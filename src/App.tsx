@@ -90,7 +90,7 @@ const AppContent: React.FC = () => {
     } = useColorGrading();
 
     const [beauty, setBeauty] = useState<BeautyConfig>({
-        enabled: true,
+        enabled: false,
         smooth: 0.35,
         eyeBrighten: 0,
         faceThin: 0,

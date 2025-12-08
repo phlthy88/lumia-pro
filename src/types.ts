@@ -50,6 +50,7 @@ export interface RecorderConfig {
     bitrate: number;
     audioSource: string;
     countdown: number;
+    photoCountdown: number;
     maxFileSize?: number;
     burstCount: number;
     burstDelay: number;

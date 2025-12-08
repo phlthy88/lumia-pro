@@ -29,8 +29,10 @@ const revokeBlobUrls = (items: MediaItem[]) => {
 export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isCountingDown, setIsCountingDown] = useState(false);
+  const [isPhotoCountingDown, setIsPhotoCountingDown] = useState(false);
   const [isBursting, setIsBursting] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [photoCountdown, setPhotoCountdown] = useState(0);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   
@@ -50,6 +52,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       bitrate: 2500000,
       audioSource: 'none',
       countdown: 0,
+      photoCountdown: 0,
       maxFileSize: 500 * 1024 * 1024,
       burstCount: 1,
       burstDelay: 200
@@ -298,7 +301,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     }, 'image/png', 1.0);
   }, [canvasRef]);
 
-  const takeBurst = useCallback((onCapture?: (url: string) => void) => {
+  const takeBurstInternal = useCallback((onCapture?: (url: string) => void) => {
     if (config.burstCount <= 1) {
       takeScreenshot(onCapture);
       return;
@@ -314,6 +317,25 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       }
     }, config.burstDelay);
   }, [config.burstCount, config.burstDelay, takeScreenshot]);
+
+  const takeBurst = useCallback((onCapture?: (url: string) => void) => {
+    if (config.photoCountdown > 0) {
+      setIsPhotoCountingDown(true);
+      setPhotoCountdown(config.photoCountdown);
+      const countdownRef = { current: config.photoCountdown };
+      const interval = setInterval(() => {
+        countdownRef.current -= 1;
+        setPhotoCountdown(countdownRef.current);
+        if (countdownRef.current <= 0) {
+          clearInterval(interval);
+          setIsPhotoCountingDown(false);
+          takeBurstInternal(onCapture);
+        }
+      }, 1000);
+    } else {
+      takeBurstInternal(onCapture);
+    }
+  }, [config.photoCountdown, takeBurstInternal]);
 
   const deleteMedia = useCallback((id: string) => {
     setMediaItems(prev => {
@@ -350,8 +372,10 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   return {
     isRecording,
     isCountingDown,
+    isPhotoCountingDown,
     isBursting,
     countdown,
+    photoCountdown,
     recordingTime,
     config,
     setConfig,

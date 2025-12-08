@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Stack, Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { MuiSelect } from './controls/MuiSelect';
 import { ControlCard } from './controls/ControlCard';
 import { RecorderConfig } from '../types';
@@ -13,10 +13,12 @@ interface RecorderSettingsProps {
 
 export const MuiRecorderSettings: React.FC<RecorderSettingsProps> = ({ config, setConfig, audioStream }) => {
     const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+    const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceInfo[]>([]);
 
     useEffect(() => {
         navigator.mediaDevices.enumerateDevices().then(devices => {
             setAudioDevices(devices.filter(d => d.kind === 'audioinput'));
+            setAudioOutputDevices(devices.filter(d => d.kind === 'audiooutput'));
         });
     }, []);
 
@@ -75,24 +77,38 @@ export const MuiRecorderSettings: React.FC<RecorderSettingsProps> = ({ config, s
                     onChange={(val) => setConfig(p => ({ ...p, bitrate: Number(val) }))}
                 />
                 <MuiSelect 
-                    label="Audio Source"
-                    value={config.audioSource}
-                    options={audioOptions}
-                    onChange={(val) => setConfig(p => ({ ...p, audioSource: val }))}
-                />
-                {config.audioSource !== 'none' && (
-                    <Box sx={{ px: 1, py: 0.5 }}>
-                        <AudioMeter audioStream={audioStream} variant="horizontal" />
-                    </Box>
-                )}
-                <MuiSelect 
-                    label="Countdown"
+                    label="Video Countdown"
                     value={config.countdown}
                     options={countdownOptions}
                     onChange={(val) => setConfig(p => ({ ...p, countdown: Number(val) }))}
                 />
             </ControlCard>
-            <ControlCard title="Photo Burst">
+            <ControlCard title="Audio">
+                <MuiSelect 
+                    label="Microphone"
+                    value={config.audioSource}
+                    options={audioOptions}
+                    onChange={(val) => setConfig(p => ({ ...p, audioSource: val }))}
+                />
+                {config.audioSource !== 'none' && (
+                    <Box sx={{ px: 1, pt: 1, pb: 2 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>Input Level</Typography>
+                        <AudioMeter audioStream={audioStream} variant="horizontal" />
+                    </Box>
+                )}
+                {audioOutputDevices.length > 0 && (
+                    <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                        Output: {audioOutputDevices[0]?.label || 'Default'}
+                    </Typography>
+                )}
+            </ControlCard>
+            <ControlCard title="Photo Capture">
+                <MuiSelect 
+                    label="Photo Countdown"
+                    value={config.photoCountdown}
+                    options={countdownOptions}
+                    onChange={(val) => setConfig(p => ({ ...p, photoCountdown: Number(val) }))}
+                />
                 <MuiSelect 
                     label="Burst Count"
                     value={config.burstCount}
