@@ -13,7 +13,7 @@ type FrameMessage = { type: 'frame'; image: ImageBitmap };
 type DisposeMessage = { type: 'dispose' };
 type IncomingMessage = InitMessage | FrameMessage | DisposeMessage;
 
-type LandmarkEvent = { type: 'landmarks'; payload: { result: FaceLandmarkerResult | null; timestamp: number } };
+type LandmarkEvent = { type: 'landmarks'; payload: { result: any; timestamp: number } };
 type ReadyEvent = { type: 'ready' };
 type ErrorEvent = { type: 'error'; message: string };
 type OutgoingMessage = LandmarkEvent | ReadyEvent | ErrorEvent;
@@ -53,7 +53,11 @@ async function handleFrame(image: ImageBitmap) {
   try {
     const result = landmarker.detect(image as unknown as HTMLImageElement);
     console.log('[VisionWorker] Detected faces:', result.faceLandmarks?.length ?? 0);
-    postMessage({ type: 'landmarks', payload: { result, timestamp: performance.now() } } satisfies LandmarkEvent);
+    // Convert result to a plain serializable object so it can be posted across worker boundary
+    const serializableResult = {
+      faceLandmarks: result.faceLandmarks?.map((face) => face.map((pt) => ({ x: pt.x, y: pt.y, z: pt.z })))
+    };
+    postMessage({ type: 'landmarks', payload: { result: serializableResult, timestamp: performance.now() } } satisfies LandmarkEvent);
   } catch (err: any) {
     console.error('[VisionWorker] Detection error:', err);
     postMessage({ type: 'error', message: err?.message ?? 'Vision worker frame failed' } satisfies ErrorEvent);

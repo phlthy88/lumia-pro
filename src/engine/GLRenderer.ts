@@ -366,8 +366,8 @@ export class GLRenderer {
                 for (int x = -1; x <= 1; x++) {
                   for (int y = -1; y <= 1; y++) {
                     float w = 1.0;
-                    vec3 sample = texture(u_videoTexture, uv + vec2(float(x), float(y)) * onePixel).rgb;
-                    accum += sample * w;
+                    vec3 samp = texture(u_videoTexture, uv + vec2(float(x), float(y)) * onePixel).rgb;
+                    accum += samp * w;
                     total += w;
                   }
                 }
