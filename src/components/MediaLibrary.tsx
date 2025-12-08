@@ -1,0 +1,343 @@
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { Box, IconButton, Dialog, Paper, Button, Typography, useTheme, Fade } from '@mui/material';
+import { keyframes } from '@mui/system';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ShareIcon from '@mui/icons-material/Share';
+import SaveIcon from '@mui/icons-material/Save';
+import EditIcon from '@mui/icons-material/Edit';
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import WarningIcon from '@mui/icons-material/Warning';
+
+const DELETE_ANIMATION_DURATION = 320;
+
+const deleteScaleFade = keyframes`
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+  60% {
+    opacity: 0.35;
+    transform: scale(0.88);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.72);
+    filter: blur(2px);
+  }
+`;
+
+interface MediaItem {
+  id: string;
+  url: string;
+  type: 'image' | 'video';
+  timestamp: number;
+}
+
+interface ParallaxMediaItemProps {
+  item: MediaItem;
+  index: number;
+  scrollY: number;
+  onSave: () => void;
+  onEdit: () => void;
+  onShare: () => void;
+  onDelete: (e: React.MouseEvent<HTMLElement>) => void;
+  isDeleting?: boolean;
+}
+
+const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({ 
+  item, index, scrollY, onSave, onEdit, onShare, onDelete, isDeleting = false 
+}) => {
+  const theme = useTheme();
+  const parallaxOffset = (scrollY * 0.1) * (index % 3 === 0 ? 1 : index % 3 === 1 ? 0.7 : 0.4);
+  
+  return (
+    <Box 
+      data-media-item
+       sx={{ 
+         position: 'relative', 
+         aspectRatio: '1', 
+         bgcolor: 'black', 
+         borderRadius: 2, 
+         overflow: 'hidden',
+         transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+         animation: isDeleting ? `${deleteScaleFade} ${DELETE_ANIMATION_DURATION}ms ease forwards` : undefined,
+         pointerEvents: isDeleting ? 'none' : 'auto',
+         '&:hover': {
+           transform: 'scale(1.03)',
+           boxShadow: `0 8px 24px ${theme.palette.primary.main}33`,
+           '& .media-overlay': { opacity: 1 },
+           '& .media-content': { transform: 'scale(1.1)' },
+         },
+       }}
+     >
+
+      <Box 
+        className="media-content"
+        sx={{ 
+          width: '100%', 
+          height: '100%',
+          transform: `translateY(${parallaxOffset}px)`,
+          transition: 'transform 0.4s ease-out',
+        }}
+      >
+        {item.type === 'image' ? (
+          <img src={item.url} alt={`Captured photo from ${new Date(item.timestamp).toLocaleString()}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <video src={item.url} preload="metadata" aria-label={`Captured video from ${new Date(item.timestamp).toLocaleString()}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        )}
+      </Box>
+      
+      <Box 
+        className="media-overlay"
+        sx={{ 
+          position: 'absolute', 
+          inset: 0,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)',
+          opacity: 0,
+          transition: 'opacity 0.3s ease',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-around', p: 1 }}>
+          <IconButton size="small" onClick={onSave} sx={{ color: 'white' }} aria-label="Save media">
+            <SaveIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" onClick={onEdit} sx={{ color: 'white' }} aria-label="Edit media">
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" onClick={onShare} sx={{ color: 'white' }} aria-label="Share media">
+            <ShareIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" onClick={onDelete} sx={{ color: 'error.main' }} aria-label="Delete media">
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
+      
+      <Box 
+        sx={{ 
+          position: 'absolute', 
+          top: 8, 
+          left: 8, 
+          px: 1, 
+          py: 0.25,
+          borderRadius: 1,
+          bgcolor: item.type === 'video' ? 'error.main' : 'primary.main',
+          fontSize: 10,
+          fontWeight: 'bold',
+          color: 'white',
+          textTransform: 'uppercase',
+        }}
+      >
+        {item.type}
+      </Box>
+    </Box>
+  );
+};
+
+interface MediaLibraryProps {
+  items: MediaItem[];
+  onClose?: () => void;
+  onDelete: (id: string) => void;
+  mode?: 'dialog' | 'panel';
+}
+
+export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDelete, mode = 'dialog' }) => {
+  const theme = useTheme();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState<{open: boolean, id: string | null, url: string | null, type?: 'image' | 'video', anchorEl: HTMLElement | null}>({open: false, id: null, url: null, anchorEl: null});
+  const [deletingIds, setDeletingIds] = useState<string[]>([]);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollY(e.currentTarget.scrollTop);
+  }, []);
+
+  const handleDeleteClick = (item: MediaItem, event: React.MouseEvent<HTMLElement>) => {
+
+    const target = event.currentTarget.closest('[data-media-item]') as HTMLElement;
+    setDeleteConfirm({open: true, id: item.id, url: item.url, type: item.type, anchorEl: target});
+  };
+  
+  const handleDeleteConfirm = () => {
+    if (!deleteConfirm.id) {
+      setDeleteConfirm({open: false, id: null, url: null, anchorEl: null});
+      return;
+    }
+
+    const targetId = deleteConfirm.id;
+    if (!deletingIds.includes(targetId)) {
+      setDeletingIds((prev) => [...prev, targetId]);
+    }
+
+    setTimeout(() => {
+      onDelete(targetId);
+      setDeletingIds((prev) => prev.filter((id) => id !== targetId));
+    }, DELETE_ANIMATION_DURATION);
+
+    setDeleteConfirm({open: false, id: null, url: null, anchorEl: null});
+  };
+
+  const handleSave = (item: MediaItem) => {
+    const a = document.createElement('a');
+    a.href = item.url;
+    a.download = `lumina_${item.type}_${item.timestamp}.${item.type === 'image' ? 'png' : 'webm'}`;
+    a.click();
+  };
+
+  const handleShare = async (item: MediaItem) => {
+    try {
+      const response = await fetch(item.url);
+      const blob = await response.blob();
+      const file = new File([blob], `lumina_${item.type}_${item.timestamp}.${item.type === 'image' ? 'png' : 'webm'}`, { type: blob.type });
+      
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        handleSave(item);
+      }
+    } catch (e) {
+      console.error('Share failed', e);
+    }
+  };
+
+  const handleEdit = (item: MediaItem) => {
+    window.open(item.url, '_blank');
+  };
+
+  const content = (
+    <Box 
+      ref={scrollRef}
+      onScroll={handleScroll}
+      sx={{ 
+        height: '100%',
+        overflowY: 'auto',
+        p: 2,
+        position: 'relative',
+      }}
+    >
+      {/* Inline Delete Confirmation */}
+      <Fade in={deleteConfirm.open}>
+        <Paper
+          elevation={8}
+          sx={{
+            position: 'absolute',
+            top: deleteConfirm.anchorEl ? `${deleteConfirm.anchorEl.offsetTop + deleteConfirm.anchorEl.offsetHeight / 2}px` : '50%',
+            left: deleteConfirm.anchorEl ? `${deleteConfirm.anchorEl.offsetLeft + deleteConfirm.anchorEl.offsetWidth / 2}px` : '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 100,
+            p: 2,
+            borderRadius: 3,
+            bgcolor: 'background.paper',
+            textAlign: 'center',
+            minWidth: 200,
+            display: deleteConfirm.open ? 'block' : 'none',
+          }}
+        >
+          <WarningIcon sx={{ fontSize: 32, color: 'error.main', mb: 1 }} />
+          <Typography variant="body2" fontWeight="bold" gutterBottom>Delete?</Typography>
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 1 }}>
+            <Button size="small" onClick={() => setDeleteConfirm({open: false, id: null, url: null, anchorEl: null})} variant="outlined">Cancel</Button>
+            <Button size="small" onClick={handleDeleteConfirm} color="error" variant="contained">Delete</Button>
+          </Box>
+        </Paper>
+      </Fade>
+
+      {/* Backdrop when delete confirm is open */}
+      {deleteConfirm.open && (
+        <Box 
+          onClick={() => setDeleteConfirm({open: false, id: null, url: null, anchorEl: null})}
+          sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.5)', zIndex: 99 }} 
+        />
+      )}
+
+      {/* Parallax Header */}
+      <Box
+        sx={{
+          position: 'relative',
+          height: 100,
+          borderRadius: 3,
+          mb: 3,
+          overflow: 'hidden',
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}33, ${theme.palette.secondary.main}33)`,
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            transform: `translateY(${scrollY * 0.4}px)`,
+            background: `radial-gradient(circle at 30% 50%, ${theme.palette.primary.main}44 0%, transparent 60%)`,
+            transition: 'transform 0.1s ease-out',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'relative',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            px: 2,
+            gap: 2,
+            transform: `translateY(${-scrollY * 0.2}px)`,
+            opacity: Math.max(0, 1 - scrollY / 100),
+            transition: 'transform 0.1s ease-out, opacity 0.1s ease-out',
+          }}
+        >
+          <PhotoLibraryIcon id="media-library-icon" sx={{ fontSize: 40, color: theme.palette.primary.main }} />
+          <Box>
+            <Typography variant="h6" fontWeight="bold">Media Library</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {items.length} {items.length === 1 ? 'item' : 'items'}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      {items.length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
+          <PhotoLibraryIcon sx={{ fontSize: 64, opacity: 0.3, mb: 2 }} />
+          <Typography>No media captured yet</Typography>
+          <Typography variant="caption">Photos and videos will appear here</Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 2 }}>
+          {items.map((item, index) => (
+            <ParallaxMediaItem
+              key={item.id}
+              item={item}
+              index={index}
+              scrollY={scrollY}
+              onSave={() => handleSave(item)}
+              onEdit={() => handleEdit(item)}
+              onShare={() => handleShare(item)}
+              onDelete={(e) => handleDeleteClick(item, e)}
+              isDeleting={deletingIds.includes(item.id)}
+            />
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+
+
+  if (mode === 'panel') {
+    return content;
+  }
+
+  return (
+    <Dialog open={true} onClose={onClose} maxWidth="md" fullWidth>
+      <Box sx={{ position: 'relative', bgcolor: 'background.default', height: '70vh' }}>
+        <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}>
+          <CloseIcon />
+        </IconButton>
+        {content}
+      </Box>
+    </Dialog>
+  );
+};

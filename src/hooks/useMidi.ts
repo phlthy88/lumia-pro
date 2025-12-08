@@ -1,0 +1,69 @@
+import { useEffect, useCallback, useState } from 'react';
+import { ColorGradeParams } from '../types';
+
+interface MidiMapping {
+  cc: number;
+  param: keyof ColorGradeParams;
+  min: number;
+  max: number;
+}
+
+const DEFAULT_MAPPINGS: MidiMapping[] = [
+  { cc: 1, param: 'exposure', min: -2, max: 2 },
+  { cc: 2, param: 'contrast', min: 0.5, max: 1.5 },
+  { cc: 3, param: 'saturation', min: 0, max: 2 },
+  { cc: 4, param: 'temperature', min: -1, max: 1 },
+  { cc: 5, param: 'tint', min: -1, max: 1 },
+  { cc: 6, param: 'highlights', min: -1, max: 1 },
+  { cc: 7, param: 'shadows', min: -1, max: 1 },
+  { cc: 8, param: 'vignette', min: 0, max: 1 },
+];
+
+export const useMidi = (
+  onColorChange: (key: keyof ColorGradeParams, value: number) => void
+) => {
+  const [midiAccess, setMidiAccess] = useState<MIDIAccess | null>(null);
+  const [connected, setConnected] = useState(false);
+
+  const handleMidiMessage = useCallback((event: MIDIMessageEvent) => {
+    const [status, cc, velocity] = event.data;
+    
+    if (status === 176) { // Control Change
+      const mapping = DEFAULT_MAPPINGS.find(m => m.cc === cc);
+      if (mapping) {
+        const normalized = velocity / 127;
+        const value = mapping.min + normalized * (mapping.max - mapping.min);
+        onColorChange(mapping.param, value);
+      }
+    }
+  }, [onColorChange]);
+
+  useEffect(() => {
+    if (!navigator.requestMIDIAccess) return;
+
+    navigator.requestMIDIAccess({ sysex: false })
+      .then(access => {
+        setMidiAccess(access);
+        
+        access.inputs.forEach(input => {
+          input.onmidimessage = handleMidiMessage;
+          setConnected(true);
+        });
+
+        access.onstatechange = (e) => {
+          const port = e.port as MIDIInput;
+          if (port.type === 'input') {
+            if (port.state === 'connected') {
+              port.onmidimessage = handleMidiMessage;
+              setConnected(true);
+            } else {
+              setConnected(false);
+            }
+          }
+        };
+      })
+      .catch(() => setConnected(false));
+  }, [handleMidiMessage]);
+
+  return { connected, midiAccess };
+};
