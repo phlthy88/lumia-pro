@@ -245,8 +245,9 @@ const AppContent: React.FC = () => {
     }, [capabilities]);
 
 
-    // AI - Only load model when beauty is enabled (saves ~1.5MB + GPU memory)
-    const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady, beauty.enabled, {
+    // AI - Load model when beauty enabled OR on AI tab
+    const visionEnabled = beauty.enabled || activeTab === 'AI';
+    const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady, visionEnabled, {
         minFaceDetectionConfidence: 0.3,
         minFacePresenceConfidence: 0.3,
         minTrackingConfidence: 0.3
