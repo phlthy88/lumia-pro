@@ -1,182 +1,181 @@
 <div align="center">
-<img width="1200" height="475" alt="Lumia Studio Pro Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 
-# 🎥 Lumia Studio Pro
+<img src="newlogo.png" alt="Lumia Pro Lens" width="120" />
 
-**Professional-grade camera studio in your browser**
+# Lumia Pro Lens
 
-Transform your webcam into a cinematic powerhouse with real-time color grading, AI-powered enhancements, and studio-quality effects.
+### Transform your webcam into a professional broadcast studio
 
-[![Live Demo](https://img.shields.io/badge/🚀-Live_Demo-blue?style=for-the-badge)](https://ai.studio/apps/drive/10JkiP_8H6pyn5vaxgZmyOlv5bTtvAXfV)
-[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
+**Real-time color grading • AI scene analysis • Virtual camera output**
 
-[Features](#-features) • [Quick Start](#-quick-start) • [Usage](#-usage) • [Tech Stack](#-tech-stack)
+<br />
+
+[![Live Demo](https://img.shields.io/badge/Try_It_Live-6750A4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://phlthy88.github.io/lumia-pro)
+[![MIT License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+
+<br />
+
+<img src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" alt="Lumia Pro Screenshot" width="100%" />
 
 </div>
 
----
+<br />
 
-## ✨ Features
+## Why Lumia Pro?
 
-### 🎨 **Cinematic Color Grading**
-- **70+ Professional LUTs** - Film emulation, creative looks, and log conversion
-- Real-time GPU-accelerated processing
-- Custom LUT import support
-- Presets: Film Noir, Vintage, Cyberpunk, and more
+Most webcam software gives you basic filters. Lumia Pro gives you a **full color grading suite** with the same tools used in Hollywood post-production—running entirely in your browser.
 
-### 🤖 **AI-Powered Intelligence**
-- Smart scene analysis and optimization
-- Automatic lighting adjustments
-- Face detection and tracking
-- Intelligent framing suggestions
+| Feature | Lumia Pro | Basic Webcam Apps |
+|---------|-----------|-------------------|
+| Professional LUTs | ✅ 70+ cinematic looks | ❌ Basic filters |
+| Real-time GPU rendering | ✅ WebGL 2.0 | ❌ CPU-based |
+| AI scene optimization | ✅ Gemini-powered | ❌ None |
+| Virtual camera output | ✅ Works with Zoom, OBS | ❌ Limited |
+| MIDI controller support | ✅ Full mapping | ❌ None |
+| Offline PWA | ✅ Install & use anywhere | ❌ Online only |
 
-### 🎬 **Studio Controls**
-- Professional color correction (exposure, contrast, saturation, temperature)
-- Real-time effects and filters
-- Customizable overlays and graphics
-- Audio level monitoring with visual feedback
+<br />
 
-### 🎮 **Hardware Integration**
-- MIDI controller support for hands-free operation
-- Keyboard shortcuts for quick access
-- Gyroscope support for mobile devices
-- Virtual camera output for streaming
-
-### 📱 **Platform Optimizations**
-- YouTube, Twitch, TikTok, Instagram presets
-- Optimal encoding settings per platform
-- Aspect ratio and resolution presets
-- One-click platform-specific enhancements
-
-### 🎯 **Professional Recording**
-- High-quality video capture
-- Audio synchronization
-- Media library with thumbnail previews
-- Export in multiple formats
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 16+ 
-- Modern browser (Chrome, Edge, or Firefox recommended)
-- Gemini API key ([Get one here](https://ai.google.dev/))
-
-### Installation
+## ⚡ Quick Start
 
 ```bash
-# Clone the repository
 git clone https://github.com/phlthy88/lumia-pro.git
 cd lumia-pro
-
-# Install dependencies
 npm install
-
-# Configure your API key
-echo "GEMINI_API_KEY=your_api_key_here" > .env.local
-
-# Start the development server
 npm run dev
 ```
 
-Visit `http://localhost:5173` and grant camera permissions to start creating!
+Open **http://localhost:5173** → Allow camera → Start creating.
 
----
+<br />
 
-## 🎯 Usage
+## 🎨 Features
 
-### Basic Workflow
-1. **Launch** - Open the app and allow camera access
-2. **Select LUT** - Choose from 70+ professional color grades
-3. **Adjust** - Fine-tune exposure, contrast, and color temperature
-4. **Enhance** - Enable AI analysis for smart optimizations
-5. **Record** - Capture your masterpiece or stream live
+<table>
+<tr>
+<td width="50%">
 
-### Keyboard Shortcuts
-- `Space` - Start/Stop recording
-- `C` - Capture photo
-- `L` - Toggle LUT panel
-- `A` - Toggle AI analysis
-- `F` - Toggle fullscreen
+### Color Grading
+- **70+ Professional LUTs** — Film stocks, cinematic looks, log conversions
+- Lift / Gamma / Gain color wheels
+- Exposure, contrast, saturation, temperature
+- Real-time GPU-accelerated processing
 
-### MIDI Control
-Connect any MIDI controller for tactile control over:
-- Color grading parameters
-- LUT selection
-- Recording controls
-- Effect toggles
+</td>
+<td width="50%">
 
----
+### AI Assistant
+- One-click scene analysis
+- Auto white balance correction
+- Face detection & beauty smoothing
+- Intelligent exposure suggestions
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### Studio Tools
+- Focus peaking & zebra overlays
+- Rule-of-thirds grid
+- Audio level meters
+- Recording with media library
+
+</td>
+<td width="50%">
+
+### Connectivity
+- Virtual camera for Zoom, Meet, OBS
+- MIDI controller mapping
+- Keyboard shortcuts
+- Mobile gyroscope support
+
+</td>
+</tr>
+</table>
+
+<br />
+
+## 🎬 LUT Library
+
+<table>
+<tr>
+<td align="center"><strong>Film Emulation</strong><br/><sub>Kodak Portra • Fuji Provia • Polaroid</sub></td>
+<td align="center"><strong>Creative Looks</strong><br/><sub>Teal & Orange • Matrix • Stranger Things</sub></td>
+<td align="center"><strong>Log Conversion</strong><br/><sub>S-Log3 • C-Log • V-Log • ARRI LogC</sub></td>
+<td align="center"><strong>Black & White</strong><br/><sub>Tri-X 400 • HP5 Plus • Classic Noir</sub></td>
+</tr>
+</table>
+
+<br />
+
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` | Start/Stop recording |
+| `C` | Capture photo |
+| `L` | Toggle LUT panel |
+| `F` | Fullscreen |
+| `B` | Bypass processing |
+
+<br />
 
 ## 🛠 Tech Stack
 
-- **React 18** - Modern UI framework
-- **TypeScript** - Type-safe development
-- **WebGL** - GPU-accelerated rendering
-- **Material Design 3** - Beautiful, accessible UI
-- **Gemini AI** - Intelligent scene analysis
-- **MediaRecorder API** - High-quality capture
-- **Web MIDI API** - Hardware integration
-- **Vite** - Lightning-fast build tool
-
----
-
-## 📦 Project Structure
-
 ```
-lumia-pro/
-├── src/
-│   ├── components/     # React components
-│   ├── engine/         # WebGL rendering engine
-│   ├── hooks/          # Custom React hooks
-│   ├── services/       # Business logic
-│   └── theme/          # Material Design 3 theming
-├── public/
-│   ├── luts/           # Color grading LUTs
-│   └── models/         # AI models
-└── package.json
+React 18        →  UI Framework
+TypeScript      →  Type Safety
+WebGL 2.0       →  GPU Rendering
+MediaPipe       →  Face Detection
+Material UI 3   →  Design System
+Vite            →  Build Tool
 ```
 
----
+<br />
 
-## 🎨 LUT Categories
+## 📁 Project Structure
 
-- **Film Emulation** - Kodak Portra, Fuji Provia, Polaroid, and more
-- **Creative Looks** - Cinematic styles inspired by iconic films
-- **Log Conversion** - Sony S-Log, Canon C-Log, RED, Blackmagic
-- **Black & White** - Classic monochrome film stocks
+```
+src/
+├── components/    UI components & layouts
+├── engine/        WebGL renderer & shaders
+├── hooks/         Camera, recording, AI hooks
+├── services/      LUT loading, AI analysis
+└── theme/         Material Design 3 theming
 
----
+public/
+├── luts/          70+ .cube LUT files
+├── models/        MediaPipe face model
+└── wasm/          Vision WASM binaries
+```
+
+<br />
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to:
-- Report bugs
-- Suggest new features
-- Submit pull requests
-- Share your custom LUTs
+Contributions welcome! Feel free to:
+- 🐛 Report bugs
+- 💡 Suggest features  
+- 🎨 Submit custom LUTs
+- 🔧 Open pull requests
 
----
+<br />
 
 ## 📄 License
 
-MIT License - feel free to use this project for personal or commercial purposes.
+MIT License — use freely for personal or commercial projects.
 
----
-
-## 🙏 Acknowledgments
-
-- LUT collection curated from professional color grading resources
-- Built with [Google AI Studio](https://ai.studio)
-- Powered by Gemini AI
-
----
+<br />
 
 <div align="center">
 
-**Made with ❤️ by [phlthy88](https://github.com/phlthy88)**
+---
 
-⭐ Star this repo if you find it useful!
+**Built with ❤️ using React, WebGL & AI**
+
+[⬆ Back to top](#lumia-pro-lens)
 
 </div>
