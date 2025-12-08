@@ -319,14 +319,15 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   }, [config.burstCount, config.burstDelay, takeScreenshot]);
 
   const takeBurst = useCallback((onCapture?: (url: string) => void) => {
-    if (config.photoCountdown > 0) {
+    const countdownTime = Number(config.photoCountdown) || 0;
+    if (countdownTime > 0) {
       setIsPhotoCountingDown(true);
-      setPhotoCountdown(config.photoCountdown);
-      const countdownRef = { current: config.photoCountdown };
+      setPhotoCountdown(countdownTime);
+      let remaining = countdownTime;
       const interval = setInterval(() => {
-        countdownRef.current -= 1;
-        setPhotoCountdown(countdownRef.current);
-        if (countdownRef.current <= 0) {
+        remaining -= 1;
+        setPhotoCountdown(remaining);
+        if (remaining <= 0) {
           clearInterval(interval);
           setIsPhotoCountingDown(false);
           takeBurstInternal(onCapture);

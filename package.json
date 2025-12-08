@@ -23,6 +23,7 @@
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
     "framer-motion": "^12.23.25",
+    "jszip": "^3.10.1",
     "react": "^19.2.1",
     "react-dom": "^19.2.1"
   },
