@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      cacheDir: 'node_modules/.vite-cache',
       server: {
         port: 3000,
         host: '0.0.0.0',
@@ -13,6 +14,14 @@ export default defineConfig(({ mode }) => {
           'Cross-Origin-Opener-Policy': 'same-origin',
           'Cross-Origin-Embedder-Policy': 'require-corp',
         }
+      },
+      optimizeDeps: {
+        include: [
+          '@mui/material',
+          '@mui/icons-material',
+          '@emotion/react',
+          '@emotion/styled'
+        ]
       },
       plugins: [
         react(),
