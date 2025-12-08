@@ -245,8 +245,8 @@ const AppContent: React.FC = () => {
     }, [capabilities]);
 
 
-    // AI - Add null check for videoRef
-    const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady, {
+    // AI - Only load model when beauty is enabled (saves ~1.5MB + GPU memory)
+    const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady, beauty.enabled, {
         minFaceDetectionConfidence: 0.3,
         minFacePresenceConfidence: 0.3,
         minTrackingConfidence: 0.3

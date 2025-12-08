@@ -16,6 +16,7 @@ const DEFAULT_MODEL = `${BASE_PATH}models/face_landmarker.task`;
 export const useVisionWorker = (
   videoRef: React.RefObject<HTMLVideoElement>,
   streamReady: boolean,
+  enabled: boolean, // Only load model when enabled (AI or Beauty active)
   options: {
     minFaceDetectionConfidence: number;
     minFacePresenceConfidence: number;
@@ -26,10 +27,9 @@ export const useVisionWorker = (
   const intervalRef = useRef<number>(0);
   const [state, setState] = useState<VisionState>({ result: null, ready: false });
 
-  // Initialize FaceLandmarker
-  // Initialize FaceLandmarker when stream is ready
+  // Initialize FaceLandmarker only when enabled
   useEffect(() => {
-    if (!streamReady || landmarkerRef.current) return;
+    if (!streamReady || !enabled || landmarkerRef.current) return;
 
     let cancelled = false;
 
@@ -65,21 +65,22 @@ export const useVisionWorker = (
       cancelled = true;
       landmarkerRef.current?.close();
       landmarkerRef.current = null;
+      setState({ result: null, ready: false });
     };
-  }, [streamReady, options.minFaceDetectionConfidence, options.minFacePresenceConfidence, options.minTrackingConfidence]);
+  }, [streamReady, enabled, options.minFaceDetectionConfidence, options.minFacePresenceConfidence, options.minTrackingConfidence]);
 
-  // Cleanup when stream becomes unavailable
+  // Cleanup when disabled or stream unavailable
   useEffect(() => {
-    if (!streamReady && landmarkerRef.current) {
+    if ((!streamReady || !enabled) && landmarkerRef.current) {
       landmarkerRef.current.close();
       landmarkerRef.current = null;
       setState(prev => ({ ...prev, ready: false, result: null }));
     }
-  }, [streamReady]);
+  }, [streamReady, enabled]);
 
   // Detection loop - 100ms interval (~10fps) to avoid blocking rendering
   useEffect(() => {
-    if (!state.ready) return;
+    if (!state.ready || !enabled) return;
 
     let isProcessing = false;
 
