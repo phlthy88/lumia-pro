@@ -7,6 +7,16 @@ export interface DeviceInfo {
     label: string;
 }
 
+export enum FallbackMode {
+    GL_UNSUPPORTED = 'gl_unsupported',
+    CAMERA_DENIED = 'camera_denied',
+    CAMERA_NOT_FOUND = 'camera_not_found',
+    MEDIAPIPE_FAILED = 'mediapipe_failed',
+    RECORDING_FAILED = 'recording_failed',
+    NETWORK_OFFLINE = 'network_offline',
+    GENERIC_ERROR = 'generic_error'
+}
+
 export interface LutData {
   name: string;
   size: number;
