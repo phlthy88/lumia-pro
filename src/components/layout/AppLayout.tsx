@@ -199,8 +199,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                     <Box 
                         sx={{ 
                             position: 'absolute', 
-                            top: 0, 
-                            right: 0, 
+                            top: '50%', 
+                            right: 16,
+                            transform: 'translateY(-50%)',
                             zIndex: theme.zIndex.drawer + 3,
                             filter: 'url(#goo)',
                             bgcolor: 'transparent',

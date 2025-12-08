@@ -70,10 +70,6 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
         <Box
             sx={{
                 width: 72,
-                position: 'absolute',
-                top: '50%',
-                right: 16,
-                transform: 'translateY(-50%)',
                 bgcolor: theme.palette.background.paper,
                 borderRadius: '20px',
                 border: `1px solid ${theme.palette.divider}`,
