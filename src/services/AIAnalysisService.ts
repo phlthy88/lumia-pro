@@ -171,6 +171,14 @@ export class AIAnalysisService {
       this.isAnalyzing = false;
     }
   }
+
+  dispose() {
+    // Clear canvas to release memory
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.canvas.width = 1;
+    this.canvas.height = 1;
+    this.isAnalyzing = false;
+  }
 }
 
 export const aiService = new AIAnalysisService();

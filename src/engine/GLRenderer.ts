@@ -35,6 +35,8 @@ export class GLRenderer {
 
     // Uniform locations cache
     private uniforms: Map<string, WebGLUniformLocation> = new Map();
+    private contextLostHandler: ((e: Event) => void) | null = null;
+    private recoveryTimeout: ReturnType<typeof setTimeout> | null = null;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -56,13 +58,13 @@ export class GLRenderer {
         console.log(`[GLRenderer] GPU Tier: ${this.gpuTier}`, this.qualityProfile);
         
         // Handle context loss (critical for low-end Chromebooks)
-        canvas.addEventListener('webglcontextlost', (e) => {
+        this.contextLostHandler = (e) => {
             e.preventDefault();
             this.stop();
             console.warn('WebGL context lost');
             
             // Attempt recovery after a short delay
-            setTimeout(() => {
+            this.recoveryTimeout = setTimeout(() => {
                 try {
                     const newContext = canvas.getContext('webgl2', { 
                         alpha: false, 
@@ -86,7 +88,8 @@ export class GLRenderer {
                     console.error('WebGL context recovery failed:', recoveryError);
                 }
             }, 1000);
-        });
+        };
+        canvas.addEventListener('webglcontextlost', this.contextLostHandler);
         
         // Enable extensions for floating point textures (critical for LUTs)
         gl.getExtension('EXT_color_buffer_float');
@@ -272,6 +275,19 @@ export class GLRenderer {
 
     public dispose() {
         this.stop();
+        
+        // Remove event listener
+        if (this.contextLostHandler) {
+            this.canvas.removeEventListener('webglcontextlost', this.contextLostHandler);
+            this.contextLostHandler = null;
+        }
+        
+        // Clear recovery timeout
+        if (this.recoveryTimeout) {
+            clearTimeout(this.recoveryTimeout);
+            this.recoveryTimeout = null;
+        }
+        
         if (this.program) {
             this.gl.deleteProgram(this.program);
             this.program = null;
@@ -287,6 +303,12 @@ export class GLRenderer {
             this.positionBuffer = null;
         }
         this.uniforms.clear();
+        
+        // Clear video/overlay sources
+        this.videoSource = null;
+        this.overlaySource = null;
+        this.beautyMaskSource = null;
+        this.beautyMask2Source = null;
     }
 
     private resize() {

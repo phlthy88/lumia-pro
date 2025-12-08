@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { createTheme, ThemeProvider as MuiThemeProvider, PaletteMode, alpha, PaletteColorOptions } from '@mui/material';
+import { createTheme, ThemeProvider as MuiThemeProvider, CssBaseline, PaletteMode, alpha, PaletteColorOptions } from '@mui/material';
 import { 
   argbFromHex, 
   sourceColorFromImage, 
@@ -373,7 +373,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         MuiCssBaseline: {
           styleOverrides: {
             body: {
-              backgroundColor: hexFromArgb(darkenArgb(tertiaryMain, 75)),
+              // Tertiary color at 10% brightness (very dark)
+              backgroundColor: hexFromArgb(Hct.from(Hct.fromInt(tertiaryMain).hue, Hct.fromInt(tertiaryMain).chroma * 0.3, 10).toInt()),
             },
           },
         },
@@ -669,6 +670,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   return (
     <ThemeContext.Provider value={{ mode, toggleMode, seedColor, setSeedColor, extractThemeFromImage, resetTheme }}>
       <MuiThemeProvider theme={theme}>
+        <CssBaseline />
         {children}
       </MuiThemeProvider>
     </ThemeContext.Provider>

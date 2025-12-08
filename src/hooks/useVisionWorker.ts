@@ -27,6 +27,7 @@ export const useVisionWorker = (
   const [state, setState] = useState<VisionState>({ result: null, ready: false });
 
   // Initialize FaceLandmarker
+  // Initialize FaceLandmarker when stream is ready
   useEffect(() => {
     if (!streamReady || landmarkerRef.current) return;
 
@@ -66,6 +67,15 @@ export const useVisionWorker = (
       landmarkerRef.current = null;
     };
   }, [streamReady, options.minFaceDetectionConfidence, options.minFacePresenceConfidence, options.minTrackingConfidence]);
+
+  // Cleanup when stream becomes unavailable
+  useEffect(() => {
+    if (!streamReady && landmarkerRef.current) {
+      landmarkerRef.current.close();
+      landmarkerRef.current = null;
+      setState(prev => ({ ...prev, ready: false, result: null }));
+    }
+  }, [streamReady]);
 
   // Detection loop - 100ms interval (~10fps) to avoid blocking rendering
   useEffect(() => {

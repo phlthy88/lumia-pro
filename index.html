@@ -31,7 +31,6 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-        background-color: #1a1520;
       }
       #root {
         height: 100vh;
@@ -61,13 +60,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/index.tsx"></script>
-    <script>
-      // Unregister any existing service workers
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-          regs.forEach(reg => reg.unregister());
-        });
-      }
-    </script>
 </body>
 </html>

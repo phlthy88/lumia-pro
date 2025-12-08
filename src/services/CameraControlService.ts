@@ -139,6 +139,20 @@ export class CameraControlService {
     public async setColorTemperature(kelvin: number) {
         await this.safeApply({ whiteBalanceMode: 'manual', colorTemperature: kelvin } as any);
     }
+
+    public dispose() {
+        // Stop all tracks
+        if (this.stream) {
+            this.stream.getTracks().forEach(t => t.stop());
+            this.stream = null;
+        }
+        this.track = null;
+        
+        // Reject pending queue items
+        this.constraintQueue.forEach(item => item.reject(new Error('Service disposed')));
+        this.constraintQueue = [];
+        this.isProcessingQueue = false;
+    }
 }
 
 export const cameraService = new CameraControlService();
