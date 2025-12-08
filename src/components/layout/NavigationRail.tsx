@@ -18,7 +18,8 @@ import {
     Settings as SettingsIcon,
     Palette as PaletteIcon,
     PhotoLibrary as MediaIcon,
-    Bolt as BoostIcon
+    Bolt as BoostIcon,
+    AutoAwesome as AIIcon
 } from '@mui/icons-material';
 
 interface NavigationProps {
@@ -28,6 +29,7 @@ interface NavigationProps {
 
 const NAV_ITEMS = [
     { id: 'ADJUST', label: 'Adjust', icon: <TuneIcon /> },
+    { id: 'AI', label: 'AI', icon: <AIIcon /> },
     { id: 'OVERLAYS', label: 'Overlays', icon: <LayersIcon /> },
     { id: 'BOOSTS', label: 'Boosts', icon: <BoostIcon /> },
     { id: 'SYSTEM', label: 'System', icon: <SettingsIcon /> },

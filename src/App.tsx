@@ -24,6 +24,7 @@ import { MaskGenerator } from './beauty/MaskGenerator';
 
 // Components
 import { AIWidget } from './components/AIWidget';
+import { AISettings } from './components/AISettings';
 import { ThemeSettings } from './components/ThemeSettings';
 import { MuiOverlaySettings } from './components/MuiOverlaySettings';
 import { MuiRecorderSettings } from './components/MuiRecorderSettings';
@@ -33,6 +34,7 @@ import { MuiPresetSelector } from './components/controls/MuiPresetSelector';
 import { MuiSlider } from './components/controls/MuiSlider';
 import { MuiSwitch, MuiToggleGroup } from './components/controls/MuiToggle';
 import { MuiSelect } from './components/controls/MuiSelect';
+import { MuiButton } from './components/controls/MuiButton';
 import { ControlCard } from './components/controls/ControlCard';
 import { StatsOverlay } from './components/StatsOverlay';
 import { StyledViewfinder } from './components/layout/StyledViewfinder';
@@ -91,7 +93,7 @@ const AppContent: React.FC = () => {
     const [beautySmooth, setBeautySmooth] = useState(0.35);
 
     // MIDI Control Integration
-    const { connected: midiConnected } = useMidi(handleColorChange);
+    const midi = useMidi(handleColorChange);
 
     // Fix Duplicate useCameraStream Hook Call
     // We call it once here. `capabilities` will be undefined initially, but that's fine.
@@ -126,7 +128,11 @@ const AppContent: React.FC = () => {
 
 
     // AI - Add null check for videoRef
-    const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady);
+    const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady, {
+        minFaceDetectionConfidence: 0.3,
+        minFacePresenceConfidence: 0.3,
+        minTrackingConfidence: 0.3
+    });
     const ai = useAIAnalysis(videoRef as React.RefObject<HTMLVideoElement>, vision.landmarks);
     const handleAutoFix = () => {
         if (ai.autoParams) {
@@ -342,37 +348,6 @@ const AppContent: React.FC = () => {
                             subtitle="Color grading & camera controls"
                             scrollY={drawerScrollY}
                         />
-                        
-                        <AIWidget 
-                            result={ai.result}
-                            isAnalyzing={ai.isAnalyzing}
-                            onAnalyze={ai.runAnalysis}
-                            onAutoFix={handleAutoFix}
-                            onUndo={undo}
-                            canUndo={canUndo}
-                        />
-
-                        <ControlCard title="Beauty">
-                            <MuiSwitch 
-                                label="Enable Beauty" 
-                                checked={beautyEnabled} 
-                                onChange={setBeautyEnabled} 
-                            />
-                            <MuiSlider 
-                                label="Skin Smooth" 
-                                value={beautySmooth} 
-                                min={0} 
-                                max={1} 
-                                step={0.01} 
-                                onChange={setBeautySmooth} 
-                                disabled={!beautyEnabled}
-                            />
-                            {!vision.hasFace && (
-                                <Typography variant="caption" color="text.secondary">
-                                    Beauty will auto-disable until a face is detected.
-                                </Typography>
-                            )}
-                        </ControlCard>
 
                         <ControlCard title="Source & Mode">
                             <MuiSelect 
@@ -494,6 +469,29 @@ const AppContent: React.FC = () => {
                         </ControlCard>
                     </>
                 );
+            case 'AI':
+                return (
+                    <>
+                        <ParallaxHeader 
+                            title="AI Assistant" 
+                            subtitle="Smart analysis & beauty"
+                            scrollY={drawerScrollY}
+                        />
+                        <AISettings
+                            result={ai.result}
+                            isAnalyzing={ai.isAnalyzing}
+                            onAnalyze={ai.runAnalysis}
+                            onAutoFix={handleAutoFix}
+                            onUndo={undo}
+                            canUndo={canUndo}
+                            beautyEnabled={beautyEnabled}
+                            setBeautyEnabled={setBeautyEnabled}
+                            beautySmooth={beautySmooth}
+                            setBeautySmooth={setBeautySmooth}
+                            hasFace={vision.hasFace}
+                        />
+                    </>
+                );
             case 'OVERLAYS':
                 return (
                     <>
@@ -526,6 +524,20 @@ const AppContent: React.FC = () => {
                         />
                         <MuiRecorderSettings config={recConfig} setConfig={setRecConfig} audioStream={audioStream} />
                         <VirtualCameraSettings virtualCamera={virtualCamera} />
+                        <ControlCard title="MIDI Controller">
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <MuiButton 
+                                    onClick={midi.requestAccess} 
+                                    disabled={midi.enabled}
+                                    variant={midi.connected ? 'outlined' : 'contained'}
+                                >
+                                    {midi.connected ? 'Connected' : midi.enabled ? 'Connecting...' : 'Connect MIDI'}
+                                </MuiButton>
+                                {midi.connected && (
+                                    <Typography variant="caption" color="success.main">● Device active</Typography>
+                                )}
+                            </Box>
+                        </ControlCard>
                     </>
                 );
             case 'THEME':
@@ -602,7 +614,7 @@ const AppContent: React.FC = () => {
                     bypass={bypass} 
                     isRecording={isRecording} 
                     recordingTime={recordingTime}
-                    midiConnected={midiConnected}
+                    midiConnected={midi.connected}
                 />
             </StyledViewfinder>
 

@@ -12,7 +12,12 @@ const DEFAULT_MODEL = '/models/face_landmarker.task';
 
 export const useVisionWorker = (
   videoRef: React.RefObject<HTMLVideoElement>,
-  streamReady: boolean
+  streamReady: boolean,
+  options: {
+    minFaceDetectionConfidence: number;
+    minFacePresenceConfidence: number;
+    minTrackingConfidence: number;
+  }
 ) => {
   const workerRef = useRef<Worker | null>(null);
   const intervalRef = useRef<number>();
@@ -42,18 +47,19 @@ export const useVisionWorker = (
     worker.postMessage({
       type: 'init',
       wasmPath: DEFAULT_WASM,
-      modelAssetPath: DEFAULT_MODEL
+      modelAssetPath: DEFAULT_MODEL,
+      ...options
     });
 
     return () => {
       worker.postMessage({ type: 'dispose' });
       workerRef.current = null;
     };
-  }, [streamReady]);
+  }, [streamReady, options]);
 
-  // Frame pump
+  // Frame pump - only run when worker is ready
   useEffect(() => {
-    if (!streamReady) return;
+    if (!streamReady || !state.ready) return;
     intervalRef.current = window.setInterval(async () => {
       if (sendingRef.current) return;
       const video = videoRef.current;
@@ -64,15 +70,14 @@ export const useVisionWorker = (
         workerRef.current.postMessage({ type: 'frame', image: bitmap }, [bitmap]);
       } catch (err) {
         sendingRef.current = false;
-        // Swallow transient errors (e.g., frame not available)
       }
-    }, 80); // ~12.5fps detection cadence
+    }, 50); // ~20fps detection cadence
 
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       sendingRef.current = false;
     };
-  }, [streamReady, videoRef]);
+  }, [streamReady, state.ready, videoRef]);
 
   const hasFace = useMemo(() => (state.result?.faceLandmarks?.length ?? 0) > 0, [state.result]);
 

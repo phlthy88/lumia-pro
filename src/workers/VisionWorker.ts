@@ -1,7 +1,14 @@
 /// <reference lib="webworker" />
 import { FilesetResolver, FaceLandmarker, FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 
-type InitMessage = { type: 'init'; wasmPath: string; modelAssetPath: string };
+type InitMessage = {
+  type: 'init';
+  wasmPath: string;
+  modelAssetPath: string;
+  minFaceDetectionConfidence: number;
+  minFacePresenceConfidence: number;
+  minTrackingConfidence: number;
+};
 type FrameMessage = { type: 'frame'; image: ImageBitmap };
 type DisposeMessage = { type: 'dispose' };
 type IncomingMessage = InitMessage | FrameMessage | DisposeMessage;
@@ -12,21 +19,27 @@ type ErrorEvent = { type: 'error'; message: string };
 type OutgoingMessage = LandmarkEvent | ReadyEvent | ErrorEvent;
 
 let landmarker: FaceLandmarker | null = null;
-let offscreen: OffscreenCanvas | null = null;
 let isProcessing = false;
 
-const TARGET_WIDTH = 480;
-
-async function ensureLandmarker(wasmPath: string, modelAssetPath: string) {
+async function ensureLandmarker(
+  wasmPath: string,
+  modelAssetPath: string,
+  minFaceDetectionConfidence: number,
+  minFacePresenceConfidence: number,
+  minTrackingConfidence: number
+) {
   if (landmarker) return;
   const vision = await FilesetResolver.forVisionTasks(wasmPath);
   landmarker = await FaceLandmarker.createFromOptions(vision, {
     baseOptions: {
       modelAssetPath,
-      delegate: 'GPU'
+      delegate: 'CPU'
     },
     runningMode: 'IMAGE',
-    numFaces: 1
+    numFaces: 1,
+    minFaceDetectionConfidence,
+    minFacePresenceConfidence,
+    minTrackingConfidence
   });
   postMessage({ type: 'ready' } satisfies ReadyEvent);
 }
@@ -38,17 +51,11 @@ async function handleFrame(image: ImageBitmap) {
   }
   isProcessing = true;
   try {
-    if (!offscreen || offscreen.width !== TARGET_WIDTH) {
-      const aspect = image.height > 0 ? image.width / image.height : 1;
-      offscreen = new OffscreenCanvas(TARGET_WIDTH, Math.max(1, Math.round(TARGET_WIDTH / aspect)));
-    }
-    const ctx = offscreen.getContext('2d', { willReadFrequently: true });
-    if (!ctx) throw new Error('OffscreenCanvas 2D context unavailable');
-    ctx.clearRect(0, 0, offscreen.width, offscreen.height);
-    ctx.drawImage(image, 0, 0, offscreen.width, offscreen.height);
-    const result = landmarker.detect(offscreen);
+    const result = landmarker.detect(image as unknown as HTMLImageElement);
+    console.log('[VisionWorker] Detected faces:', result.faceLandmarks?.length ?? 0);
     postMessage({ type: 'landmarks', payload: { result, timestamp: performance.now() } } satisfies LandmarkEvent);
   } catch (err: any) {
+    console.error('[VisionWorker] Detection error:', err);
     postMessage({ type: 'error', message: err?.message ?? 'Vision worker frame failed' } satisfies ErrorEvent);
   } finally {
     image.close();
@@ -61,7 +68,13 @@ self.onmessage = async (event: MessageEvent<IncomingMessage>) => {
   switch (data.type) {
     case 'init':
       try {
-        await ensureLandmarker(data.wasmPath, data.modelAssetPath);
+        await ensureLandmarker(
+          data.wasmPath,
+          data.modelAssetPath,
+          data.minFaceDetectionConfidence,
+          data.minFacePresenceConfidence,
+          data.minTrackingConfidence
+        );
       } catch (err: any) {
         postMessage({ type: 'error', message: err?.message ?? 'Vision worker init failed' } satisfies ErrorEvent);
       }
@@ -72,7 +85,6 @@ self.onmessage = async (event: MessageEvent<IncomingMessage>) => {
     case 'dispose':
       landmarker?.close();
       landmarker = null;
-      offscreen = null;
       isProcessing = false;
       close();
       break;
