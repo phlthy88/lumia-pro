@@ -7,6 +7,11 @@ import { ControlDrawer } from './ControlDrawer';
 // M3 Emphasized Decelerate easing for entering elements
 const m3EmphasizedDecelerate = 'cubic-bezier(0.05, 0.7, 0.1, 1.0)';
 
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
 // M3 container transform animation
 const m3ContainerIn = keyframes`
   0% { opacity: 0; transform: translateY(16px) scale(0.96); }
@@ -171,15 +176,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                             sx={{
                                 position: 'absolute',
                                 top: 16,
-                                right: 16,
+                                right: 24,
                                 zIndex: theme.zIndex.drawer + 4,
                                 bgcolor: navOpen ? theme.palette.primary.main : theme.palette.background.paper,
                                 color: navOpen ? theme.palette.primary.contrastText : theme.palette.text.primary,
+                                opacity: navOpen ? 1 : 0.6,
                                 boxShadow: theme.shadows[4],
-                                transition: 'all 0.3s ease',
+                                transition: 'opacity 0.3s ease, background-color 0.3s ease',
+                                animation: navOpen ? `${spin} 0.6s ease-in-out` : 'none',
                                 '&:hover': {
+                                    opacity: 1,
                                     bgcolor: navOpen ? theme.palette.primary.dark : theme.palette.action.hover,
-                                    transform: 'scale(1.1)',
                                 },
                                 '&:active': {
                                     transform: 'scale(0.95)',
