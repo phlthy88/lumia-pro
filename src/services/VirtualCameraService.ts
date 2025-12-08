@@ -19,6 +19,8 @@ export interface VirtualCameraState {
   stream: MediaStream | null;
   windowRef: Window | null;
   config: VirtualCameraConfig;
+  webrtcUrl?: string;
+  isStreaming: boolean;
 }
 
 const DEFAULT_CONFIG: VirtualCameraConfig = {
@@ -36,7 +38,8 @@ export class VirtualCameraService {
     isWindowOpen: false,
     stream: null,
     windowRef: null,
-    config: { ...DEFAULT_CONFIG }
+    config: { ...DEFAULT_CONFIG },
+    isStreaming: false
   };
 
   private sourceCanvas: HTMLCanvasElement | null = null;
@@ -45,6 +48,8 @@ export class VirtualCameraService {
   private animationId: number | null = null;
   private popoutAnimationId: number | null = null;
   private listeners: Set<(state: VirtualCameraState) => void> = new Set();
+  private broadcastChannel: BroadcastChannel | null = null;
+  private lastBroadcastTime = 0;
 
   /**
    * Initialize the virtual camera with a source canvas
@@ -251,6 +256,74 @@ export class VirtualCameraService {
    */
   getStream(): MediaStream | null {
     return this.state.stream;
+  }
+
+  /**
+   * Start WebRTC streaming for OBS Browser Source integration
+   * Returns a URL that can be used in OBS Browser Source
+   */
+  startWebRTCStream(): string {
+    if (!this.state.stream) {
+      console.error('[VirtualCamera] No stream available. Call start() first.');
+      return '';
+    }
+
+    // Initialize BroadcastChannel for frame sharing
+    if (!this.broadcastChannel) {
+      this.broadcastChannel = new BroadcastChannel('lumia-virtual-camera');
+      this.broadcastChannel.onmessage = (event) => {
+        if (event.data.type === 'request-frame' && this.sourceCanvas) {
+          // Throttle to ~30fps
+          const now = Date.now();
+          if (now - this.lastBroadcastTime > 33) {
+            this.sourceCanvas.toBlob((blob) => {
+              if (blob) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  this.broadcastChannel?.postMessage({
+                    type: 'frame',
+                    dataUrl: reader.result
+                  });
+                };
+                reader.readAsDataURL(blob);
+              }
+            }, 'image/jpeg', 0.9);
+            this.lastBroadcastTime = now;
+          }
+        }
+      };
+    }
+
+    const url = `${window.location.origin}/virtual-camera.html`;
+    
+    this.state.webrtcUrl = url;
+    this.state.isStreaming = true;
+    this.notifyListeners();
+
+    console.log('[VirtualCamera] WebRTC stream available at:', url);
+    console.log('[VirtualCamera] Add this URL as a Browser Source in OBS');
+    return url;
+  }
+
+  /**
+   * Stop WebRTC streaming
+   */
+  stopWebRTCStream() {
+    if (this.broadcastChannel) {
+      this.broadcastChannel.close();
+      this.broadcastChannel = null;
+    }
+    this.state.webrtcUrl = undefined;
+    this.state.isStreaming = false;
+    this.notifyListeners();
+    console.log('[VirtualCamera] WebRTC stream stopped');
+  }
+
+  /**
+   * Get WebRTC stream URL for OBS Browser Source
+   */
+  getWebRTCUrl(): string | undefined {
+    return this.state.webrtcUrl;
   }
 
   /**
@@ -469,13 +542,19 @@ export class VirtualCameraService {
 **Note:** Teams may require the window to be in focus for best quality.
       `,
       obs: `
-**OBS Studio Setup:**
-1. In OBS, add a new "Window Capture" source
-2. Select "Lumina Studio - Virtual Camera" window
-3. Crop/resize as needed in OBS
-4. Use OBS Virtual Camera to output to other apps
+**OBS Studio Setup (Browser Source - Recommended):**
+1. In Lumia Studio Pro, click "Start WebRTC Stream"
+2. Copy the URL provided (e.g., http://localhost:5173/virtual-camera.html)
+3. In OBS, add a new "Browser" source
+4. Paste the URL and set dimensions (1920x1080 recommended)
+5. The processed video will appear in OBS in real-time!
 
-**Alternative:** Add "Browser Source" pointing to localhost:5173 for direct integration.
+**Alternative - Window Capture:**
+1. Click "Pop-out Window" in Lumia Studio Pro
+2. In OBS, add a new "Window Capture" source
+3. Select "Lumia Studio - Virtual Camera" window
+4. Crop/resize as needed in OBS
+5. Use OBS Virtual Camera to output to other apps
       `,
       discord: `
 **Discord Setup:**

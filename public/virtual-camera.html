@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumia Studio Pro - Virtual Camera Output</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #output {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #status {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-family: system-ui, sans-serif;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        .connected { color: #4ade80; }
+        .disconnected { color: #f87171; }
+    </style>
+</head>
+<body>
+    <canvas id="output"></canvas>
+    <div id="status">Waiting for connection...</div>
+
+    <script>
+        const canvas = document.getElementById('output');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const status = document.getElementById('status');
+
+        // Set canvas size to match window
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Connect to parent window via BroadcastChannel
+        const channel = new BroadcastChannel('lumia-virtual-camera');
+        let connected = false;
+
+        channel.onmessage = (event) => {
+            if (event.data.type === 'frame') {
+                if (!connected) {
+                    connected = true;
+                    status.innerHTML = '<span class="connected">● Connected</span>';
+                    setTimeout(() => status.style.display = 'none', 3000);
+                }
+                
+                // Draw the frame
+                const img = new Image();
+                img.onload = () => {
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Maintain aspect ratio
+                    const srcAspect = img.width / img.height;
+                    const dstAspect = canvas.width / canvas.height;
+                    
+                    let drawWidth = canvas.width;
+                    let drawHeight = canvas.height;
+                    let offsetX = 0;
+                    let offsetY = 0;
+                    
+                    if (srcAspect > dstAspect) {
+                        drawHeight = canvas.width / srcAspect;
+                        offsetY = (canvas.height - drawHeight) / 2;
+                    } else {
+                        drawWidth = canvas.height * srcAspect;
+                        offsetX = (canvas.width - drawWidth) / 2;
+                    }
+                    
+                    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+                };
+                img.src = event.data.dataUrl;
+            }
+        };
+
+        // Request frames
+        setInterval(() => {
+            channel.postMessage({ type: 'request-frame' });
+        }, 33); // ~30fps
+
+        // Timeout check
+        setTimeout(() => {
+            if (!connected) {
+                status.innerHTML = '<span class="disconnected">● Not Connected</span><br><small>Open Lumia Studio Pro in another tab</small>';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

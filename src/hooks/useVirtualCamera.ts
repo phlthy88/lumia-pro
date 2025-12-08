@@ -11,6 +11,8 @@ export interface UseVirtualCameraReturn {
   isWindowOpen: boolean;
   stream: MediaStream | null;
   config: VirtualCameraConfig;
+  webrtcUrl?: string;
+  isStreaming: boolean;
 
   // Actions
   initialize: (canvas: HTMLCanvasElement) => void;
@@ -19,6 +21,8 @@ export interface UseVirtualCameraReturn {
   openPopOut: () => Window | null;
   closePopOut: () => void;
   updateConfig: (config: Partial<VirtualCameraConfig>) => void;
+  startWebRTC: () => string;
+  stopWebRTC: () => void;
 
   // Helpers
   getSetupInstructions: (app: 'zoom' | 'meet' | 'teams' | 'obs' | 'discord') => string;
@@ -74,17 +78,29 @@ export function useVirtualCamera(): UseVirtualCameraReturn {
     return VirtualCameraService.getSetupInstructions(app);
   }, []);
 
+  const startWebRTC = useCallback(() => {
+    return virtualCameraService.startWebRTCStream();
+  }, []);
+
+  const stopWebRTC = useCallback(() => {
+    virtualCameraService.stopWebRTCStream();
+  }, []);
+
   return {
     isActive: state.isActive,
     isWindowOpen: state.isWindowOpen,
     stream: state.stream,
     config: state.config,
+    webrtcUrl: state.webrtcUrl,
+    isStreaming: state.isStreaming,
     initialize,
     start,
     stop,
     openPopOut,
     closePopOut,
     updateConfig,
+    startWebRTC,
+    stopWebRTC,
     getSetupInstructions
   };
 }

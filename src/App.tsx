@@ -25,6 +25,7 @@ import { AIWidget } from './components/AIWidget';
 import { ThemeSettings } from './components/ThemeSettings';
 import { MuiOverlaySettings } from './components/MuiOverlaySettings';
 import { MuiRecorderSettings } from './components/MuiRecorderSettings';
+import { VirtualCameraSettings } from './components/VirtualCameraSettings';
 import { MuiLutControl } from './components/controls/MuiLutControl';
 import { MuiPresetSelector } from './components/controls/MuiPresetSelector';
 import { MuiSlider } from './components/controls/MuiSlider';
@@ -470,6 +471,7 @@ const AppContent: React.FC = () => {
                             scrollY={drawerScrollY}
                         />
                         <MuiRecorderSettings config={recConfig} setConfig={setRecConfig} audioStream={audioStream} />
+                        <VirtualCameraSettings virtualCamera={virtualCamera} />
                     </>
                 );
             case 'THEME':
