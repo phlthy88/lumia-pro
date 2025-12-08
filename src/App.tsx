@@ -94,7 +94,9 @@ const AppContent: React.FC = () => {
         smooth: 0.35,
         eyeBrighten: 0,
         faceThin: 0,
-        skinTone: 0
+        skinTone: 0,
+        cheekbones: 0,
+        lipsFuller: 0
     });
 
     // MIDI Control Integration
@@ -153,7 +155,9 @@ const AppContent: React.FC = () => {
             smoothStrength: beauty.enabled ? beauty.smooth : 0,
             eyeBrighten: beauty.enabled ? beauty.eyeBrighten : 0,
             faceThin: beauty.enabled ? beauty.faceThin : 0,
-            skinTone: beauty.enabled ? beauty.skinTone : 0
+            skinTone: beauty.enabled ? beauty.skinTone : 0,
+            cheekbones: beauty.enabled ? beauty.cheekbones : 0,
+            lipsFuller: beauty.enabled ? beauty.lipsFuller : 0
         } 
     });
     useEffect(() => {
@@ -166,7 +170,9 @@ const AppContent: React.FC = () => {
                 smoothStrength: beauty.enabled ? beauty.smooth : 0,
                 eyeBrighten: beauty.enabled ? beauty.eyeBrighten : 0,
                 faceThin: beauty.enabled ? beauty.faceThin : 0,
-                skinTone: beauty.enabled ? beauty.skinTone : 0
+                skinTone: beauty.enabled ? beauty.skinTone : 0,
+                cheekbones: beauty.enabled ? beauty.cheekbones : 0,
+                lipsFuller: beauty.enabled ? beauty.lipsFuller : 0
             }
         };
     }, [color, transform, mode, bypass, beauty]);
@@ -176,7 +182,7 @@ const AppContent: React.FC = () => {
         gyroAngle: gyroRef.current
     }), [gyroRef]);
 
-    const { canvasRef, statsRef, setLut, setBeautyMask } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
+    const { canvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2 } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
 
     // Beauty mask generation
     const maskGeneratorRef = useRef<MaskGenerator | null>(null);
@@ -186,17 +192,20 @@ const AppContent: React.FC = () => {
         }
         if (!beauty.enabled) {
             setBeautyMask(null);
+            setBeautyMask2(null);
             return;
         }
         const face = vision.landmarks?.faceLandmarks?.[0];
         const video = videoRef.current;
         if (!face || !video || video.videoWidth === 0 || video.videoHeight === 0) {
             setBeautyMask(null);
+            setBeautyMask2(null);
             return;
         }
         maskGeneratorRef.current?.update(face, video.videoWidth, video.videoHeight);
         setBeautyMask(maskGeneratorRef.current?.getCanvas() ?? null);
-    }, [vision.landmarks, beauty.enabled, setBeautyMask, videoRef]);
+        setBeautyMask2(maskGeneratorRef.current?.getCanvas2() ?? null);
+    }, [vision.landmarks, beauty.enabled, setBeautyMask, setBeautyMask2, videoRef]);
 
     // Virtual Camera - for use with Zoom/Meet/Teams etc.
     const virtualCamera = useVirtualCamera();

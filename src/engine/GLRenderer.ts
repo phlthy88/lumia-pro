@@ -6,10 +6,12 @@ export class GLRenderer {
     private videoSource: HTMLVideoElement | null = null;
     private overlaySource: HTMLCanvasElement | null = null;
     private beautyMaskSource: OffscreenCanvas | HTMLCanvasElement | null = null;
+    private beautyMask2Source: OffscreenCanvas | HTMLCanvasElement | null = null;
     
     private program: WebGLProgram | null = null;
     private lutTexture: WebGLTexture | null = null;
     private beautyMaskTexture: WebGLTexture | null = null;
+    private beautyMask2Texture: WebGLTexture | null = null;
     private textures: Map<string, WebGLTexture> = new Map();
     private positionBuffer: WebGLBuffer | null = null;
     private frameId: number | null = null;
@@ -110,6 +112,27 @@ export class GLRenderer {
             const empty = new Uint8Array([0, 0, 0, 0]);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, empty);
             this.beautyMaskTexture = texture;
+        }
+    }
+
+    public setBeautyMask2(mask: OffscreenCanvas | HTMLCanvasElement | null) {
+        this.beautyMask2Source = mask;
+        if (!this.textures.get('beautyMask2')) {
+            this.createTexture('beautyMask2');
+        }
+        const texture = this.textures.get('beautyMask2');
+        if (!texture) return;
+
+        this.gl.activeTexture(this.gl.TEXTURE4);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+
+        if (mask) {
+            this.beautyMask2Texture = texture;
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
+        } else {
+            const empty = new Uint8Array([0, 0, 0, 0]);
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, empty);
+            this.beautyMask2Texture = texture;
         }
     }
 
@@ -299,6 +322,7 @@ export class GLRenderer {
             uniform sampler2D u_overlayTexture;
             uniform sampler3D u_lutTexture;
             uniform sampler2D u_beautyMask;
+            uniform sampler2D u_beautyMask2;
             
             uniform int u_mode;
             uniform int u_bypass;
@@ -307,6 +331,8 @@ export class GLRenderer {
             uniform float u_eyeBrighten;
             uniform float u_faceThin;
             uniform float u_skinTone;
+            uniform float u_cheekbones;
+            uniform float u_lipsFuller;
 
             // Color Grading
             uniform float u_exposure;
@@ -366,22 +392,32 @@ export class GLRenderer {
                 vec2 onePixel = vec2(1.0) / vec2(textureSize(u_videoTexture, 0));
                 vec3 accum = vec3(0.0);
                 float total = 0.0;
-                for (int x = -1; x <= 1; x++) {
-                  for (int y = -1; y <= 1; y++) {
-                    float w = 1.0;
-                    vec3 samp = texture(u_videoTexture, uv + vec2(float(x), float(y)) * onePixel).rgb;
+                // Larger kernel for more pronounced smoothing
+                int radius = int(2.0 + u_skinSmoothStrength * 3.0);
+                for (int x = -3; x <= 3; x++) {
+                  for (int y = -3; y <= 3; y++) {
+                    if (abs(x) > radius || abs(y) > radius) continue;
+                    float w = 1.0 - length(vec2(float(x), float(y))) / 5.0;
+                    vec3 samp = texture(u_videoTexture, uv + vec2(float(x), float(y)) * onePixel * 2.0).rgb;
                     accum += samp * w;
                     total += w;
                   }
                 }
                 vec3 blurred = accum / max(total, 0.0001);
-                return mix(baseColor, blurred, clamp(maskWeight * u_skinSmoothStrength, 0.0, 1.0));
+                // Preserve some detail by mixing with original
+                vec3 detail = baseColor - blurred;
+                vec3 smoothed = blurred + detail * (1.0 - u_skinSmoothStrength * 0.8);
+                return mix(baseColor, smoothed, clamp(maskWeight * u_skinSmoothStrength * 1.5, 0.0, 1.0));
             }
 
             vec3 applyEyeBrighten(vec3 color, float eyeMask) {
                 if (eyeMask < 0.01 || u_eyeBrighten <= 0.0) return color;
-                float boost = 1.0 + u_eyeBrighten * eyeMask * 0.5;
-                return color * boost;
+                // More pronounced brightening with contrast boost
+                float boost = 1.0 + u_eyeBrighten * eyeMask * 1.2;
+                vec3 brightened = color * boost;
+                // Add slight contrast to make eyes pop
+                brightened = mix(vec3(0.5), brightened, 1.0 + u_eyeBrighten * eyeMask * 0.3);
+                return brightened;
             }
 
             vec3 applySkinTone(vec3 color, float skinMask) {
@@ -395,11 +431,28 @@ export class GLRenderer {
 
             vec2 applyFaceThin(vec2 uv, float contourMask) {
                 if (u_faceThin <= 0.0 || contourMask < 0.01) return uv;
-                // Push pixels toward center based on contour mask
+                // Pull pixels inward from edges (sample outward to slim)
                 vec2 center = vec2(0.5, 0.4);
-                vec2 dir = normalize(uv - center);
-                float dist = length(uv - center);
-                return uv - dir * contourMask * u_faceThin * 0.02 * dist;
+                vec2 toCenter = center - uv;
+                float dist = length(toCenter);
+                vec2 dir = normalize(toCenter);
+                // Offset UV outward so we sample from wider area, making face appear slimmer
+                return uv - dir * contourMask * u_faceThin * 0.04 * dist;
+            }
+
+            vec2 applyCheekbones(vec2 uv, float cheekMask) {
+                if (u_cheekbones <= 0.0 || cheekMask < 0.01) return uv;
+                // Pull cheek area slightly upward and inward
+                vec2 offset = vec2(0.0, -1.0) * cheekMask * u_cheekbones * 0.02;
+                return uv + offset;
+            }
+
+            vec2 applyLipsFuller(vec2 uv, float lipMask) {
+                if (u_lipsFuller <= 0.0 || lipMask < 0.01) return uv;
+                // Expand lips outward from center
+                vec2 lipCenter = vec2(0.5, 0.6);
+                vec2 fromCenter = uv - lipCenter;
+                return uv + fromCenter * lipMask * u_lipsFuller * 0.03;
             }
 
             void main() {
@@ -426,14 +479,19 @@ export class GLRenderer {
 
                 // Get beauty mask channels (R=skin, G=eyes, B=face contour)
                 vec4 beautyMask = texture(u_beautyMask, uv);
+                // Second mask (R=cheeks, G=lips)
+                vec4 beautyMask2 = texture(u_beautyMask2, uv);
                 
-                // Apply face thinning (distorts UV before sampling)
-                vec2 thinUv = applyFaceThin(uv, beautyMask.b);
-                vec4 video = texture(u_videoTexture, thinUv);
+                // Apply geometric distortions (UV warping)
+                vec2 warpedUv = applyFaceThin(uv, beautyMask.b);
+                warpedUv = applyCheekbones(warpedUv, beautyMask2.r);
+                warpedUv = applyLipsFuller(warpedUv, beautyMask2.g);
+                
+                vec4 video = texture(u_videoTexture, warpedUv);
                 vec3 color = video.rgb;
 
-                // Beauty effects before grading
-                color = applySkinSmoothing(thinUv, color, beautyMask.r);
+                // Beauty color effects
+                color = applySkinSmoothing(warpedUv, color, beautyMask.r);
                 color = applyEyeBrighten(color, beautyMask.g);
                 color = applySkinTone(color, beautyMask.r);
 
@@ -649,6 +707,7 @@ export class GLRenderer {
         setUniform1i('u_overlayTexture', 1);
         setUniform1i('u_lutTexture', 2);
         setUniform1i('u_beautyMask', 3);
+        setUniform1i('u_beautyMask2', 4);
 
         setUniform1i('u_mode', this.getModeInt(params.mode));
         setUniform1i('u_bypass', params.bypass ? 1 : 0);
@@ -656,6 +715,8 @@ export class GLRenderer {
         setUniform1f('u_eyeBrighten', params.beauty?.eyeBrighten ?? 0);
         setUniform1f('u_faceThin', params.beauty?.faceThin ?? 0);
         setUniform1f('u_skinTone', params.beauty?.skinTone ?? 0);
+        setUniform1f('u_cheekbones', params.beauty?.cheekbones ?? 0);
+        setUniform1f('u_lipsFuller', params.beauty?.lipsFuller ?? 0);
 
         setUniform1f('u_exposure', params.color.exposure);
         setUniform1f('u_contrast', params.color.contrast);
@@ -696,6 +757,11 @@ export class GLRenderer {
         if (this.beautyMaskTexture) {
             this.gl.activeTexture(this.gl.TEXTURE3);
             this.gl.bindTexture(this.gl.TEXTURE_2D, this.beautyMaskTexture);
+        }
+
+        if (this.beautyMask2Texture) {
+            this.gl.activeTexture(this.gl.TEXTURE4);
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.beautyMask2Texture);
         }
 
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);

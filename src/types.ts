@@ -61,6 +61,8 @@ export interface BeautyConfig {
     eyeBrighten: number;
     faceThin: number;
     skinTone: number;
+    cheekbones: number;
+    lipsFuller: number;
 }
 
 export interface ColorGradeParams {

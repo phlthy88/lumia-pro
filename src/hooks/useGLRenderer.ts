@@ -182,5 +182,9 @@ export const useGLRenderer = (
       rendererRef.current?.setBeautyMask(mask);
   }, []);
 
-  return { canvasRef, statsRef, setLut, setBeautyMask };
+  const setBeautyMask2 = useCallback((mask: OffscreenCanvas | HTMLCanvasElement | null) => {
+      rendererRef.current?.setBeautyMask2(mask);
+  }, []);
+
+  return { canvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2 };
 };
