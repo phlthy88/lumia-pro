@@ -495,7 +495,7 @@ const AppContent: React.FC = () => {
             case 'OVERLAYS':
                 return (
                     <>
-                        <ParallexHeader 
+                        <ParallaxHeader 
                             title="Overlays" 
                             subtitle="Grids, guides & display options"
                             scrollY={drawerScrollY}

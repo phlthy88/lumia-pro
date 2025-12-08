@@ -124,8 +124,8 @@ export class AIAnalysisService {
         // Nose tip is usually index 1 or 4
         const nose = face?.[1];
         
-        // Check landmark confidence before using it
-        if (nose && (!nose.hasOwnProperty('presence') || nose.presence >= 0.5)) {
+        // Check landmark exists before using it
+        if (nose) {
             // Rule of Thirds check
             const xDist = Math.abs(nose.x - 0.5);
             const yDist = Math.abs(nose.y - 0.4); // Eyes usually around 40% height

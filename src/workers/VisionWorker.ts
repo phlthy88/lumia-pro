@@ -53,8 +53,7 @@ async function ensureLandmarker(
         numFaces: 5, // Support up to 5 faces for group scenarios
         minFaceDetectionConfidence: Math.max(0.4, minFaceDetectionConfidence),
         minFacePresenceConfidence: Math.max(0.4, minFacePresenceConfidence),
-        minTrackingConfidence: Math.max(0.4, minTrackingConfidence),
-        outputFaceTransformations: true // Enable for better accuracy
+        minTrackingConfidence: Math.max(0.4, minTrackingConfidence)
       });
       console.log('[VisionWorker] FaceLandmarker initialized with GPU delegate');
     } catch (gpuError) {
@@ -70,8 +69,7 @@ async function ensureLandmarker(
         numFaces: 5,
         minFaceDetectionConfidence: Math.max(0.4, minFaceDetectionConfidence),
         minFacePresenceConfidence: Math.max(0.4, minFacePresenceConfidence),
-        minTrackingConfidence: Math.max(0.4, minTrackingConfidence),
-        outputFaceTransformations: true
+        minTrackingConfidence: Math.max(0.4, minTrackingConfidence)
       });
       console.log('[VisionWorker] FaceLandmarker initialized with CPU delegate');
     }
@@ -156,10 +154,10 @@ async function handleFrame(image: ImageBitmap, timestamp: number) {
       // Convert result to a plain serializable object
       const serializableResult = {
         faceLandmarks: filteredLandmarks.map((face) =>
-          face.map((pt) => ({ x: pt.x, y: pt.y, z: pt.z, presence: pt.presence || 1 }))
+          face.map((pt: { x: number; y: number; z: number }) => ({ x: pt.x, y: pt.y, z: pt.z }))
         ),
         faceBlendshapes: result.faceBlendshapes,
-        facialTransformationMatrices: result.facialTransformationMatrices
+        facialTransformationMatrixes: result.facialTransformationMatrixes
       };
       
       console.log(`[VisionWorker] Detected ${result.faceLandmarks.length} face(s) at timestamp ${timestamp}`);
