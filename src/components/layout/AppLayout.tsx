@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Box, useTheme, useMediaQuery, Slide, Collapse, keyframes } from '@mui/material';
+import { Box, useTheme, useMediaQuery, Slide, Collapse, keyframes, IconButton } from '@mui/material';
+import { Settings as SettingsIcon } from '@mui/icons-material';
 import { Navigation } from './NavigationRail';
 import { ControlDrawer } from './ControlDrawer';
-import { AppHeader } from './AppHeader';
 
 // M3 Emphasized Decelerate easing for entering elements
 const m3EmphasizedDecelerate = 'cubic-bezier(0.05, 0.7, 0.1, 1.0)';
@@ -55,9 +55,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                     <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
                 </filter>
             </svg>
-
-            {/* Header - Desktop only */}
-            {!isMobile && <AppHeader title={drawerTitle} navOpen={navOpen} onNavToggle={() => setNavOpen(!navOpen)} />}
 
             {/* Main content area */}
             <Box sx={{ 
@@ -167,20 +164,47 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
                 {/* Desktop: Navigation Rail dropdown */}
                 {!isMobile && (
-                    <Box 
-                        sx={{ 
-                            position: 'absolute', 
-                            top: 0, 
-                            right: 0, 
-                            zIndex: theme.zIndex.drawer + 3,
-                            filter: 'url(#goo)',
-                            bgcolor: 'transparent',
-                        }}
-                    >
-                        <Collapse in={navOpen} timeout={400}>
-                            <Navigation activeTab={activeTab} onTabChange={onTabChange} />
-                        </Collapse>
-                    </Box>
+                    <>
+                        {/* Floating Settings Button */}
+                        <IconButton
+                            onClick={() => setNavOpen(!navOpen)}
+                            sx={{
+                                position: 'absolute',
+                                top: 16,
+                                right: 16,
+                                zIndex: theme.zIndex.drawer + 4,
+                                bgcolor: navOpen ? theme.palette.primary.main : theme.palette.background.paper,
+                                color: navOpen ? theme.palette.primary.contrastText : theme.palette.text.primary,
+                                boxShadow: theme.shadows[4],
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    bgcolor: navOpen ? theme.palette.primary.dark : theme.palette.action.hover,
+                                    transform: 'scale(1.1)',
+                                },
+                                '&:active': {
+                                    transform: 'scale(0.95)',
+                                },
+                            }}
+                        >
+                            <SettingsIcon />
+                        </IconButton>
+
+                        {/* Navigation Rail Panel */}
+                        <Box 
+                            sx={{ 
+                                position: 'absolute', 
+                                top: 0, 
+                                right: 0, 
+                                zIndex: theme.zIndex.drawer + 3,
+                                filter: 'url(#goo)',
+                                bgcolor: 'transparent',
+                            }}
+                        >
+                            <Collapse in={navOpen} timeout={400}>
+                                <Navigation activeTab={activeTab} onTabChange={onTabChange} />
+                            </Collapse>
+                        </Box>
+                    </>
                 )}
             </Box>
 
