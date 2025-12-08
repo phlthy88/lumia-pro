@@ -41,6 +41,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   const audioStreamRef = useRef<MediaStream | null>(null);
   const captureStreamRef = useRef<MediaStream | null>(null);
   const mediaItemsRef = useRef<MediaItem[]>([]);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
 
   const [config, setConfig] = useState<RecorderConfig>({
       mimeType: 'video/webm;codecs=vp9',
@@ -55,6 +56,44 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   useEffect(() => {
     mediaItemsRef.current = mediaItems;
   }, [mediaItems]);
+
+  // Create preview audio stream when audio source changes
+  useEffect(() => {
+    if (config.audioSource === 'none') {
+      if (audioStreamRef.current) {
+        stopStreamTracks(audioStreamRef.current);
+        audioStreamRef.current = null;
+      }
+      setAudioStream(null);
+      return;
+    }
+
+    const setupPreviewAudio = async () => {
+      try {
+        const constraints: MediaStreamConstraints = {
+          audio: config.audioSource === 'default' 
+            ? true 
+            : { deviceId: { ideal: config.audioSource } }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        audioStreamRef.current = stream;
+        setAudioStream(stream);
+      } catch (e) {
+        console.warn("Failed to setup preview audio", e);
+        setAudioStream(null);
+      }
+    };
+
+    setupPreviewAudio();
+
+    return () => {
+      if (audioStreamRef.current && !isRecording) {
+        stopStreamTracks(audioStreamRef.current);
+        audioStreamRef.current = null;
+        setAudioStream(null);
+      }
+    };
+  }, [config.audioSource, isRecording]);
 
   // Cleanup helper for streams
   const cleanupStreams = useCallback(() => {
@@ -89,13 +128,15 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       
       if (config.audioSource !== 'none') {
         try {
-          const audioStream = await navigator.mediaDevices.getUserMedia({
-            audio: { deviceId: { exact: config.audioSource } }
-          });
-          audioStreamRef.current = audioStream;
+          const constraints: MediaStreamConstraints = {
+            audio: config.audioSource === 'default' 
+              ? true 
+              : { deviceId: { ideal: config.audioSource } }
+          };
+          const recordAudioStream = await navigator.mediaDevices.getUserMedia(constraints);
           
           // Process audio through broadcast chain
-          const processedAudio = processStream(audioStream);
+          const processedAudio = processStream(recordAudioStream);
           
           stream = new MediaStream([
             ...stream.getVideoTracks(),
@@ -287,6 +328,6 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     mediaItems,
     deleteMedia,
     clearMedia,
-    audioStream: audioStreamRef.current,
+    audioStream,
   };
 };
