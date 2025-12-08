@@ -304,6 +304,9 @@ export class GLRenderer {
             uniform int u_bypass;
 
             uniform float u_skinSmoothStrength;
+            uniform float u_eyeBrighten;
+            uniform float u_faceThin;
+            uniform float u_skinTone;
 
             // Color Grading
             uniform float u_exposure;
@@ -375,6 +378,30 @@ export class GLRenderer {
                 return mix(baseColor, blurred, clamp(maskWeight * u_skinSmoothStrength, 0.0, 1.0));
             }
 
+            vec3 applyEyeBrighten(vec3 color, float eyeMask) {
+                if (eyeMask < 0.01 || u_eyeBrighten <= 0.0) return color;
+                float boost = 1.0 + u_eyeBrighten * eyeMask * 0.5;
+                return color * boost;
+            }
+
+            vec3 applySkinTone(vec3 color, float skinMask) {
+                if (abs(u_skinTone) < 0.01 || skinMask < 0.01) return color;
+                // Warm (+) adds red/yellow, cool (-) adds blue
+                vec3 toned = color;
+                toned.r += u_skinTone * skinMask * 0.1;
+                toned.b -= u_skinTone * skinMask * 0.1;
+                return toned;
+            }
+
+            vec2 applyFaceThin(vec2 uv, float contourMask) {
+                if (u_faceThin <= 0.0 || contourMask < 0.01) return uv;
+                // Push pixels toward center based on contour mask
+                vec2 center = vec2(0.5, 0.4);
+                vec2 dir = normalize(uv - center);
+                float dist = length(uv - center);
+                return uv - dir * contourMask * u_faceThin * 0.02 * dist;
+            }
+
             void main() {
                 vec2 uv = v_texCoord;
                 uv -= 0.5;
@@ -397,12 +424,18 @@ export class GLRenderer {
                     return;
                 }
 
-                vec4 video = texture(u_videoTexture, uv);
+                // Get beauty mask channels (R=skin, G=eyes, B=face contour)
+                vec4 beautyMask = texture(u_beautyMask, uv);
+                
+                // Apply face thinning (distorts UV before sampling)
+                vec2 thinUv = applyFaceThin(uv, beautyMask.b);
+                vec4 video = texture(u_videoTexture, thinUv);
                 vec3 color = video.rgb;
 
-                // Beauty smoothing before grading
-                float skinMask = texture(u_beautyMask, uv).r;
-                color = applySkinSmoothing(uv, color, skinMask);
+                // Beauty effects before grading
+                color = applySkinSmoothing(thinUv, color, beautyMask.r);
+                color = applyEyeBrighten(color, beautyMask.g);
+                color = applySkinTone(color, beautyMask.r);
 
                 if (u_bypass == 0) {
                     color = colorGrade(color);
@@ -620,6 +653,9 @@ export class GLRenderer {
         setUniform1i('u_mode', this.getModeInt(params.mode));
         setUniform1i('u_bypass', params.bypass ? 1 : 0);
         setUniform1f('u_skinSmoothStrength', params.beauty?.smoothStrength ?? 0);
+        setUniform1f('u_eyeBrighten', params.beauty?.eyeBrighten ?? 0);
+        setUniform1f('u_faceThin', params.beauty?.faceThin ?? 0);
+        setUniform1f('u_skinTone', params.beauty?.skinTone ?? 0);
 
         setUniform1f('u_exposure', params.color.exposure);
         setUniform1f('u_contrast', params.color.contrast);

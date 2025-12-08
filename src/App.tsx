@@ -147,14 +147,27 @@ const AppContent: React.FC = () => {
 
     // Renderer
     // Keep a ref of the latest state to pass to renderer without re-binding
-    const latestStateRef = useRef({ color, transform, mode, bypass, beauty: { smoothStrength: beauty.enabled ? beauty.smooth : 0 } });
+    const latestStateRef = useRef({ 
+        color, transform, mode, bypass, 
+        beauty: { 
+            smoothStrength: beauty.enabled ? beauty.smooth : 0,
+            eyeBrighten: beauty.enabled ? beauty.eyeBrighten : 0,
+            faceThin: beauty.enabled ? beauty.faceThin : 0,
+            skinTone: beauty.enabled ? beauty.skinTone : 0
+        } 
+    });
     useEffect(() => {
         latestStateRef.current = { 
             color, 
             transform, 
             mode, 
             bypass,
-            beauty: { smoothStrength: beauty.enabled ? beauty.smooth : 0 }
+            beauty: { 
+                smoothStrength: beauty.enabled ? beauty.smooth : 0,
+                eyeBrighten: beauty.enabled ? beauty.eyeBrighten : 0,
+                faceThin: beauty.enabled ? beauty.faceThin : 0,
+                skinTone: beauty.enabled ? beauty.skinTone : 0
+            }
         };
     }, [color, transform, mode, bypass, beauty]);
 
