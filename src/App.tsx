@@ -524,7 +524,7 @@ const AppContent: React.FC = () => {
                     <>
                         <ParallaxHeader 
                             title="Platform Boosts" 
-                            subtitle="Performance & virtual camera"
+                            subtitle="Performance optimization"
                             scrollY={drawerScrollY}
                         />
                         <PlatformBoostsPanel />
@@ -535,7 +535,7 @@ const AppContent: React.FC = () => {
                     <>
                         <ParallaxHeader 
                             title="System" 
-                            subtitle="Recording & export settings"
+                            subtitle="Recording, export & virtual camera"
                             scrollY={drawerScrollY}
                         />
                         <MuiRecorderSettings config={recConfig} setConfig={setRecConfig} audioStream={audioStream} />
