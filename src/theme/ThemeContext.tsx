@@ -373,8 +373,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         MuiCssBaseline: {
           styleOverrides: {
             body: {
-              // Tertiary color at 10% brightness (very dark)
-              backgroundColor: hexFromArgb(Hct.from(Hct.fromInt(tertiaryMain).hue, Hct.fromInt(tertiaryMain).chroma * 0.3, 10).toInt()),
+              // Dark: tertiary at 10% brightness, Light: standard tertiary
+              backgroundColor: isDark 
+                ? hexFromArgb(Hct.from(Hct.fromInt(tertiaryMain).hue, Hct.fromInt(tertiaryMain).chroma * 0.3, 10).toInt())
+                : hexFromArgb(tertiaryMain),
+              transition: 'background-color 0.3s ease',
             },
           },
         },
