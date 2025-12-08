@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { FaceLandmarkerResult } from '@mediapipe/tasks-vision';
+import { FilesetResolver, FaceLandmarker, type FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 
 type VisionState = {
   result: FaceLandmarkerResult | null;
@@ -7,7 +7,6 @@ type VisionState = {
   error?: string;
 };
 
-// Respect Vite base URL so assets load when the app is served from a subpath/offline bundle.
 const BASE_PATH = (import.meta.env.BASE_URL || '/').endsWith('/')
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
@@ -23,72 +22,82 @@ export const useVisionWorker = (
     minTrackingConfidence: number;
   }
 ) => {
-  const workerRef = useRef<Worker | null>(null);
-  const intervalRef = useRef<number | undefined>(undefined);
-  const sendingRef = useRef(false);
-
+  const landmarkerRef = useRef<FaceLandmarker | null>(null);
+  const intervalRef = useRef<number>(0);
   const [state, setState] = useState<VisionState>({ result: null, ready: false });
 
-  // Instantiate worker when stream ready
+  // Initialize FaceLandmarker
   useEffect(() => {
-    if (!streamReady || workerRef.current) return;
-    const worker = new Worker(new URL('../workers/VisionWorker.ts', import.meta.url), { type: 'module' });
-    workerRef.current = worker;
+    if (!streamReady || landmarkerRef.current) return;
 
-    worker.onmessage = (event: MessageEvent<any>) => {
-      const { type, payload, message } = event.data || {};
-      if (type === 'ready') {
-        setState((prev) => ({ ...prev, ready: true, error: undefined }));
-      } else if (type === 'landmarks') {
-        setState((prev) => ({ ...prev, result: payload?.result ?? null }));
-        sendingRef.current = false;
-      } else if (type === 'error') {
-        setState((prev) => ({ ...prev, error: message || 'Vision worker error' }));
-        sendingRef.current = false;
-      }
-    };
+    let cancelled = false;
 
-    worker.postMessage({
-      type: 'init',
-      wasmPath: DEFAULT_WASM,
-      modelAssetPath: DEFAULT_MODEL,
-      ...options
-    });
-
-    return () => {
-      worker.postMessage({ type: 'dispose' });
-      workerRef.current = null;
-    };
-  }, [streamReady, options]);
-
-  // Frame pump - only run when worker is ready
-  useEffect(() => {
-    if (!streamReady || !state.ready) return;
-    intervalRef.current = window.setInterval(async () => {
-      if (sendingRef.current) return;
-      const video = videoRef.current;
-      if (!video || video.readyState < 2 || !workerRef.current) return;
+    (async () => {
       try {
-        sendingRef.current = true;
-        const bitmap = await createImageBitmap(video);
-        workerRef.current.postMessage({ type: 'frame', image: bitmap }, [bitmap]);
-      } catch (err) {
-        sendingRef.current = false;
+        const vision = await FilesetResolver.forVisionTasks(DEFAULT_WASM);
+        if (cancelled) return;
+
+        const landmarker = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: DEFAULT_MODEL, delegate: 'GPU' },
+          runningMode: 'VIDEO',
+          numFaces: 2,
+          minFaceDetectionConfidence: options.minFaceDetectionConfidence,
+          minFacePresenceConfidence: options.minFacePresenceConfidence,
+          minTrackingConfidence: options.minTrackingConfidence
+        });
+
+        if (cancelled) {
+          landmarker.close();
+          return;
+        }
+
+        landmarkerRef.current = landmarker;
+        console.log('[useVisionWorker] FaceLandmarker ready');
+        setState(prev => ({ ...prev, ready: true }));
+      } catch (err: any) {
+        console.error('[useVisionWorker] Init failed:', err);
+        setState(prev => ({ ...prev, error: err?.message || 'Init failed' }));
       }
-    }, 33); // 30 FPS detection cadence (smooth and responsive)
+    })();
 
     return () => {
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-      sendingRef.current = false;
+      cancelled = true;
+      landmarkerRef.current?.close();
+      landmarkerRef.current = null;
     };
-  }, [streamReady, state.ready, videoRef]);
+  }, [streamReady, options.minFaceDetectionConfidence, options.minFacePresenceConfidence, options.minTrackingConfidence]);
+
+  // Detection loop - 100ms interval (~10fps) to avoid blocking rendering
+  useEffect(() => {
+    if (!state.ready) return;
+
+    const detect = () => {
+      const video = videoRef.current;
+      const landmarker = landmarkerRef.current;
+      if (!video || !landmarker || video.readyState < 2) return;
+
+      // Use idle callback if available, otherwise run directly
+      const run = () => {
+        try {
+          const result = landmarker.detectForVideo(video, performance.now());
+          setState(prev => ({ ...prev, result }));
+        } catch {
+          // Skip frame
+        }
+      };
+
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(run, { timeout: 50 });
+      } else {
+        run();
+      }
+    };
+
+    intervalRef.current = window.setInterval(detect, 100);
+    return () => clearInterval(intervalRef.current);
+  }, [state.ready, videoRef]);
 
   const hasFace = useMemo(() => (state.result?.faceLandmarks?.length ?? 0) > 0, [state.result]);
 
-  return {
-    landmarks: state.result,
-    ready: state.ready,
-    error: state.error,
-    hasFace
-  };
+  return { landmarks: state.result, ready: state.ready, error: state.error, hasFace };
 };

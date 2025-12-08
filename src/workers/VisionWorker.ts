@@ -51,9 +51,9 @@ async function ensureLandmarker(
         },
         runningMode: 'VIDEO', // VIDEO mode preserves temporal context for better tracking
         numFaces: 5, // Support up to 5 faces for group scenarios
-        minFaceDetectionConfidence: Math.max(0.4, minFaceDetectionConfidence),
-        minFacePresenceConfidence: Math.max(0.4, minFacePresenceConfidence),
-        minTrackingConfidence: Math.max(0.4, minTrackingConfidence)
+        minFaceDetectionConfidence,
+        minFacePresenceConfidence,
+        minTrackingConfidence
       });
       console.log('[VisionWorker] FaceLandmarker initialized with GPU delegate');
     } catch (gpuError) {
@@ -67,9 +67,9 @@ async function ensureLandmarker(
         },
         runningMode: 'VIDEO',
         numFaces: 5,
-        minFaceDetectionConfidence: Math.max(0.4, minFaceDetectionConfidence),
-        minFacePresenceConfidence: Math.max(0.4, minFacePresenceConfidence),
-        minTrackingConfidence: Math.max(0.4, minTrackingConfidence)
+        minFaceDetectionConfidence,
+        minFacePresenceConfidence,
+        minTrackingConfidence
       });
       console.log('[VisionWorker] FaceLandmarker initialized with CPU delegate');
     }

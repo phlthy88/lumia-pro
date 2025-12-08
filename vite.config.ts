@@ -7,6 +7,9 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       cacheDir: 'node_modules/.vite-cache',
+      worker: {
+        format: 'iife'
+      },
       server: {
         port: 3000,
         host: '0.0.0.0',

@@ -197,7 +197,7 @@ export const ControlDrawer: React.FC<ControlDrawerProps> = ({ title, children, o
                         <Box 
                             ref={scrollRef}
                             onScroll={handleScroll}
-                            sx={{ px: 2, pb: 2, height: '100%', overflow: 'auto', WebkitOverflowScrolling: 'touch' }}
+                            sx={{ px: 2, pb: 2, height: '100%', overflow: 'auto', WebkitOverflowScrolling: 'touch', overflowAnchor: 'none' }}
                         >
                             {children}
                         </Box>
@@ -235,6 +235,7 @@ export const ControlDrawer: React.FC<ControlDrawerProps> = ({ title, children, o
                         height: '100%',
                         overflowY: 'auto',
                         overflowX: 'hidden',
+                        overflowAnchor: 'none',
                         p: 2,
                         scrollBehavior: 'smooth',
                         direction: 'rtl',
