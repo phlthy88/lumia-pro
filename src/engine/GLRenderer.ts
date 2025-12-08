@@ -333,6 +333,7 @@ export class GLRenderer {
             uniform float u_skinTone;
             uniform float u_cheekbones;
             uniform float u_lipsFuller;
+            uniform float u_noseSlim;
 
             // Color Grading
             uniform float u_exposure;
@@ -431,28 +432,36 @@ export class GLRenderer {
 
             vec2 applyFaceThin(vec2 uv, float contourMask) {
                 if (u_faceThin <= 0.0 || contourMask < 0.01) return uv;
-                // Pull pixels inward from edges (sample outward to slim)
-                vec2 center = vec2(0.5, 0.4);
+                // Only apply to sides of face, not top/bottom
+                vec2 center = vec2(0.5, 0.5);
                 vec2 toCenter = center - uv;
-                float dist = length(toCenter);
-                vec2 dir = normalize(toCenter);
-                // Offset UV outward so we sample from wider area, making face appear slimmer
-                return uv - dir * contourMask * u_faceThin * 0.04 * dist;
+                // Horizontal slimming only to avoid glitchy top/bottom
+                float horizDist = abs(uv.x - 0.5);
+                float strength = contourMask * u_faceThin * 0.03 * horizDist;
+                return uv + vec2(toCenter.x * strength, 0.0);
             }
 
             vec2 applyCheekbones(vec2 uv, float cheekMask) {
                 if (u_cheekbones <= 0.0 || cheekMask < 0.01) return uv;
-                // Pull cheek area slightly upward and inward
-                vec2 offset = vec2(0.0, -1.0) * cheekMask * u_cheekbones * 0.02;
+                // Sample from below to lift cheeks (positive Y = down in UV)
+                vec2 offset = vec2(0.0, 1.0) * cheekMask * u_cheekbones * 0.025;
                 return uv + offset;
+            }
+
+            vec2 applyNoseSlim(vec2 uv, float noseMask) {
+                if (u_noseSlim <= 0.0 || noseMask < 0.01) return uv;
+                // Push nose pixels toward center horizontally
+                float centerX = 0.5;
+                float horizOffset = (centerX - uv.x) * noseMask * u_noseSlim * 0.04;
+                return uv + vec2(horizOffset, 0.0);
             }
 
             vec2 applyLipsFuller(vec2 uv, float lipMask) {
                 if (u_lipsFuller <= 0.0 || lipMask < 0.01) return uv;
-                // Expand lips outward from center
+                // Sample from center to expand lips
                 vec2 lipCenter = vec2(0.5, 0.6);
-                vec2 fromCenter = uv - lipCenter;
-                return uv + fromCenter * lipMask * u_lipsFuller * 0.03;
+                vec2 toCenter = lipCenter - uv;
+                return uv + toCenter * lipMask * u_lipsFuller * 0.04;
             }
 
             void main() {
@@ -479,13 +488,14 @@ export class GLRenderer {
 
                 // Get beauty mask channels (R=skin, G=eyes, B=face contour)
                 vec4 beautyMask = texture(u_beautyMask, uv);
-                // Second mask (R=cheeks, G=lips)
+                // Second mask (R=cheeks, G=lips, B=nose)
                 vec4 beautyMask2 = texture(u_beautyMask2, uv);
                 
                 // Apply geometric distortions (UV warping)
                 vec2 warpedUv = applyFaceThin(uv, beautyMask.b);
                 warpedUv = applyCheekbones(warpedUv, beautyMask2.r);
                 warpedUv = applyLipsFuller(warpedUv, beautyMask2.g);
+                warpedUv = applyNoseSlim(warpedUv, beautyMask2.b);
                 
                 vec4 video = texture(u_videoTexture, warpedUv);
                 vec3 color = video.rgb;
@@ -717,6 +727,7 @@ export class GLRenderer {
         setUniform1f('u_skinTone', params.beauty?.skinTone ?? 0);
         setUniform1f('u_cheekbones', params.beauty?.cheekbones ?? 0);
         setUniform1f('u_lipsFuller', params.beauty?.lipsFuller ?? 0);
+        setUniform1f('u_noseSlim', params.beauty?.noseSlim ?? 0);
 
         setUniform1f('u_exposure', params.color.exposure);
         setUniform1f('u_contrast', params.color.contrast);

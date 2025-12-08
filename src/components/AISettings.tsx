@@ -76,6 +76,13 @@ export const AISettings: React.FC<AISettingsProps> = ({
                     disabled={!beauty.enabled}
                 />
                 <MuiSlider 
+                    label="Nose Slim" 
+                    value={beauty.noseSlim} 
+                    min={0} max={1} step={0.01} 
+                    onChange={(v) => setBeauty(p => ({ ...p, noseSlim: v }))} 
+                    disabled={!beauty.enabled}
+                />
+                <MuiSlider 
                     label="Lips Fuller" 
                     value={beauty.lipsFuller} 
                     min={0} max={1} step={0.01} 

@@ -96,7 +96,8 @@ const AppContent: React.FC = () => {
         faceThin: 0,
         skinTone: 0,
         cheekbones: 0,
-        lipsFuller: 0
+        lipsFuller: 0,
+        noseSlim: 0
     });
 
     // MIDI Control Integration
@@ -157,7 +158,8 @@ const AppContent: React.FC = () => {
             faceThin: beauty.enabled ? beauty.faceThin : 0,
             skinTone: beauty.enabled ? beauty.skinTone : 0,
             cheekbones: beauty.enabled ? beauty.cheekbones : 0,
-            lipsFuller: beauty.enabled ? beauty.lipsFuller : 0
+            lipsFuller: beauty.enabled ? beauty.lipsFuller : 0,
+            noseSlim: beauty.enabled ? beauty.noseSlim : 0
         } 
     });
     useEffect(() => {
@@ -172,7 +174,8 @@ const AppContent: React.FC = () => {
                 faceThin: beauty.enabled ? beauty.faceThin : 0,
                 skinTone: beauty.enabled ? beauty.skinTone : 0,
                 cheekbones: beauty.enabled ? beauty.cheekbones : 0,
-                lipsFuller: beauty.enabled ? beauty.lipsFuller : 0
+                lipsFuller: beauty.enabled ? beauty.lipsFuller : 0,
+                noseSlim: beauty.enabled ? beauty.noseSlim : 0
             }
         };
     }, [color, transform, mode, bypass, beauty]);

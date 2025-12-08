@@ -9,8 +9,9 @@ const SKIN_INDICES = [
 const LEFT_EYE = [33, 133, 160, 159, 158, 144, 145, 153];
 const RIGHT_EYE = [362, 263, 387, 386, 385, 373, 374, 380];
 
-// Face contour for slim effect (jawline only)
-const FACE_CONTOUR = [234, 93, 132, 58, 172, 150, 176, 149, 148, 152, 377, 378, 365, 397, 288, 361, 323, 454];
+// Face contour for slim effect (sides only - jawline)
+const FACE_CONTOUR_LEFT = [234, 93, 132, 58, 172, 136];
+const FACE_CONTOUR_RIGHT = [454, 323, 361, 288, 397, 365];
 
 // Cheekbone regions
 const LEFT_CHEEK = [116, 117, 118, 119, 100, 126, 209, 49, 129, 203];
@@ -18,6 +19,9 @@ const RIGHT_CHEEK = [345, 346, 347, 348, 329, 355, 429, 279, 358, 423];
 
 // Lip region
 const LIPS_OUTER = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0, 37, 39, 40, 185, 61];
+
+// Nose region
+const NOSE = [168, 6, 197, 195, 5, 4, 1, 19, 94, 2, 164, 0, 11, 12, 13, 14, 168];
 
 export class MaskGenerator {
   private canvas: OffscreenCanvas;
@@ -45,7 +49,7 @@ export class MaskGenerator {
 
     const toCanvas = (lm: NormalizedLandmark) => ({ x: lm.x * width, y: lm.y * height });
 
-    // Canvas 1: R=skin, G=eyes, B=face contour
+    // Canvas 1: R=skin, G=eyes, B=face contour (sides only)
     this.ctx.fillStyle = '#ff0000';
     this.drawPoly(this.ctx, SKIN_INDICES, landmarks, toCanvas);
 
@@ -53,25 +57,32 @@ export class MaskGenerator {
     this.drawPoly(this.ctx, LEFT_EYE, landmarks, toCanvas);
     this.drawPoly(this.ctx, RIGHT_EYE, landmarks, toCanvas);
 
+    // Draw face contour as strokes on sides only (not chin)
     this.ctx.strokeStyle = '#0000ff';
-    this.ctx.lineWidth = 25;
-    this.ctx.beginPath();
-    FACE_CONTOUR.forEach((idx, i) => {
-      const lm = landmarks[idx];
-      if (!lm) return;
-      const { x, y } = toCanvas(lm);
-      if (i === 0) this.ctx.moveTo(x, y);
-      else this.ctx.lineTo(x, y);
-    });
-    this.ctx.stroke();
+    this.ctx.lineWidth = 20;
+    this.ctx.lineCap = 'round';
+    for (const contour of [FACE_CONTOUR_LEFT, FACE_CONTOUR_RIGHT]) {
+      this.ctx.beginPath();
+      contour.forEach((idx, i) => {
+        const lm = landmarks[idx];
+        if (!lm) return;
+        const { x, y } = toCanvas(lm);
+        if (i === 0) this.ctx.moveTo(x, y);
+        else this.ctx.lineTo(x, y);
+      });
+      this.ctx.stroke();
+    }
 
-    // Canvas 2: R=cheeks, G=lips
+    // Canvas 2: R=cheeks, G=lips, B=nose
     this.ctx2.fillStyle = '#ff0000';
     this.drawPoly(this.ctx2, LEFT_CHEEK, landmarks, toCanvas);
     this.drawPoly(this.ctx2, RIGHT_CHEEK, landmarks, toCanvas);
 
     this.ctx2.fillStyle = '#00ff00';
     this.drawPoly(this.ctx2, LIPS_OUTER, landmarks, toCanvas);
+
+    this.ctx2.fillStyle = '#0000ff';
+    this.drawPoly(this.ctx2, NOSE, landmarks, toCanvas);
 
     // Apply blur for soft edges
     for (const c of [this.ctx, this.ctx2]) {

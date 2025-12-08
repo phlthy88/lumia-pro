@@ -63,6 +63,7 @@ export interface BeautyConfig {
     skinTone: number;
     cheekbones: number;
     lipsFuller: number;
+    noseSlim: number;
 }
 
 export interface ColorGradeParams {
