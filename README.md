@@ -47,7 +47,7 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5173** → Allow camera → Start creating.
+Open **http://localhost:3000** → Allow camera → Start creating.
 
 <br />
 
