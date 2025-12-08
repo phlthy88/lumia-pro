@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { RecorderConfig } from '../types';
+import { FallbackMode, RecorderConfig } from '../types';
 import { useAudioProcessor } from './useAudioProcessor';
 import { saveMedia, loadAllMedia, deleteMediaItem, clearAllMedia, StoredMediaItem } from '../services/MediaStorageService';
 
@@ -35,7 +35,8 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   const [photoCountdown, setPhotoCountdown] = useState(0);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
-  
+  const [error, setError] = useState<FallbackMode | null>(null);
+
   const { processStream, cleanup: cleanupAudio } = useAudioProcessor();
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -142,6 +143,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     // Clean up any previous streams first
     cleanupStreams();
     cleanupTimer();
+    setError(null);
 
     try {
       let stream = canvas.captureStream(60); 
@@ -174,12 +176,17 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         videoBitsPerSecond: config.bitrate
       };
       
-      if (!MediaRecorder.isTypeSupported(options.mimeType!)) {
-        console.warn(`${options.mimeType} not supported, falling back.`);
-        options.mimeType = 'video/webm';
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-          options.mimeType = undefined;
-        }
+      // Codec capability check
+      if (options.mimeType && !MediaRecorder.isTypeSupported(options.mimeType)) {
+         console.warn(`${options.mimeType} not supported, trying fallback.`);
+         options.mimeType = 'video/webm'; // fallback
+
+         if (!MediaRecorder.isTypeSupported('video/webm')) {
+             console.error("No supported MediaRecorder mimeType found.");
+             setError(FallbackMode.RECORDING_FAILED);
+             cleanupStreams();
+             return;
+         }
       }
 
       const recorder = new MediaRecorder(stream, options);
@@ -200,6 +207,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
 
       recorder.onerror = () => {
         console.error('MediaRecorder error');
+        setError(FallbackMode.RECORDING_FAILED);
         cleanupTimer();
         cleanupStreams();
         setIsRecording(false);
@@ -232,6 +240,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
 
     } catch (e) {
       console.error("Recording failed to start", e);
+      setError(FallbackMode.RECORDING_FAILED);
       cleanupTimer();
       cleanupStreams();
     }
@@ -405,5 +414,6 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     deleteMedia,
     clearMedia,
     audioStream,
+    error // Return error state
   };
 };

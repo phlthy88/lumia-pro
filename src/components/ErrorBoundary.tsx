@@ -1,6 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Typography, Button, Paper, Container } from '@mui/material';
-import { Refresh, WarningAmber } from '@mui/icons-material';
+import { FallbackMode } from '../types';
+import { ErrorScreen } from './ErrorScreen';
 
 interface Props {
   children: ReactNode;
@@ -40,34 +40,11 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <Container maxWidth="sm" sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
-            <Paper elevation={4} sx={{ p: 4, textAlign: 'center', borderRadius: 4, bgcolor: 'background.paper' }}>
-                <WarningAmber color="error" sx={{ fontSize: 64, mb: 2 }} />
-                <Typography variant="h5" gutterBottom fontWeight="bold">
-                    Something went wrong
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                    The studio engine encountered a critical error.
-                </Typography>
-                
-                {this.state.error && (
-                    <Box sx={{ my: 2, p: 2, bgcolor: 'action.hover', borderRadius: 2, textAlign: 'left', overflow: 'auto', maxHeight: 200 }}>
-                        <Typography variant="caption" fontFamily="monospace" color="error">
-                            {this.state.error.toString()}
-                        </Typography>
-                    </Box>
-                )}
-
-                <Button 
-                    variant="contained" 
-                    startIcon={<Refresh />} 
-                    onClick={() => window.location.reload()}
-                    sx={{ mt: 2 }}
-                >
-                    Reload Application
-                </Button>
-            </Paper>
-        </Container>
+        <ErrorScreen
+            mode={FallbackMode.GENERIC_ERROR}
+            message={this.state.error?.message}
+            onRetry={() => window.location.reload()}
+        />
       );
     }
 

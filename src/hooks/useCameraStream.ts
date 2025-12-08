@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { cameraService } from '../services/CameraControlService';
+import { FallbackMode } from '../types';
 
 const RESOLUTION_PRESETS = [
     { label: '4K (UHD)', width: 3840, height: 2160 },
@@ -12,6 +13,12 @@ const FPS_PRESETS = [240, 144, 120, 100, 60, 59.94, 50, 48, 30, 29.97, 25, 24, 2
 
 type StreamStatus = 'idle' | 'initializing' | 'streaming' | 'error';
 
+export interface CameraError {
+  mode: FallbackMode;
+  message: string;
+  originalError?: unknown;
+}
+
 export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, maxH?: number) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [deviceList, setDeviceList] = useState<MediaDeviceInfo[]>([]);
@@ -22,7 +29,7 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
    }); 
   const [targetFps, setTargetFps] = useState<number>(30);
   const [status, setStatus] = useState<StreamStatus>('idle');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<CameraError | null>(null);
 
   // Device Discovery
   const refreshDevices = useCallback(async () => {
@@ -116,10 +123,21 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
         
         if (isMounted) setStatus('streaming');
 
-      } catch (err) {
+      } catch (err: any) {
         console.error("Stream error", err);
         if (isMounted) {
-          setError(err instanceof Error ? err.message : String(err));
+            let mode = FallbackMode.GENERIC_ERROR;
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                mode = FallbackMode.CAMERA_DENIED;
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                mode = FallbackMode.CAMERA_NOT_FOUND;
+            }
+
+          setError({
+              mode,
+              message: err instanceof Error ? err.message : String(err),
+              originalError: err
+          });
           setStatus('error');
         }
       }
