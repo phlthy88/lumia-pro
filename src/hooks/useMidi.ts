@@ -26,7 +26,11 @@ export const useMidi = (
   const [connected, setConnected] = useState(false);
 
   const handleMidiMessage = useCallback((event: MIDIMessageEvent) => {
-    const [status, cc, velocity] = event.data;
+    const data = event.data;
+    if (!data || data.length < 3) return;
+    
+    const [status, cc, velocity] = Array.from(data);
+    if (status === undefined || cc === undefined || velocity === undefined) return;
     
     if (status === 176) { // Control Change
       const mapping = DEFAULT_MAPPINGS.find(m => m.cc === cc);

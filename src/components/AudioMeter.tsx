@@ -27,7 +27,7 @@ export const AudioMeter: React.FC<AudioMeterProps> = ({
   const [level, setLevel] = useState(0);
   const [peak, setPeak] = useState(0);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (!audioStream) {
@@ -50,7 +50,7 @@ export const AudioMeter: React.FC<AudioMeterProps> = ({
       if (!analyserRef.current) return;
       
       analyserRef.current.getByteFrequencyData(dataArray);
-      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+      const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
       const normalized = Math.min(100, (average / 255) * 100);
       
       setLevel(normalized);

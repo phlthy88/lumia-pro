@@ -15,11 +15,11 @@ Object.defineProperty(global.navigator, 'mediaDevices', {
 // Mock WebGL context
 if (typeof HTMLCanvasElement !== 'undefined') {
   const originalGetContext = HTMLCanvasElement.prototype.getContext;
-  HTMLCanvasElement.prototype.getContext = function(contextId: string, ...args: any[]) {
+  HTMLCanvasElement.prototype.getContext = function(contextId: any, ...args: any[]): any {
     if (contextId === 'webgl2') {
       return {} as WebGL2RenderingContext;
     }
-    return originalGetContext.call(this, contextId, ...args);
+    return originalGetContext.call(this, contextId as any, ...args);
   };
 }
 
