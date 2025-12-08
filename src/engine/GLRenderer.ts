@@ -511,34 +511,34 @@ export class GLRenderer {
 
             vec2 applyFaceThin(vec2 uv, float contourMask) {
                 if (u_faceThin <= 0.0 || contourMask < 0.01) return uv;
-                // Push pixels toward vertical center line
-                float horizDist = uv.x - 0.5;
-                float strength = contourMask * u_faceThin * 0.08;
-                return uv - vec2(horizDist * strength, 0.0);
+                // Only apply where mask is present, push inward
+                // Mask is on face edges, so push toward center
+                float strength = contourMask * u_faceThin * 0.02;
+                float dir = uv.x < 0.5 ? 1.0 : -1.0;
+                return uv + vec2(dir * strength, 0.0);
             }
 
             vec2 applyCheekbones(vec2 uv, float cheekMask) {
                 if (u_cheekbones <= 0.0 || cheekMask < 0.01) return uv;
-                // Create shadow/highlight by sampling slightly inward and up
-                float horizDist = uv.x - 0.5;
-                vec2 offset = vec2(-sign(horizDist) * 0.01, -0.015) * cheekMask * u_cheekbones;
-                return uv + offset;
+                // Subtle inward pull for cheekbone definition
+                float strength = cheekMask * u_cheekbones * 0.015;
+                float dir = uv.x < 0.5 ? 1.0 : -1.0;
+                return uv + vec2(dir * strength, -strength * 0.5);
             }
 
             vec2 applyNoseSlim(vec2 uv, float noseMask) {
                 if (u_noseSlim <= 0.0 || noseMask < 0.01) return uv;
-                // Push nose pixels toward center horizontally
-                float horizDist = uv.x - 0.5;
-                float strength = noseMask * u_noseSlim * 0.15;
-                return uv - vec2(horizDist * strength, 0.0);
+                // Push nose pixels toward center - only where mask is blue
+                float strength = noseMask * u_noseSlim * 0.03;
+                float dir = uv.x < 0.5 ? 1.0 : -1.0;
+                return uv + vec2(dir * strength, 0.0);
             }
 
             vec2 applyLipsFuller(vec2 uv, float lipMask) {
                 if (u_lipsFuller <= 0.0 || lipMask < 0.01) return uv;
-                // Scale outward from lip center
-                vec2 lipCenter = vec2(0.5, uv.y);
-                vec2 fromCenter = uv - lipCenter;
-                return uv + fromCenter * lipMask * u_lipsFuller * 0.1;
+                // Expand lips outward from their center vertically
+                float strength = lipMask * u_lipsFuller * 0.02;
+                return uv + vec2(0.0, (uv.y - 0.5) * strength);
             }
 
             void main() {
