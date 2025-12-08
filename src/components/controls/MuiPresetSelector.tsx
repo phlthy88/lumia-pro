@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Stack, Button, Box, Typography } from '@mui/material';
+import React, { useRef, memo } from 'react';
+import { Stack, Button, Box } from '@mui/material';
 import { Save, FileUpload, FileDownload, Delete } from '@mui/icons-material';
 import { MuiSelect } from './MuiSelect';
 import { Preset } from '../../types';
@@ -13,7 +13,7 @@ interface PresetSelectorProps {
     onExport: () => void;
 }
 
-export const MuiPresetSelector: React.FC<PresetSelectorProps> = ({ 
+export const MuiPresetSelector: React.FC<PresetSelectorProps> = memo(({
     presets, onLoad, onSave, onDelete, onImport, onExport 
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,6 +52,7 @@ export const MuiPresetSelector: React.FC<PresetSelectorProps> = ({
                     color="secondary" 
                     onClick={handleSaveClick}
                     sx={{ minWidth: 40, height: 40 }}
+                    aria-label="Save Preset"
                 >
                     <Save fontSize="small" />
                 </Button>
@@ -62,6 +63,7 @@ export const MuiPresetSelector: React.FC<PresetSelectorProps> = ({
                     size="small" 
                     startIcon={<FileUpload />} 
                     onClick={onExport}
+                    aria-label="Export Presets"
                 >
                     Export
                 </Button>
@@ -69,6 +71,7 @@ export const MuiPresetSelector: React.FC<PresetSelectorProps> = ({
                     size="small" 
                     startIcon={<FileDownload />} 
                     onClick={() => fileInputRef.current?.click()}
+                    aria-label="Import Presets"
                 >
                     Import
                 </Button>
@@ -85,4 +88,4 @@ export const MuiPresetSelector: React.FC<PresetSelectorProps> = ({
             </Stack>
         </Box>
     );
-}
+});

@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
 import { OverlayConfig, GridType, AspectRatio } from '../types';
+import { usePersistedState } from './usePersistedState';
 
 export const useOverlays = () => {
-  const [config, setConfig] = useState<OverlayConfig>({
+  const [config, setConfig] = usePersistedState<OverlayConfig>('lumia_overlays', {
     grid: GridType.None,
     aspectRatio: AspectRatio.Native,
     safeArea: false,

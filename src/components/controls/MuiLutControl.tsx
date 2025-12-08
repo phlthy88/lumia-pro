@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, memo } from 'react';
 import { Button, Stack, Box } from '@mui/material';
 import { UploadFile } from '@mui/icons-material';
 import { MuiSelect } from './MuiSelect';
@@ -15,7 +15,7 @@ interface LutControlProps {
     onChangeStrength: (val: number) => void;
 }
 
-export const MuiLutControl: React.FC<LutControlProps> = ({ 
+export const MuiLutControl: React.FC<LutControlProps> = memo(({
     luts, activeIndex, strength, onSelect, onUpload, onChangeStrength 
 }) => {
     const fileRef = useRef<HTMLInputElement>(null);
@@ -39,6 +39,7 @@ export const MuiLutControl: React.FC<LutControlProps> = ({
                 fullWidth 
                 onClick={() => fileRef.current?.click()}
                 sx={{ mb: 2 }}
+                aria-label="Import LUT file"
             >
                 Import .CUBE File
             </Button>
@@ -64,4 +65,4 @@ export const MuiLutControl: React.FC<LutControlProps> = ({
             />
         </ControlCard>
     );
-};
+});
