@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Box, useTheme, useMediaQuery, Slide, Grow, keyframes, IconButton } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import { Navigation } from './NavigationRail';
@@ -10,6 +10,11 @@ const m3EmphasizedDecelerate = 'cubic-bezier(0.05, 0.7, 0.1, 1.0)';
 const spin = keyframes`
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+`;
+
+const spinReverse = keyframes`
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
 `;
 
 // M3 container transform animation
@@ -48,6 +53,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [navOpen, setNavOpen] = useState(false);
     const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
+    const [spinAnim, setSpinAnim] = useState<'none' | 'open' | 'close'>('none');
+
+    const handleNavToggle = () => {
+        setSpinAnim(navOpen ? 'close' : 'open');
+        setNavOpen(!navOpen);
+    };
 
     return (
         <Box sx={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', bgcolor: 'black', flexDirection: 'column' }}>
@@ -104,7 +115,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                         {/* Floating Settings Button - Inside viewfinder */}
                         {!isMobile && (
                             <IconButton
-                                onClick={() => setNavOpen(!navOpen)}
+                                onClick={handleNavToggle}
                                 sx={{
                                     position: 'absolute',
                                     top: 24,
@@ -115,7 +126,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                                     opacity: navOpen ? 1 : 0.6,
                                     boxShadow: theme.shadows[4],
                                     transition: 'opacity 0.3s ease, background-color 0.3s ease',
-                                    animation: navOpen ? `${spin} 0.6s ease-in-out` : 'none',
+                                    animation: spinAnim === 'open' ? `${spin} 0.5s ease-out` : spinAnim === 'close' ? `${spinReverse} 0.5s ease-out` : 'none',
                                     '&:hover': {
                                         opacity: 1,
                                         bgcolor: navOpen ? theme.palette.primary.dark : theme.palette.action.hover,

@@ -46,6 +46,67 @@ import { ThumbnailSwoosh } from './components/ThumbnailSwoosh';
 // Lazy Load Heavy Components
 const MediaLibrary = React.lazy(() => import('./components/MediaLibrary').then(module => ({ default: module.MediaLibrary })));
 
+// Countdown Overlay with audio cues
+const CountdownOverlay: React.FC<{ count: number; type: 'video' | 'photo' }> = ({ count, type }) => {
+    const audioCtxRef = useRef<AudioContext | null>(null);
+    
+    useEffect(() => {
+        // Play beep sound
+        if (!audioCtxRef.current) {
+            audioCtxRef.current = new AudioContext();
+        }
+        const ctx = audioCtxRef.current;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = count === 1 ? 880 : 440; // Higher pitch on final count
+        gain.gain.value = 0.3;
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.stop(ctx.currentTime + 0.15);
+        
+        return () => { osc.disconnect(); gain.disconnect(); };
+    }, [count]);
+
+    return (
+        <Box 
+            sx={{ 
+                position: 'absolute', 
+                inset: 0, 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                bgcolor: 'rgba(0,0,0,0.6)', 
+                backdropFilter: 'blur(8px)', 
+                zIndex: 9999 
+            }}
+        >
+            <Typography 
+                variant="h1" 
+                sx={{ 
+                    fontSize: '12rem', 
+                    fontWeight: 900, 
+                    color: 'white',
+                    textShadow: '0 0 40px rgba(255,255,255,0.5)',
+                    animation: 'pulse 1s ease-in-out',
+                    '@keyframes pulse': {
+                        '0%': { transform: 'scale(0.8)', opacity: 0 },
+                        '50%': { transform: 'scale(1.1)' },
+                        '100%': { transform: 'scale(1)', opacity: 1 },
+                    }
+                }}
+            >
+                {count}
+            </Typography>
+            <Typography variant="h6" color="grey.400" sx={{ mt: 2 }}>
+                {type === 'video' ? '🎬 Recording starts...' : '📸 Capturing...'}
+            </Typography>
+        </Box>
+    );
+};
+
 const AppContent: React.FC = () => {
     // Layout State
     const [activeTab, setActiveTab] = useState('ADJUST');
@@ -326,7 +387,7 @@ const AppContent: React.FC = () => {
 
     // Recorder - Add null check for canvasRef
     const { 
-        isRecording, isCountingDown, isBursting, countdown, recordingTime, config: recConfig, setConfig: setRecConfig, 
+        isRecording, isCountingDown, isPhotoCountingDown, isBursting, countdown, photoCountdown, recordingTime, config: recConfig, setConfig: setRecConfig, 
         startRecording, stopRecording, takeScreenshot, takeBurst, mediaItems, deleteMedia, clearMedia, audioStream
     } = useRecorder(canvasRef as React.RefObject<HTMLCanvasElement>);
 
@@ -683,21 +744,11 @@ const AppContent: React.FC = () => {
                 </Box>
             )}
 
-            {isCountingDown && (
-                <Box 
-                    sx={{ 
-                        position: 'absolute', 
-                        inset: 0, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        bgcolor: 'rgba(0,0,0,0.5)', 
-                        backdropFilter: 'blur(4px)', 
-                        zIndex: 9999 
-                    }}
-                >
-                    <Typography variant="h1" fontWeight="bold" color="white">{countdown}</Typography>
-                </Box>
+            {(isCountingDown || isPhotoCountingDown) && (
+                <CountdownOverlay 
+                    count={isCountingDown ? countdown : photoCountdown} 
+                    type={isCountingDown ? 'video' : 'photo'} 
+                />
             )}
 
             <Snackbar 
