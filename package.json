@@ -12,7 +12,8 @@
     "size-check": "du -sh dist && test $(du -sb dist | cut -f1) -lt 10485760",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:load": "k6 run test/load/stress-test.js"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -41,6 +42,7 @@
     "@vitest/ui": "^4.0.15",
     "eslint": "^9.17.0",
     "jsdom": "^23.0.1",
+    "k6": "^0.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^1.2.0",
