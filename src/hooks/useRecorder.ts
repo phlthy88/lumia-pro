@@ -301,14 +301,31 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     }, 'image/png', 1.0);
   }, [canvasRef]);
 
+  const playShutterSound = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 1200;
+      gain.gain.value = 0.15;
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+      osc.stop(ctx.currentTime + 0.08);
+    } catch (e) { /* ignore audio errors */ }
+  }, []);
+
   const takeBurstInternal = useCallback((onCapture?: (url: string) => void) => {
     if (config.burstCount <= 1) {
+      playShutterSound();
       takeScreenshot(onCapture);
       return;
     }
     setIsBursting(true);
     let taken = 0;
     const interval = setInterval(() => {
+      playShutterSound();
       takeScreenshot(taken === 0 ? onCapture : undefined);
       taken++;
       if (taken >= config.burstCount) {
@@ -316,7 +333,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         setIsBursting(false);
       }
     }, config.burstDelay);
-  }, [config.burstCount, config.burstDelay, takeScreenshot]);
+  }, [config.burstCount, config.burstDelay, takeScreenshot, playShutterSound]);
 
   const takeBurst = useCallback((onCapture?: (url: string) => void) => {
     const countdownTime = Number(config.photoCountdown) || 0;

@@ -408,27 +408,12 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
                       <Button size="small" color="error" onClick={deleteSelected} startIcon={<DeleteIcon />}>
                         ({selectedIds.size})
                       </Button>
+                      <Button size="small" onClick={downloadAll} startIcon={<DownloadIcon />}>
+                        Save
+                      </Button>
                       <IconButton size="small" onClick={(e) => setBulkMenuAnchor(e.currentTarget)}>
                         <MoreVertIcon />
                       </IconButton>
-                      <Menu
-                        anchorEl={bulkMenuAnchor}
-                        open={Boolean(bulkMenuAnchor)}
-                        onClose={() => setBulkMenuAnchor(null)}
-                      >
-                        <MenuItem onClick={downloadAll}>
-                          <ListItemIcon><DownloadIcon fontSize="small" /></ListItemIcon>
-                          <ListItemText>Download All</ListItemText>
-                        </MenuItem>
-                        <MenuItem onClick={downloadAsZip}>
-                          <ListItemIcon><FolderZipIcon fontSize="small" /></ListItemIcon>
-                          <ListItemText>Download as ZIP</ListItemText>
-                        </MenuItem>
-                        <MenuItem onClick={shareSelected}>
-                          <ListItemIcon><ShareIcon fontSize="small" /></ListItemIcon>
-                          <ListItemText>Share</ListItemText>
-                        </MenuItem>
-                      </Menu>
                     </>
                   )}
                 </>
@@ -439,6 +424,31 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
           )}
         </Box>
       </Box>
+
+      {/* Bulk Actions Menu - rendered at root level */}
+      <Menu
+        anchorEl={bulkMenuAnchor}
+        open={Boolean(bulkMenuAnchor)}
+        onClose={() => setBulkMenuAnchor(null)}
+        sx={{ zIndex: 9999 }}
+      >
+        <MenuItem onClick={downloadAll}>
+          <ListItemIcon><DownloadIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Download All</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={downloadAsZip}>
+          <ListItemIcon><FolderZipIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Download as ZIP</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={shareSelected}>
+          <ListItemIcon><ShareIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Share</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={deleteSelected}>
+          <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
+          <ListItemText>Delete All</ListItemText>
+        </MenuItem>
+      </Menu>
 
       {items.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
