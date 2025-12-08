@@ -83,7 +83,7 @@ export class CameraControlService {
                     audio: false,
                     video: validDeviceId 
                         ? { deviceId: { exact: validDeviceId }, width: { ideal: res.width }, height: { ideal: res.height } }
-                        : { facingMode: 'environment', width: { ideal: res.width }, height: { ideal: res.height } }
+                        : { width: { ideal: res.width }, height: { ideal: res.height } }
                 };
                 this.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 this.track = this.stream.getVideoTracks()[0] || null;
@@ -97,7 +97,7 @@ export class CameraControlService {
         // Final fallback - no resolution constraints
         const fallbackConstraints: MediaStreamConstraints = {
             audio: false,
-            video: validDeviceId ? { deviceId: { exact: validDeviceId } } : { facingMode: 'environment' }
+            video: validDeviceId ? { deviceId: { exact: validDeviceId } } : true
         };
         this.stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
         this.track = this.stream.getVideoTracks()[0] || null;
