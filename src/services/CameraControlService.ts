@@ -33,21 +33,34 @@ export class CameraControlService {
         }
     }
 
+    private isInitializing = false;
+
     public async initialize(deviceId?: string): Promise<MediaStream> {
-        // Stop existing stream
-        if (this.stream) {
-            this.stream.getTracks().forEach(t => t.stop());
+        // Prevent double initialization
+        if (this.isInitializing) {
+            console.warn('[Camera] Already initializing, skipping');
+            if (this.stream) return this.stream;
+            throw new Error('Camera initialization in progress');
         }
+        this.isInitializing = true;
 
-        // Validate deviceId exists before using exact constraint
-        let validDeviceId: string | undefined = undefined;
-        if (deviceId) {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const exists = devices.some(d => d.kind === 'videoinput' && d.deviceId === deviceId);
-            validDeviceId = exists ? deviceId : undefined;
-        }
+        try {
+            // Stop existing stream
+            if (this.stream) {
+                this.stream.getTracks().forEach(t => t.stop());
+                this.stream = null;
+                this.track = null;
+            }
 
-        // Resolution ladder - start at 1080p for better performance on most systems
+            // Validate deviceId exists before using exact constraint
+            let validDeviceId: string | undefined = undefined;
+            if (deviceId) {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const exists = devices.some(d => d.kind === 'videoinput' && d.deviceId === deviceId);
+                validDeviceId = exists ? deviceId : undefined;
+            }
+
+            // Resolution ladder - start at 1080p for better performance on most systems
         const resolutions = [
             { width: 1920, height: 1080 }, // 1080p
             { width: 1280, height: 720 },  // 720p
@@ -79,6 +92,9 @@ export class CameraControlService {
         this.stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
         this.track = this.stream.getVideoTracks()[0] || null;
         return this.stream;
+        } finally {
+            this.isInitializing = false;
+        }
     }
 
     public getCapabilities(): MediaTrackCapabilities | null {

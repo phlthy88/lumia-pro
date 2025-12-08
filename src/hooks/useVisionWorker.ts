@@ -81,18 +81,26 @@ export const useVisionWorker = (
   useEffect(() => {
     if (!state.ready) return;
 
+    let isProcessing = false;
+
     const detect = () => {
+      // Skip if still processing previous frame (frame dropping)
+      if (isProcessing) return;
+      
       const video = videoRef.current;
       const landmarker = landmarkerRef.current;
       if (!video || !landmarker || video.readyState < 2) return;
 
       // Use idle callback if available, otherwise run directly
       const run = () => {
+        isProcessing = true;
         try {
           const result = landmarker.detectForVideo(video, performance.now());
           setState(prev => ({ ...prev, result }));
         } catch {
           // Skip frame
+        } finally {
+          isProcessing = false;
         }
       };
 

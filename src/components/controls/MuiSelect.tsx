@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { useId, useMemo } from 'react';
 import { FormControl, InputLabel, Select, MenuItem, Box } from '@mui/material';
 
 interface MuiSelectProps {
@@ -13,6 +13,12 @@ export const MuiSelect: React.FC<MuiSelectProps> = ({ label, value, options, onC
     const id = useId();
     const labelId = `${id}-label`;
     
+    // Only use value if it exists in options, otherwise use empty string
+    const safeValue = useMemo(() => {
+        if (options.length === 0) return '';
+        return options.some(opt => opt.value === value) ? value : '';
+    }, [value, options]);
+    
     return (
         <Box sx={{ minWidth: 120, mb: 2 }}>
             <FormControl fullWidth size="small" disabled={disabled}>
@@ -20,7 +26,7 @@ export const MuiSelect: React.FC<MuiSelectProps> = ({ label, value, options, onC
                 <Select
                     id={id}
                     labelId={labelId}
-                    value={value}
+                    value={safeValue}
                     label={label}
                     onChange={(e) => onChange(e.target.value as string)}
                     sx={{
