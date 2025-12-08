@@ -29,13 +29,14 @@ jobs:
       
       - name: Check bundle size
         run: |
-          SIZE=$(du -sb dist | cut -f1)
-          MAX_SIZE=$((10 * 1024 * 1024))
-          if [ $SIZE -gt $MAX_SIZE ]; then
-            echo "Bundle size $SIZE exceeds 10MB limit"
+          JS_SIZE=$(du -sb dist/assets | cut -f1)
+          MAX_SIZE=$((2 * 1024 * 1024))
+          if [ $JS_SIZE -gt $MAX_SIZE ]; then
+            echo "JS bundle size $JS_SIZE exceeds 2MB limit"
             exit 1
           fi
-          echo "Bundle size: $(($SIZE / 1024 / 1024))MB"
+          echo "JS bundle size: $(($JS_SIZE / 1024))KB"
+          echo "Total dist size: $(du -sh dist | cut -f1)"
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
