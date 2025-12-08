@@ -44,7 +44,16 @@ export default defineConfig(({ mode }) => {
         })
       ],
       build: {
-        chunkSizeWarningLimit: 600
+        chunkSizeWarningLimit: 600,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'react-vendor': ['react', 'react-dom'],
+              'mui-vendor': ['@mui/material', '@mui/icons-material'],
+              'mediapipe-vendor': ['@mediapipe/tasks-vision']
+            }
+          }
+        }
       },
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
