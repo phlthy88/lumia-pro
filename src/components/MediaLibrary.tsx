@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { Box, IconButton, Dialog, Paper, Button, Typography, useTheme, Fade } from '@mui/material';
+import { Box, IconButton, Dialog, Paper, Button, Typography, useTheme, Fade, Checkbox } from '@mui/material';
 import { keyframes } from '@mui/system';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -8,6 +8,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import EditIcon from '@mui/icons-material/Edit';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import WarningIcon from '@mui/icons-material/Warning';
+import SelectAllIcon from '@mui/icons-material/SelectAll';
 
 const DELETE_ANIMATION_DURATION = 320;
 
@@ -45,10 +46,13 @@ interface ParallaxMediaItemProps {
   onShare: () => void;
   onDelete: (e: React.MouseEvent<HTMLElement>) => void;
   isDeleting?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
+  selectMode?: boolean;
 }
 
 const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({ 
-  item, index, scrollY, onSave, onEdit, onShare, onDelete, isDeleting = false 
+  item, index, scrollY, onSave, onEdit, onShare, onDelete, isDeleting = false, isSelected = false, onSelect, selectMode = false
 }) => {
   const theme = useTheme();
   const parallaxOffset = (scrollY * 0.1) * (index % 3 === 0 ? 1 : index % 3 === 1 ? 0.7 : 0.4);
@@ -56,6 +60,7 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({
   return (
     <Box 
       data-media-item
+      onClick={selectMode ? onSelect : undefined}
        sx={{ 
          position: 'relative', 
          aspectRatio: '1', 
@@ -65,14 +70,23 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({
          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
          animation: isDeleting ? `${deleteScaleFade} ${DELETE_ANIMATION_DURATION}ms ease forwards` : undefined,
          pointerEvents: isDeleting ? 'none' : 'auto',
+         cursor: selectMode ? 'pointer' : 'default',
+         outline: isSelected ? `3px solid ${theme.palette.primary.main}` : 'none',
          '&:hover': {
            transform: 'scale(1.03)',
            boxShadow: `0 8px 24px ${theme.palette.primary.main}33`,
-           '& .media-overlay': { opacity: 1 },
+           '& .media-overlay': { opacity: selectMode ? 0 : 1 },
            '& .media-content': { transform: 'scale(1.1)' },
          },
        }}
      >
+      {selectMode && (
+        <Checkbox 
+          checked={isSelected} 
+          sx={{ position: 'absolute', top: 4, right: 4, zIndex: 10, color: 'white', '&.Mui-checked': { color: 'primary.main' } }}
+          onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+        />
+      )}
 
       <Box 
         className="media-content"
@@ -153,6 +167,31 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
   const [scrollY, setScrollY] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<{open: boolean, id: string | null, url: string | null, type?: 'image' | 'video', anchorEl: HTMLElement | null}>({open: false, id: null, url: null, anchorEl: null});
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedIds(new Set(items.map(i => i.id)));
+  const clearSelection = () => { setSelectedIds(new Set()); setSelectMode(false); };
+
+  const deleteSelected = () => {
+    selectedIds.forEach(id => {
+      setDeletingIds(prev => [...prev, id]);
+      setTimeout(() => {
+        onDelete(id);
+        setDeletingIds(prev => prev.filter(i => i !== id));
+      }, DELETE_ANIMATION_DURATION);
+    });
+    clearSelection();
+  };
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     setScrollY(e.currentTarget.scrollTop);
@@ -290,12 +329,30 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
           }}
         >
           <PhotoLibraryIcon id="media-library-icon" sx={{ fontSize: 40, color: theme.palette.primary.main }} />
-          <Box>
+          <Box sx={{ flex: 1 }}>
             <Typography variant="h6" fontWeight="bold">Media Library</Typography>
             <Typography variant="caption" color="text.secondary">
               {items.length} {items.length === 1 ? 'item' : 'items'}
+              {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
             </Typography>
           </Box>
+          {items.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              {selectMode ? (
+                <>
+                  <Button size="small" onClick={selectAll} startIcon={<SelectAllIcon />}>All</Button>
+                  <Button size="small" onClick={clearSelection}>Cancel</Button>
+                  {selectedIds.size > 0 && (
+                    <Button size="small" color="error" onClick={deleteSelected} startIcon={<DeleteIcon />}>
+                      Delete ({selectedIds.size})
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <Button size="small" onClick={() => setSelectMode(true)}>Select</Button>
+              )}
+            </Box>
+          )}
         </Box>
       </Box>
 
@@ -318,6 +375,9 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
               onShare={() => handleShare(item)}
               onDelete={(e) => handleDeleteClick(item, e)}
               isDeleting={deletingIds.includes(item.id)}
+              isSelected={selectedIds.has(item.id)}
+              onSelect={() => toggleSelect(item.id)}
+              selectMode={selectMode}
             />
           ))}
         </Box>
