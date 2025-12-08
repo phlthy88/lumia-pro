@@ -129,9 +129,9 @@ const AppContent: React.FC = () => {
 
     // AI - Add null check for videoRef
     const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady, {
-        minFaceDetectionConfidence: 0.3,
-        minFacePresenceConfidence: 0.3,
-        minTrackingConfidence: 0.3
+        minFaceDetectionConfidence: 0.6,
+        minFacePresenceConfidence: 0.6,
+        minTrackingConfidence: 0.7
     });
     const ai = useAIAnalysis(videoRef as React.RefObject<HTMLVideoElement>, vision.landmarks);
     const handleAutoFix = () => {
@@ -495,7 +495,7 @@ const AppContent: React.FC = () => {
             case 'OVERLAYS':
                 return (
                     <>
-                        <ParallaxHeader 
+                        <ParallexHeader 
                             title="Overlays" 
                             subtitle="Grids, guides & display options"
                             scrollY={drawerScrollY}
