@@ -399,9 +399,10 @@ const AppContent: React.FC = () => {
         });
     }, [takeBurst]);
 
-    // Trigger swoosh when video recording stops
+    // Trigger swoosh and capture animation when video recording stops
     const handleStopRecording = useCallback(() => {
         stopRecording((thumbUrl) => {
+            setCaptureAnim(thumbUrl);
             setSwooshThumbnail(thumbUrl);
         });
     }, [stopRecording]);
