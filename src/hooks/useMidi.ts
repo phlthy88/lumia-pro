@@ -24,6 +24,7 @@ export const useMidi = (
 ) => {
   const [midiAccess, setMidiAccess] = useState<MIDIAccess | null>(null);
   const [connected, setConnected] = useState(false);
+  const [enabled, setEnabled] = useState(false);
 
   const handleMidiMessage = useCallback((event: MIDIMessageEvent) => {
     const data = event.data;
@@ -42,10 +43,15 @@ export const useMidi = (
     }
   }, [onColorChange]);
 
-  useEffect(() => {
-    if (!navigator.requestMIDIAccess) return;
+  const requestAccess = useCallback(() => {
+    if (!navigator.requestMIDIAccess || midiAccess) return;
+    setEnabled(true);
+  }, [midiAccess]);
 
-    navigator.requestMIDIAccess({ sysex: false })
+  useEffect(() => {
+    if (!enabled || !navigator.requestMIDIAccess || midiAccess) return;
+
+    navigator.requestMIDIAccess()
       .then(access => {
         setMidiAccess(access);
         
@@ -67,7 +73,7 @@ export const useMidi = (
         };
       })
       .catch(() => setConnected(false));
-  }, [handleMidiMessage]);
+  }, [enabled, midiAccess, handleMidiMessage]);
 
-  return { connected, midiAccess };
+  return { connected, midiAccess, requestAccess, enabled };
 };

@@ -20,7 +20,7 @@ export const useVisionWorker = (
   }
 ) => {
   const workerRef = useRef<Worker | null>(null);
-  const intervalRef = useRef<number>();
+  const intervalRef = useRef<number | undefined>(undefined);
   const sendingRef = useRef(false);
 
   const [state, setState] = useState<VisionState>({ result: null, ready: false });
