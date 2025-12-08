@@ -1,6 +1,7 @@
 {
   "name": "Lumia Pro Lens",
   "short_name": "Lumia",
+  "id": "Phlthy215.LumiaProLens",
   "start_url": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
@@ -23,6 +24,13 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "windows",
+      "url": "https://apps.microsoft.com/detail/9NKM5J6K3KC6",
+      "id": "Phlthy215.LumiaProLens_0frz9dj85203w"
     }
   ],
   "file_handlers": [

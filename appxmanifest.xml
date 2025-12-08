@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+         xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+         xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
+  
+  <Identity Name="Phlthy215.LumiaProLens"
+            Publisher="CN=5EF113A4-2FC8-46C1-BA46-659F1C60D4FA"
+            Version="1.0.0.0"
+            ProcessorArchitecture="neutral" />
+
+  <Properties>
+    <DisplayName>Lumia Pro Lens</DisplayName>
+    <PublisherDisplayName>Phlthy215</PublisherDisplayName>
+    <Logo>public\icon-512.png</Logo>
+    <Description>Professional WebGL Webcam Studio &amp; Color Grading App</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+                 Executable="LumiaProLens.exe"
+                 EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="Lumia Pro Lens"
+                          Description="Transform your webcam into a professional broadcast studio"
+                          BackgroundColor="#6750A4"
+                          Square150x150Logo="public\icon-192.png"
+                          Square44x44Logo="public\favicon.png">
+        <uap:DefaultTile Wide310x150Logo="public\icon-512.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <uap3:Extension Category="windows.appExecutionAlias">
+          <uap3:AppExecutionAlias>
+            <uap3:ExecutionAlias Alias="lumia-pro.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+    <uap:Capability Name="webcam" />
+    <uap:Capability Name="microphone" />
+  </Capabilities>
+</Package>
