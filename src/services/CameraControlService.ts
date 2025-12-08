@@ -33,28 +33,7 @@ export class CameraControlService {
         }
     }
 
-    private isInitializing = false;
-    private initPromise: Promise<MediaStream> | null = null;
-
     public async initialize(deviceId?: string): Promise<MediaStream> {
-        // If already initializing, wait for it to complete
-        if (this.isInitializing && this.initPromise) {
-            console.warn('[Camera] Already initializing, waiting...');
-            return this.initPromise;
-        }
-        
-        this.isInitializing = true;
-        this.initPromise = this._doInitialize(deviceId);
-        
-        try {
-            return await this.initPromise;
-        } finally {
-            this.isInitializing = false;
-            this.initPromise = null;
-        }
-    }
-
-    private async _doInitialize(deviceId?: string): Promise<MediaStream> {
         // Stop existing stream
         if (this.stream) {
             this.stream.getTracks().forEach(t => t.stop());
