@@ -2,16 +2,25 @@
 import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
+// Helper to create a mock MediaStreamTrack
+const createMockTrack = (kind: 'video' | 'audio') => ({
+    kind,
+    stop: vi.fn(),
+    getSettings: vi.fn(() => ({ width: 1920, height: 1080, frameRate: 30, deviceId: 'test-device' })),
+    getCapabilities: vi.fn(() => ({})),
+    applyConstraints: vi.fn().mockResolvedValue(undefined),
+});
+
 // 1. Mock MediaDevices API
 const mockMediaDevices = {
   getUserMedia: vi.fn().mockImplementation((constraints) => {
     return Promise.resolve({
         getTracks: () => [
-            { stop: vi.fn(), kind: 'video' },
-            { stop: vi.fn(), kind: 'audio' }
+            createMockTrack('video'),
+            createMockTrack('audio')
         ],
-        getVideoTracks: () => [{ stop: vi.fn(), kind: 'video' }],
-        getAudioTracks: () => [{ stop: vi.fn(), kind: 'audio' }],
+        getVideoTracks: () => [createMockTrack('video')],
+        getAudioTracks: () => [createMockTrack('audio')],
     } as unknown as MediaStream);
   }),
   enumerateDevices: vi.fn().mockResolvedValue([
@@ -131,3 +140,32 @@ global.ResizeObserver = class ResizeObserver {
     unobserve() {}
     disconnect() {}
 };
+
+// Mock IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+    readonly root: Element | Document | null = null;
+    readonly rootMargin: string = '';
+    readonly thresholds: ReadonlyArray<number> = [];
+
+    constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {}
+
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() { return []; }
+};
+
+// Mock matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(), // deprecated
+    removeListener: vi.fn(), // deprecated
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});

@@ -10,7 +10,7 @@ describe('Feature Flags', () => {
     });
 
     it('returns true for AI_SCENE_ANALYSIS when API key is present', () => {
-        const spy = vi.spyOn(envModule, 'getEnv').mockReturnValue('api-key');
+        const spy = vi.spyOn(envModule, 'getEnv').mockReturnValue('test-key');
         expect(isFeatureEnabled(Features.AI_SCENE_ANALYSIS)).toBe(true);
         spy.mockRestore();
     });
