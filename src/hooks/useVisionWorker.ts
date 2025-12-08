@@ -75,7 +75,7 @@ export const useVisionWorker = (
       } catch (err) {
         sendingRef.current = false;
       }
-    }, 50); // ~20fps detection cadence
+    }, 33); // 30 FPS detection cadence (smooth and responsive)
 
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);

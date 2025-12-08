@@ -122,8 +122,9 @@ export class AIAnalysisService {
     if (faceData && faceData.faceLandmarks.length > 0) {
         const face = faceData.faceLandmarks[0];
         // Nose tip is usually index 1 or 4
-        const nose = face?.[1]; 
+        const nose = face?.[1];
         
+        // Check landmark exists before using it
         if (nose) {
             // Rule of Thirds check
             const xDist = Math.abs(nose.x - 0.5);
@@ -137,6 +138,10 @@ export class AIAnalysisService {
                 tips.push("Headroom incorrect. Adjust camera tilt.");
                 compScore -= 20;
             }
+        } else {
+            // Landmark confidence too low
+            tips.push("Face landmark confidence too low. Improve lighting or distance.");
+            compScore -= 10;
         }
 
         // Portrait Enhancement

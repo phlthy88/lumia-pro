@@ -2,7 +2,7 @@
 // Platform Boosts Panel - UI for Platform Optimizations & Virtual Camera
 // ============================================================================
 
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import {
   Box,
   Typography,
@@ -108,6 +108,9 @@ export const PlatformBoostsPanel: React.FC = () => {
     app: 'zoom' | 'meet' | 'teams' | 'obs' | 'discord';
   }>({ open: false, app: 'zoom' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
+
+  const resolutionId = useId();
+  const frameRateId = useId();
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -486,8 +489,10 @@ export const PlatformBoostsPanel: React.FC = () => {
               Output Settings
             </Typography>
             <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-              <InputLabel>Resolution</InputLabel>
+              <InputLabel id={`${resolutionId}-label`}>Resolution</InputLabel>
               <Select
+                id={resolutionId}
+                labelId={`${resolutionId}-label`}
                 value={`${virtualCamera.config.width}x${virtualCamera.config.height}`}
                 label="Resolution"
                 onChange={(e) => {
@@ -501,8 +506,10 @@ export const PlatformBoostsPanel: React.FC = () => {
               </Select>
             </FormControl>
             <FormControl fullWidth size="small">
-              <InputLabel>Frame Rate</InputLabel>
+              <InputLabel id={`${frameRateId}-label`}>Frame Rate</InputLabel>
               <Select
+                id={frameRateId}
+                labelId={`${frameRateId}-label`}
                 value={virtualCamera.config.frameRate}
                 label="Frame Rate"
                 onChange={(e) => virtualCamera.updateConfig({ frameRate: Number(e.target.value) })}
