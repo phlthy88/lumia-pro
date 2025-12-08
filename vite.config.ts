@@ -72,7 +72,37 @@ export default defineConfig(({ mode }) => {
             maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5MB max per file
           },
           includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
-          manifest: false
+          manifest: {
+            name: "Lumia Pro Lens",
+            short_name: "Lumia",
+            description: "Professional WebGL Camera Studio",
+            theme_color: "#000000",
+            background_color: "#000000",
+            display: "standalone",
+            orientation: "landscape",
+            start_url: "/",
+            icons: [
+              {
+                src: "icon-192.png",
+                sizes: "192x192",
+                type: "image/png"
+              },
+              {
+                src: "icon-512.png",
+                sizes: "512x512",
+                type: "image/png"
+              }
+            ],
+            shortcuts: [
+              {
+                name: "Start Recording",
+                short_name: "Record",
+                description: "Start recording immediately",
+                url: "/?action=record",
+                icons: [{ src: "icon-192.png", sizes: "192x192" }]
+              }
+            ]
+          }
         })
       ],
       build: {

@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { FallbackMode } from '../types';
 import { ErrorScreen } from './ErrorScreen';
+import { ErrorReporter } from '../services/ErrorReporter';
 
 interface Props {
   children: ReactNode;
@@ -27,14 +28,19 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
-    
     // Log WebGL context errors but don't break the app
     if (error.message.includes('WebGL') || error.message.includes('context')) {
       console.warn('WebGL context error caught by boundary:', error);
       // Allow recovery mechanisms to handle this
       return;
     }
+
+    console.error("Uncaught error:", error, errorInfo);
+
+    // Capture to Sentry
+    ErrorReporter.captureException(error, {
+        componentStack: errorInfo.componentStack
+    });
   }
 
   public render() {

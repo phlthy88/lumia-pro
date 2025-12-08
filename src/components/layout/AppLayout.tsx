@@ -63,6 +63,28 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     return (
         <Box sx={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', bgcolor: 'black', flexDirection: 'column' }}>
             
+            {/* Accessibility: Skip to Content */}
+            <Box
+                component="a"
+                href="#main-content"
+                sx={{
+                    position: 'absolute',
+                    left: 16,
+                    top: -100,
+                    zIndex: 9999,
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    p: 1,
+                    borderRadius: 1,
+                    transition: 'top 0.3s',
+                    '&:focus': { top: 16 },
+                    textDecoration: 'none',
+                    fontWeight: 'bold'
+                }}
+            >
+                Skip to Content
+            </Box>
+
             {/* Gooey SVG Filter */}
             <svg style={{ position: 'absolute', width: 0, height: 0 }}>
                 <filter id="goo">
@@ -100,18 +122,24 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                     transition: 'padding 0.3s ease',
                     pr: !isMobile && navOpen ? '88px' : 0,
                 }}>
-                    <Box component="main" sx={{ 
-                        flex: isMobile && mobileSettingsOpen ? '0 0 auto' : '1 1 0',
-                        height: isMobile && mobileSettingsOpen ? 'calc(35dvh - 56px)' : '100%',
-                        position: 'relative', 
-                        overflow: 'hidden',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        p: isMobile ? 1 : 2,
-                        boxSizing: 'border-box',
-                        transition: 'padding 0.3s ease',
-                    }}>
+                    <Box
+                        id="main-content"
+                        component="main"
+                        tabIndex={-1} // Allow programmatic focus but not tab focus (unless content inside is focusable)
+                        sx={{
+                            flex: isMobile && mobileSettingsOpen ? '0 0 auto' : '1 1 0',
+                            height: isMobile && mobileSettingsOpen ? 'calc(35dvh - 56px)' : '100%',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            p: isMobile ? 1 : 2,
+                            boxSizing: 'border-box',
+                            transition: 'padding 0.3s ease',
+                            outline: 'none', // Remove focus ring on container
+                        }}
+                    >
                         {/* Floating Settings Button - Inside viewfinder */}
                         {!isMobile && (
                             <IconButton

@@ -119,6 +119,29 @@ const AppContent: React.FC = () => {
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
     const [networkToast, setNetworkToast] = useState<{open: boolean, message: string, severity: 'warning' | 'success'}>({open: false, message: '', severity: 'warning'});
     
+    // Offline Banner Logic
+    const OfflineBanner = () => (
+        isOffline ? (
+            <Box
+                sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bgcolor: 'warning.main',
+                    color: 'warning.contrastText',
+                    textAlign: 'center',
+                    py: 0.5,
+                    zIndex: 9999,
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold'
+                }}
+            >
+                Offline Mode - AI features unavailable
+            </Box>
+        ) : null
+    );
+
     // Capture Animation
     const [captureAnim, setCaptureAnim] = useState<string | null>(null);
     
@@ -721,6 +744,7 @@ const AppContent: React.FC = () => {
             drawerTitle={activeTab === 'ADJUST' ? 'Adjustments' : activeTab === 'MEDIA' ? 'Media' : activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}
             onDrawerScroll={setDrawerScrollY}
         >
+             <OfflineBanner />
              {/* Hidden Source Video */}
              <video 
                 ref={videoRef} 

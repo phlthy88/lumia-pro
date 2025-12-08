@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { cameraService } from '../services/CameraControlService';
 import { FallbackMode } from '../types';
+import { usePersistedState } from './usePersistedState';
 
 const RESOLUTION_PRESETS = [
     { label: '4K (UHD)', width: 3840, height: 2160 },
@@ -22,7 +23,7 @@ export interface CameraError {
 export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, maxH?: number) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [deviceList, setDeviceList] = useState<MediaDeviceInfo[]>([]);
-  const [activeDeviceId, setActiveDeviceId] = useState<string>('');
+  const [activeDeviceId, setActiveDeviceId] = usePersistedState<string>('lumia_camera_id', '');
    const [targetRes, setTargetRes] = useState<{w: number, h: number}>({ 
      w: RESOLUTION_PRESETS[1]!.width, 
      h: RESOLUTION_PRESETS[1]!.height 
