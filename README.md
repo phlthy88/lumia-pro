@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="logofull.png" alt="Lumia Pro Lens" width="120" />
+<img src="fulllogo.png" alt="Lumia Pro Lens" width="120" />
 
 # Lumia Pro Lens
 

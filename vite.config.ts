@@ -58,8 +58,7 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               'react-vendor': ['react', 'react-dom'],
-              'mui-vendor': ['@mui/material', '@mui/icons-material'],
-              'mediapipe-vendor': ['@mediapipe/tasks-vision']
+              'mui-vendor': ['@mui/material', '@mui/icons-material']
             }
           }
         }
