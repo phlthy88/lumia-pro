@@ -186,6 +186,30 @@ const AppContent: React.FC = () => {
         noseSlim: 0
     });
 
+    // Reset functions for each section
+    const resetColorWheels = useCallback(() => {
+        setColor({ ...color, lift: 0, gamma: 0, gain: 0 });
+    }, [color, setColor]);
+
+    const resetGrading = useCallback(() => {
+        setColor({ ...color, exposure: 0, temperature: 0, tint: 0, saturation: 1, contrast: 1 });
+    }, [color, setColor]);
+
+    const resetDetailOptics = useCallback(() => {
+        setColor({ ...color, distortion: 0, sharpness: 0.1, portraitLight: 0, denoise: 0, grain: 0.05, vignette: 0.2 });
+    }, [color, setColor]);
+
+    const resetTransform = useCallback(() => {
+        handleTransformChange('zoom', 1);
+        handleTransformChange('rotate', 0);
+        handleTransformChange('panX', 0);
+        handleTransformChange('panY', 0);
+    }, [handleTransformChange]);
+
+    const resetBeauty = useCallback(() => {
+        setBeauty({ enabled: false, smooth: 0.35, eyeBrighten: 0, faceThin: 0, skinTone: 0, cheekbones: 0, lipsFuller: 0, noseSlim: 0 });
+    }, []);
+
     // MIDI Control Integration
     const midi = useMidi(handleColorChange);
 
@@ -578,7 +602,7 @@ const AppContent: React.FC = () => {
                             )}
                         </ControlCard>
 
-                        <ControlCard title="Virtual Gimbal">
+                        <ControlCard title="Virtual Gimbal" onReset={resetTransform}>
                             <MuiSlider label="Zoom" value={transform.zoom} min={1.0} max={4.0} step={0.01} onChange={(v) => handleTransformChange('zoom', v)} unit="x" />
                             <MuiSlider label="Rotation" value={transform.rotate} min={-45} max={45} step={0.1} onChange={(v) => handleTransformChange('rotate', v)} unit="°" />
                             <MuiSlider label="Pan X" value={transform.panX} min={-1.0} max={1.0} step={0.01} onChange={(v) => handleTransformChange('panX', v)} />
@@ -594,13 +618,13 @@ const AppContent: React.FC = () => {
                             onChangeStrength={(v) => handleColorChange('lutStrength', v)} 
                         />
 
-                        <ControlCard title="Color Wheels">
+                        <ControlCard title="Color Wheels" onReset={resetColorWheels}>
                             <MuiSlider label="Lift" value={color.lift} min={-1.0} max={1.0} step={0.01} onChange={(v) => handleColorChange('lift', v)} />
                             <MuiSlider label="Gamma" value={color.gamma} min={-1.0} max={1.0} step={0.01} onChange={(v) => handleColorChange('gamma', v)} />
                             <MuiSlider label="Gain" value={color.gain} min={-1.0} max={1.0} step={0.01} onChange={(v) => handleColorChange('gain', v)} />
                         </ControlCard>
 
-                        <ControlCard title="Grading">
+                        <ControlCard title="Grading" onReset={resetGrading}>
                             <MuiSlider label="Exp" value={color.exposure} min={-2} max={2} step={0.1} onChange={(v)=>handleColorChange('exposure',v)} unit="EV"/>
                             <MuiSlider label="Temp" value={color.temperature} min={-1} max={1} step={0.01} onChange={(v)=>handleColorChange('temperature',v)}/>
                             <MuiSlider label="Tint" value={color.tint} min={-1} max={1} step={0.01} onChange={(v)=>handleColorChange('tint',v)}/>
@@ -608,7 +632,7 @@ const AppContent: React.FC = () => {
                             <MuiSlider label="Cont" value={color.contrast} min={0.5} max={1.5} step={0.01} onChange={(v)=>handleColorChange('contrast',v)}/>
                         </ControlCard>
 
-                         <ControlCard title="Detail & Optics" defaultExpanded={false}>
+                         <ControlCard title="Detail & Optics" defaultExpanded={false} onReset={resetDetailOptics}>
                             <MuiSlider label="Lens Distortion" value={color.distortion} min={-1.0} max={1.0} step={0.01} onChange={(v)=>handleColorChange('distortion',v)} />
                             <MuiSlider label="Sharpness" value={color.sharpness} min={0} max={1} step={0.01} onChange={(v)=>handleColorChange('sharpness',v)}/>
                             <MuiSlider label="Portrait Light" value={color.portraitLight} min={0} max={1} step={0.01} onChange={(v)=>handleColorChange('portraitLight',v)}/>
@@ -646,6 +670,7 @@ const AppContent: React.FC = () => {
                                 beauty={beauty}
                                 setBeauty={setBeauty}
                                 hasFace={vision.hasFace}
+                                onResetBeauty={resetBeauty}
                             />
                         </FeatureGate>
                     </>

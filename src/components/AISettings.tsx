@@ -17,6 +17,7 @@ interface AISettingsProps {
     beauty: BeautyConfig;
     setBeauty: React.Dispatch<React.SetStateAction<BeautyConfig>>;
     hasFace: boolean;
+    onResetBeauty?: () => void;
 }
 
 export const AISettings: React.FC<AISettingsProps> = ({
@@ -29,6 +30,7 @@ export const AISettings: React.FC<AISettingsProps> = ({
     beauty,
     setBeauty,
     hasFace,
+    onResetBeauty,
 }) => {
     return (
         <>
@@ -41,7 +43,7 @@ export const AISettings: React.FC<AISettingsProps> = ({
                 canUndo={canUndo}
             />
 
-            <ControlCard title="Beauty">
+            <ControlCard title="Beauty" onReset={onResetBeauty}>
                 <MuiSwitch 
                     label="Enable Beauty" 
                     checked={beauty.enabled} 

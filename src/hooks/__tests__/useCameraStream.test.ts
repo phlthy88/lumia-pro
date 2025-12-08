@@ -15,7 +15,12 @@ describe('useCameraStream', () => {
         const mockVideo = document.createElement('video');
         Object.defineProperty(mockVideo, 'videoWidth', { value: 1920 });
         Object.defineProperty(mockVideo, 'videoHeight', { value: 1080 });
-        Object.defineProperty(mockVideo, 'readyState', { value: 0, writable: true });
+        
+        let readyStateValue = 0;
+        Object.defineProperty(mockVideo, 'readyState', { 
+            get: () => readyStateValue,
+            configurable: true 
+        });
         mockVideo.play = vi.fn().mockResolvedValue(undefined);
 
         // Inject mock video into ref
@@ -28,7 +33,7 @@ describe('useCameraStream', () => {
 
         // Simulate loadeddata event to resolve the promise in the hook
         setTimeout(() => {
-            Object.defineProperty(mockVideo, 'readyState', { value: 4, configurable: true });
+            readyStateValue = 4;
             mockVideo.dispatchEvent(new Event('loadeddata'));
         }, 100);
 
