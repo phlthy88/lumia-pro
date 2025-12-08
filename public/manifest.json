@@ -2,7 +2,8 @@
   "name": "Lumia Pro Lens",
   "short_name": "Lumia",
   "id": "Phlthy215.LumiaProLens",
-  "start_url": "/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#000000",
@@ -35,7 +36,7 @@
   ],
   "file_handlers": [
     {
-      "action": "/",
+      "action": "./",
       "accept": {
         "video/webm": [".webm"],
         "video/mp4": [".mp4"],

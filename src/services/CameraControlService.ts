@@ -39,15 +39,37 @@ export class CameraControlService {
             this.stream.getTracks().forEach(t => t.stop());
         }
 
-        // Request highest resolution the camera supports
-        const constraints: MediaStreamConstraints = {
-            audio: false,
-            video: deviceId 
-                ? { deviceId: { exact: deviceId }, width: { ideal: 4096 }, height: { ideal: 2160 } }
-                : { facingMode: 'environment', width: { ideal: 4096 }, height: { ideal: 2160 } }
-        };
+        // Resolution ladder - try from highest to lowest
+        const resolutions = [
+            { width: 3840, height: 2160 }, // 4K
+            { width: 1920, height: 1080 }, // 1080p
+            { width: 1280, height: 720 },  // 720p
+            { width: 640, height: 480 },   // 480p fallback
+        ];
 
-        this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+        for (const res of resolutions) {
+            try {
+                const constraints: MediaStreamConstraints = {
+                    audio: false,
+                    video: deviceId 
+                        ? { deviceId: { exact: deviceId }, width: { ideal: res.width }, height: { ideal: res.height } }
+                        : { facingMode: 'environment', width: { ideal: res.width }, height: { ideal: res.height } }
+                };
+                this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                this.track = this.stream.getVideoTracks()[0] || null;
+                console.log(`[Camera] Initialized at ${res.width}x${res.height}`);
+                return this.stream;
+            } catch (e) {
+                console.warn(`[Camera] Failed at ${res.width}x${res.height}, trying lower resolution`);
+            }
+        }
+
+        // Final fallback - no resolution constraints
+        const fallbackConstraints: MediaStreamConstraints = {
+            audio: false,
+            video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' }
+        };
+        this.stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
         this.track = this.stream.getVideoTracks()[0] || null;
         return this.stream;
     }

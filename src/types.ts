@@ -98,10 +98,15 @@ export interface TransformParams {
     panY: number;
 }
 
+export interface PresetData {
+    color: Partial<ColorGradeParams>;
+    transform?: Partial<TransformParams>;
+}
+
 export interface Preset {
     id: string;
     name: string;
-    data: any;
+    data: PresetData;
     timestamp?: number;
     isFactory?: boolean;
 }

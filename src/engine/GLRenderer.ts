@@ -58,9 +58,15 @@ export class GLRenderer {
                     });
                     if (newContext) {
                         this.gl = newContext;
+                        // Reset texture tracking state
+                        this.textures.clear();
+                        this.videoTextureInitialized = false;
+                        this.lutTexture = null;
+                        this.beautyMaskTexture = null;
+                        this.beautyMask2Texture = null;
                         this.initShaders();
                         this.initBuffers();
-                        console.log('WebGL context recovered successfully');
+                        console.log('WebGL context recovered - textures will reload on next frame');
                     }
                 } catch (recoveryError) {
                     console.error('WebGL context recovery failed:', recoveryError);
@@ -671,6 +677,10 @@ export class GLRenderer {
         this.textures.set(name, texture!);
     }
 
+    private videoTextureInitialized = false;
+    private lastVideoWidth = 0;
+    private lastVideoHeight = 0;
+
     private updateVideoTexture() {
         if (!this.videoSource) return;
         const texture = this.textures.get('video');
@@ -678,7 +688,20 @@ export class GLRenderer {
 
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.videoSource);
+        
+        const w = this.videoSource.videoWidth;
+        const h = this.videoSource.videoHeight;
+        
+        // Only reallocate if dimensions changed or first time
+        if (!this.videoTextureInitialized || w !== this.lastVideoWidth || h !== this.lastVideoHeight) {
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.videoSource);
+            this.videoTextureInitialized = true;
+            this.lastVideoWidth = w;
+            this.lastVideoHeight = h;
+        } else {
+            // Fast path: update existing texture without reallocation
+            this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.videoSource);
+        }
     }
 
     private updateOverlay(drawFn: (ctx: CanvasRenderingContext2D, w: number, h: number, t: number) => boolean, time: number) {
