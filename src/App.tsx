@@ -3,8 +3,9 @@ import { Box, Typography, CircularProgress, Snackbar, Alert } from '@mui/materia
 import { PhotoLibrary } from '@mui/icons-material';
 import { ThemeProvider, useAppTheme } from './theme/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
-import { RenderMode, LutData, BeautyConfig } from './types';
+import { RenderMode, LutData, BeautyConfig, FallbackMode } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorScreen } from './components/ErrorScreen';
 
 // Hooks
 import { useCameraStream } from './hooks/useCameraStream';
@@ -29,6 +30,8 @@ import { ThemeSettings } from './components/ThemeSettings';
 import { MuiOverlaySettings } from './components/MuiOverlaySettings';
 import { MuiRecorderSettings } from './components/MuiRecorderSettings';
 import { VirtualCameraSettings } from './components/VirtualCameraSettings';
+import { FeatureGate } from './components/FeatureGate';
+import { Features } from './config/features';
 import { MuiLutControl } from './components/controls/MuiLutControl';
 import { MuiPresetSelector } from './components/controls/MuiPresetSelector';
 import { MuiSlider } from './components/controls/MuiSlider';
@@ -172,7 +175,7 @@ const AppContent: React.FC = () => {
     const {
         videoRef, deviceList, 
         activeDeviceId, setActiveDeviceId,
-        targetRes, targetFps, applyFormat, streamReady, error,
+        targetRes, targetFps, applyFormat, streamReady, error: cameraError,
         availableResolutions, availableFps
     } = useCameraStream(streamCapabilities.maxFrameRate, streamCapabilities.maxWidth, streamCapabilities.maxHeight);
 
@@ -246,7 +249,7 @@ const AppContent: React.FC = () => {
         gyroAngle: gyroRef.current
     }), [gyroRef]);
 
-    const { canvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2 } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
+    const { canvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error: glError } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
 
     // Beauty mask generation
     const maskGeneratorRef = useRef<MaskGenerator | null>(null);
@@ -388,7 +391,7 @@ const AppContent: React.FC = () => {
     // Recorder - Add null check for canvasRef
     const { 
         isRecording, isCountingDown, isPhotoCountingDown, isBursting, countdown, photoCountdown, recordingTime, config: recConfig, setConfig: setRecConfig, 
-        startRecording, stopRecording, takeScreenshot, takeBurst, mediaItems, deleteMedia, clearMedia, audioStream
+        startRecording, stopRecording, takeScreenshot, takeBurst, mediaItems, deleteMedia, clearMedia, audioStream, error: recordingError
     } = useRecorder(canvasRef as React.RefObject<HTMLCanvasElement>);
 
     // Wrapped screenshot with animation (uses burst mode if configured)
@@ -428,6 +431,21 @@ const AppContent: React.FC = () => {
              }
          }
     });
+
+    // Gatekeeper Logic (Moved to end to prevent Hook mismatch on re-render)
+    if (glError) {
+        return <ErrorScreen mode={glError} />;
+    }
+    if (cameraError) {
+        // Critical camera errors
+        if (cameraError.mode === FallbackMode.CAMERA_DENIED || cameraError.mode === FallbackMode.CAMERA_NOT_FOUND) {
+            return <ErrorScreen mode={cameraError.mode} message={cameraError.message} />;
+        }
+        // Generic camera errors fallback
+        if (cameraError.mode === FallbackMode.GENERIC_ERROR) {
+             return <ErrorScreen mode={FallbackMode.GENERIC_ERROR} message={cameraError.message} />;
+        }
+    }
 
     // --- Drawer Content Factory ---
     const getDrawerContent = () => {
@@ -569,17 +587,28 @@ const AppContent: React.FC = () => {
                             subtitle="Smart analysis & beauty"
                             scrollY={drawerScrollY}
                         />
-                        <AISettings
-                            result={ai.result}
-                            isAnalyzing={ai.isAnalyzing}
-                            onAnalyze={ai.runAnalysis}
-                            onAutoFix={handleAutoFix}
-                            onUndo={undo}
-                            canUndo={canUndo}
-                            beauty={beauty}
-                            setBeauty={setBeauty}
-                            hasFace={vision.hasFace}
-                        />
+                        <FeatureGate
+                            feature={Features.AI_SCENE_ANALYSIS}
+                            fallback={
+                                <Box p={3} textAlign="center">
+                                    <Typography color="text.secondary">
+                                        AI features require a Gemini API Key to be configured.
+                                    </Typography>
+                                </Box>
+                            }
+                        >
+                            <AISettings
+                                result={ai.result}
+                                isAnalyzing={ai.isAnalyzing}
+                                onAnalyze={ai.runAnalysis}
+                                onAutoFix={handleAutoFix}
+                                onUndo={undo}
+                                canUndo={canUndo}
+                                beauty={beauty}
+                                setBeauty={setBeauty}
+                                hasFace={vision.hasFace}
+                            />
+                        </FeatureGate>
                     </>
                 );
             case 'OVERLAYS':
@@ -730,10 +759,10 @@ const AppContent: React.FC = () => {
                         p: 4
                     }}
                 >
-                    {error ? (
+                    {cameraError ? (
                          <>
                             <Typography variant="h5" color="error" gutterBottom>Camera Initialization Failed</Typography>
-                            <Typography variant="body1" color="white" align="center">{error}</Typography>
+                            <Typography variant="body1" color="white" align="center">{cameraError.message}</Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ mt: 2 }}>Check permissions and reload.</Typography>
                          </>
                     ) : (
@@ -760,6 +789,19 @@ const AppContent: React.FC = () => {
             >
                 <Alert severity={networkToast.severity} variant="filled">{networkToast.message}</Alert>
             </Snackbar>
+
+            {/* Recording Error Toast */}
+            {recordingError && (
+                <Snackbar
+                open={!!recordingError}
+                autoHideDuration={6000}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                >
+                    <Alert severity="error" variant="filled">
+                        Recording Error: Codec not supported or media error.
+                    </Alert>
+                </Snackbar>
+            )}
         </AppLayout>
     );
 };

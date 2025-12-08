@@ -1,4 +1,6 @@
 import { ColorGradeParams, TransformParams, RenderMode, EngineStats, LutData } from '../types';
+import { GPUCapabilities, GPUTier, QualityProfile } from './GPUCapabilities';
+import { AdaptiveQuality } from './AdaptiveQuality';
 
 export class GLRenderer {
     private canvas: HTMLCanvasElement;
@@ -26,6 +28,11 @@ export class GLRenderer {
     private lastResizeTime = 0;
     private stableResizeCount = 0;
 
+    // Quality and Adaptive Logic
+    private gpuTier: GPUTier;
+    private qualityProfile: QualityProfile;
+    private adaptiveQuality: AdaptiveQuality;
+
     // Uniform locations cache
     private uniforms: Map<string, WebGLUniformLocation> = new Map();
 
@@ -40,6 +47,13 @@ export class GLRenderer {
         
         if (!gl) throw new Error("WebGL2 not supported");
         this.gl = gl;
+
+        // Initialize GPU Capabilities and Adaptive Quality
+        this.gpuTier = GPUCapabilities.getTier();
+        this.qualityProfile = GPUCapabilities.getProfile(this.gpuTier);
+        this.adaptiveQuality = new AdaptiveQuality();
+
+        console.log(`[GLRenderer] GPU Tier: ${this.gpuTier}`, this.qualityProfile);
         
         // Handle context loss (critical for low-end Chromebooks)
         canvas.addEventListener('webglcontextlost', (e) => {
@@ -214,9 +228,25 @@ export class GLRenderer {
             this.frameCount++;
             if (now - this.lastFpsUpdate >= 1000) {
                 onStats(Math.round((this.frameCount * 1000) / (now - this.lastFpsUpdate)));
+
+                // Adaptive Logic: Check frame time and adjust
+                if (this.adaptiveQuality.shouldDownscale()) {
+                    // Reduce resolution scale if struggling
+                    if (this.qualityProfile.resolutionScale > 0.5) {
+                        this.qualityProfile.resolutionScale -= 0.1;
+                        console.warn('Downscaling resolution due to performance', this.qualityProfile.resolutionScale);
+                        this.adaptiveQuality.reset();
+                    }
+                }
+
                 this.frameCount = 0;
                 this.lastFpsUpdate = now;
             }
+
+            // Track frame time
+            const delta = now - this.lastFrameTime;
+            this.adaptiveQuality.addFrameTime(delta);
+            this.lastFrameTime = now;
 
             const params = getParams();
             const time = (now - this.startTime) / 1000;
@@ -263,8 +293,12 @@ export class GLRenderer {
         const now = performance.now();
         
         // Get the actual display dimensions
-        const displayWidth = Math.floor(this.canvas.clientWidth);
-        const displayHeight = Math.floor(this.canvas.clientHeight);
+        let displayWidth = Math.floor(this.canvas.clientWidth);
+        let displayHeight = Math.floor(this.canvas.clientHeight);
+
+        // Apply Quality Profile Scale
+        displayWidth = Math.floor(displayWidth * this.qualityProfile.resolutionScale);
+        displayHeight = Math.floor(displayHeight * this.qualityProfile.resolutionScale);
 
         // Skip resize if dimensions are invalid or zero, reset counter
         if (displayWidth <= 0 || displayHeight <= 0) {
@@ -319,8 +353,8 @@ export class GLRenderer {
             }`;
 
             const fsSource = `#version 300 es
-            precision highp float;
-            precision highp sampler3D;
+            precision ${this.qualityProfile.precision} float;
+            precision ${this.qualityProfile.precision} sampler3D;
 
             in vec2 v_texCoord;
             
@@ -332,6 +366,9 @@ export class GLRenderer {
             
             uniform int u_mode;
             uniform int u_bypass;
+
+            // Quality Scale Uniform
+            uniform float u_qualityScale;
 
             uniform float u_skinSmoothStrength;
             uniform float u_eyeBrighten;
@@ -742,6 +779,9 @@ export class GLRenderer {
 
         setUniform1i('u_mode', this.getModeInt(params.mode));
         setUniform1i('u_bypass', params.bypass ? 1 : 0);
+
+        setUniform1f('u_qualityScale', this.qualityProfile.resolutionScale);
+
         setUniform1f('u_skinSmoothStrength', params.beauty?.smoothStrength ?? 0);
         setUniform1f('u_eyeBrighten', params.beauty?.eyeBrighten ?? 0);
         setUniform1f('u_faceThin', params.beauty?.faceThin ?? 0);

@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, MutableRefObject, useCallback } from 'react';
 import { GLRenderer } from '../engine/GLRenderer';
-import { ColorGradeParams, TransformParams, RenderMode, EngineStats, LutData } from '../types';
+import { ColorGradeParams, TransformParams, RenderMode, EngineStats, LutData, FallbackMode } from '../types';
 
 interface GLParams {
     color: ColorGradeParams;
@@ -33,6 +33,7 @@ export const useGLRenderer = (
   });
 
   const [contextLost, setContextLost] = useState(false);
+  const [error, setError] = useState<FallbackMode | null>(null);
   
   const drawCallbackRef = useRef(onDrawOverlay);
   useEffect(() => {
@@ -113,6 +114,8 @@ export const useGLRenderer = (
               startRenderer();
             } catch (e) {
               console.error("Failed to restore GLRenderer", e);
+              // Fallback if restore fails
+               setError(FallbackMode.GENERIC_ERROR);
             }
           }
       };
@@ -147,11 +150,20 @@ export const useGLRenderer = (
     if (contextLost) return;
 
     if (canvasRef.current && !rendererRef.current) {
+        // Initial Check for WebGL 2 Support
+        const gl = canvasRef.current.getContext('webgl2');
+        if (!gl) {
+            console.error("WebGL 2.0 not supported");
+            setError(FallbackMode.GL_UNSUPPORTED);
+            return;
+        }
+
       try {
         rendererRef.current = new GLRenderer(canvasRef.current);
         rendererRef.current.setPerformanceMode(performanceMode);
       } catch (e) {
           console.error("Failed to init GLRenderer", e);
+          setError(FallbackMode.GENERIC_ERROR);
       }
     }
 
@@ -186,5 +198,5 @@ export const useGLRenderer = (
       rendererRef.current?.setBeautyMask2(mask);
   }, []);
 
-  return { canvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2 };
+  return { canvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error };
 };

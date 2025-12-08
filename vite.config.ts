@@ -5,6 +5,19 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+
+    // CSP Header Construction
+    const csp = [
+      "default-src 'self'",
+      // Development often needs unsafe-eval for source maps/HMR
+      "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'",
+      "connect-src 'self' https://generativelanguage.googleapis.com",
+      "img-src 'self' blob: data:",
+      "worker-src 'self' blob:",
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self' data:",
+    ].join('; ');
+
     return {
       cacheDir: 'node_modules/.vite-cache',
       worker: {
@@ -16,6 +29,7 @@ export default defineConfig(({ mode }) => {
         headers: {
           'Cross-Origin-Opener-Policy': 'same-origin',
           'Cross-Origin-Embedder-Policy': 'require-corp',
+          'Content-Security-Policy': csp
         }
       },
       optimizeDeps: {
