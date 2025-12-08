@@ -101,6 +101,33 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                         boxSizing: 'border-box',
                         transition: 'padding 0.3s ease',
                     }}>
+                        {/* Floating Settings Button - Inside viewfinder */}
+                        {!isMobile && (
+                            <IconButton
+                                onClick={() => setNavOpen(!navOpen)}
+                                sx={{
+                                    position: 'absolute',
+                                    top: 24,
+                                    right: 24,
+                                    zIndex: 70,
+                                    bgcolor: navOpen ? theme.palette.primary.main : theme.palette.background.paper,
+                                    color: navOpen ? theme.palette.primary.contrastText : theme.palette.text.primary,
+                                    opacity: navOpen ? 1 : 0.6,
+                                    boxShadow: theme.shadows[4],
+                                    transition: 'opacity 0.3s ease, background-color 0.3s ease',
+                                    animation: navOpen ? `${spin} 0.6s ease-in-out` : 'none',
+                                    '&:hover': {
+                                        opacity: 1,
+                                        bgcolor: navOpen ? theme.palette.primary.dark : theme.palette.action.hover,
+                                    },
+                                    '&:active': {
+                                        transform: 'scale(0.95)',
+                                    },
+                                }}
+                            >
+                                <SettingsIcon />
+                            </IconButton>
+                        )}
                         {children}
                     </Box>
 
@@ -169,49 +196,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
                 {/* Desktop: Navigation Rail dropdown */}
                 {!isMobile && (
-                    <>
-                        {/* Floating Settings Button */}
-                        <IconButton
-                            onClick={() => setNavOpen(!navOpen)}
-                            sx={{
-                                position: 'absolute',
-                                top: 16,
-                                right: 24,
-                                zIndex: theme.zIndex.drawer + 4,
-                                bgcolor: navOpen ? theme.palette.primary.main : theme.palette.background.paper,
-                                color: navOpen ? theme.palette.primary.contrastText : theme.palette.text.primary,
-                                opacity: navOpen ? 1 : 0.6,
-                                boxShadow: theme.shadows[4],
-                                transition: 'opacity 0.3s ease, background-color 0.3s ease',
-                                animation: navOpen ? `${spin} 0.6s ease-in-out` : 'none',
-                                '&:hover': {
-                                    opacity: 1,
-                                    bgcolor: navOpen ? theme.palette.primary.dark : theme.palette.action.hover,
-                                },
-                                '&:active': {
-                                    transform: 'scale(0.95)',
-                                },
-                            }}
-                        >
-                            <SettingsIcon />
-                        </IconButton>
-
-                        {/* Navigation Rail Panel */}
-                        <Box 
-                            sx={{ 
-                                position: 'absolute', 
-                                top: 0, 
-                                right: 0, 
-                                zIndex: theme.zIndex.drawer + 3,
-                                filter: 'url(#goo)',
-                                bgcolor: 'transparent',
-                            }}
-                        >
-                            <Collapse in={navOpen} timeout={400}>
-                                <Navigation activeTab={activeTab} onTabChange={onTabChange} />
-                            </Collapse>
-                        </Box>
-                    </>
+                    <Box 
+                        sx={{ 
+                            position: 'absolute', 
+                            top: 0, 
+                            right: 0, 
+                            zIndex: theme.zIndex.drawer + 3,
+                            filter: 'url(#goo)',
+                            bgcolor: 'transparent',
+                        }}
+                    >
+                        <Collapse in={navOpen} timeout={400}>
+                            <Navigation activeTab={activeTab} onTabChange={onTabChange} />
+                        </Collapse>
+                    </Box>
                 )}
             </Box>
 
