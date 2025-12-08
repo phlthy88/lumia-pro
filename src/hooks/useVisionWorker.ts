@@ -7,8 +7,12 @@ type VisionState = {
   error?: string;
 };
 
-const DEFAULT_WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm';
-const DEFAULT_MODEL = '/models/face_landmarker.task';
+// Respect Vite base URL so assets load when the app is served from a subpath/offline bundle.
+const BASE_PATH = (import.meta.env.BASE_URL || '/').endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const DEFAULT_WASM = `${BASE_PATH}wasm`;
+const DEFAULT_MODEL = `${BASE_PATH}models/face_landmarker.task`;
 
 export const useVisionWorker = (
   videoRef: React.RefObject<HTMLVideoElement>,

@@ -3,15 +3,11 @@
   "short_name": "Lumia",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#000000",
   "theme_color": "#6750A4",
   "description": "Professional WebGL Webcam Studio & Color Grading App",
   "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
-    },
     {
       "src": "icon-192.png",
       "sizes": "192x192",

@@ -64,6 +64,7 @@ export class AIAnalysisService {
 
     // 3. AI Face Detection (Composition & Focus)
     const faceData: FaceLandmarkerResult | null = faceResult ?? null;
+    console.log('[AIAnalysisService] faceLandmarks length:', faceData?.faceLandmarks?.length ?? 0, 'sample point:', faceData?.faceLandmarks?.[0]?.[1]);
 
     // --- SCORING LOGIC ---
     

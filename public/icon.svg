@@ -1,20 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <title>Lumina Studio Pro Icon</title>
-  <rect x="0" y="0" width="64" height="64" rx="16" ry="16" fill="#12121a" />
-  <g transform="translate(32, 32)">
-    <g fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round">
-      <circle cx="0" cy="0" r="22" stroke-dasharray="10 6" transform="rotate(-30)" />
-      <path d="M-12,-18 L-4,-6 L-18,-4 M12,18 L4,6 L18,4 M-18,4 L-6,-4 L-4,-18 M18,-4 L6,4 L4,18" />
-    </g>
-    <path d="M-28,18 Q-10,0 10,-18" stroke="url(#spectral-gradient)" stroke-width="5" fill="none" stroke-linecap="round" transform="rotate(30)"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Lumia Studio Pro Icon</title>
   <defs>
-    <linearGradient id="spectral-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#f56565;stop-opacity:1" />
-      <stop offset="25%" style="stop-color:#ed8936;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#48bb78;stop-opacity:1" />
-      <stop offset="75%" style="stop-color:#4299e1;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#9f7aea;stop-opacity:1" />
-    </linearGradient>
+    <clipPath id="icon-clip">
+      <rect width="512" height="512" rx="96" ry="96" />
+    </clipPath>
   </defs>
+  <g clip-path="url(#icon-clip)">
+    <rect width="512" height="512" fill="#000" />
+    <image href="icon-512.png" width="512" height="512" preserveAspectRatio="xMidYMid slice" />
+  </g>
+  <rect width="512" height="512" rx="96" ry="96" fill="none" stroke="#ffffff22" stroke-width="8" />
 </svg>
