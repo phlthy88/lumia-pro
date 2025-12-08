@@ -108,16 +108,16 @@ export const ThemeSettings: React.FC = () => {
 
             <ControlCard title="Preview">
                  <Stack spacing={1}>
-                    <Box sx={{ p: 2, bgcolor: 'primary.container', color: 'primary.onContainer', borderRadius: 2 }}>
+                    <Box sx={{ p: 2, bgcolor: 'primary.container', color: 'primary.onContainer', borderRadius: 2, fontFamily: 'Roboto, sans-serif' }}>
                         Primary Container
                     </Box>
-                    <Box sx={{ p: 2, bgcolor: 'secondary.container', color: 'secondary.onContainer', borderRadius: 2 }}>
+                    <Box sx={{ p: 2, bgcolor: 'secondary.container', color: 'secondary.onContainer', borderRadius: 2, fontFamily: 'Roboto, sans-serif' }}>
                         Secondary Container
                     </Box>
-                    <Box sx={{ p: 2, bgcolor: 'tertiary.container', color: 'tertiary.onContainer', borderRadius: 2 }}>
+                    <Box sx={{ p: 2, bgcolor: 'tertiary.container', color: 'tertiary.onContainer', borderRadius: 2, fontFamily: 'Roboto, sans-serif' }}>
                         Tertiary Container
                     </Box>
-                    <Box sx={{ p: 2, bgcolor: 'background.surfaceContainerHigh', color: 'text.primary', borderRadius: 2 }}>
+                    <Box sx={{ p: 2, bgcolor: 'background.surfaceContainerHigh', color: 'text.primary', borderRadius: 2, fontFamily: 'Roboto, sans-serif' }}>
                         Surface Container High
                     </Box>
                  </Stack>
