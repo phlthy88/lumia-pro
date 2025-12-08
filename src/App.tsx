@@ -3,7 +3,7 @@ import { Box, Typography, CircularProgress, Snackbar, Alert } from '@mui/materia
 import { PhotoLibrary } from '@mui/icons-material';
 import { ThemeProvider, useAppTheme } from './theme/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
-import { RenderMode, LutData } from './types';
+import { RenderMode, LutData, BeautyConfig } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Hooks
@@ -89,8 +89,13 @@ const AppContent: React.FC = () => {
         savePreset, loadPreset, deletePreset, importPresets, exportPresets
     } = useColorGrading();
 
-    const [beautyEnabled, setBeautyEnabled] = useState(true);
-    const [beautySmooth, setBeautySmooth] = useState(0.35);
+    const [beauty, setBeauty] = useState<BeautyConfig>({
+        enabled: true,
+        smooth: 0.35,
+        eyeBrighten: 0,
+        faceThin: 0,
+        skinTone: 0
+    });
 
     // MIDI Control Integration
     const midi = useMidi(handleColorChange);
@@ -142,16 +147,16 @@ const AppContent: React.FC = () => {
 
     // Renderer
     // Keep a ref of the latest state to pass to renderer without re-binding
-    const latestStateRef = useRef({ color, transform, mode, bypass, beauty: { smoothStrength: beautyEnabled ? beautySmooth : 0 } });
+    const latestStateRef = useRef({ color, transform, mode, bypass, beauty: { smoothStrength: beauty.enabled ? beauty.smooth : 0 } });
     useEffect(() => {
         latestStateRef.current = { 
             color, 
             transform, 
             mode, 
             bypass,
-            beauty: { smoothStrength: beautyEnabled ? beautySmooth : 0 }
+            beauty: { smoothStrength: beauty.enabled ? beauty.smooth : 0 }
         };
-    }, [color, transform, mode, bypass, beautyEnabled, beautySmooth]);
+    }, [color, transform, mode, bypass, beauty]);
 
     const getParams = useCallback(() => ({
         ...latestStateRef.current,
@@ -166,7 +171,7 @@ const AppContent: React.FC = () => {
         if (!maskGeneratorRef.current) {
             maskGeneratorRef.current = new MaskGenerator();
         }
-        if (!beautyEnabled) {
+        if (!beauty.enabled) {
             setBeautyMask(null);
             return;
         }
@@ -178,7 +183,7 @@ const AppContent: React.FC = () => {
         }
         maskGeneratorRef.current?.update(face, video.videoWidth, video.videoHeight);
         setBeautyMask(maskGeneratorRef.current?.getCanvas() ?? null);
-    }, [vision.landmarks, beautyEnabled, setBeautyMask, videoRef]);
+    }, [vision.landmarks, beauty.enabled, setBeautyMask, videoRef]);
 
     // Virtual Camera - for use with Zoom/Meet/Teams etc.
     const virtualCamera = useVirtualCamera();
@@ -296,17 +301,17 @@ const AppContent: React.FC = () => {
 
     // Recorder - Add null check for canvasRef
     const { 
-        isRecording, isCountingDown, countdown, recordingTime, config: recConfig, setConfig: setRecConfig, 
-        startRecording, stopRecording, takeScreenshot, mediaItems, deleteMedia, clearMedia, audioStream
+        isRecording, isCountingDown, isBursting, countdown, recordingTime, config: recConfig, setConfig: setRecConfig, 
+        startRecording, stopRecording, takeScreenshot, takeBurst, mediaItems, deleteMedia, clearMedia, audioStream
     } = useRecorder(canvasRef as React.RefObject<HTMLCanvasElement>);
 
-    // Wrapped screenshot with animation
+    // Wrapped screenshot with animation (uses burst mode if configured)
     const handleSnapshot = useCallback(() => {
-        takeScreenshot((url) => {
+        takeBurst((url) => {
             setCaptureAnim(url);
             setSwooshThumbnail(url);
         });
-    }, [takeScreenshot]);
+    }, [takeBurst]);
 
     // Trigger swoosh when video recording stops
     const handleStopRecording = useCallback(() => {
@@ -484,10 +489,8 @@ const AppContent: React.FC = () => {
                             onAutoFix={handleAutoFix}
                             onUndo={undo}
                             canUndo={canUndo}
-                            beautyEnabled={beautyEnabled}
-                            setBeautyEnabled={setBeautyEnabled}
-                            beautySmooth={beautySmooth}
-                            setBeautySmooth={setBeautySmooth}
+                            beauty={beauty}
+                            setBeauty={setBeauty}
                             hasFace={vision.hasFace}
                         />
                     </>

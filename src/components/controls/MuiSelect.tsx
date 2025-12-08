@@ -6,15 +6,16 @@ interface MuiSelectProps {
     value: string | number;
     options: { value: string | number; label: string }[];
     onChange: (value: string) => void;
+    disabled?: boolean;
 }
 
-export const MuiSelect: React.FC<MuiSelectProps> = ({ label, value, options, onChange }) => {
+export const MuiSelect: React.FC<MuiSelectProps> = ({ label, value, options, onChange, disabled }) => {
     const id = useId();
     const labelId = `${id}-label`;
     
     return (
         <Box sx={{ minWidth: 120, mb: 2 }}>
-            <FormControl fullWidth size="small">
+            <FormControl fullWidth size="small" disabled={disabled}>
                 <InputLabel id={labelId}>{label}</InputLabel>
                 <Select
                     id={id}

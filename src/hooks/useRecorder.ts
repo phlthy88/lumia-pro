@@ -2,6 +2,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { RecorderConfig } from '../types';
 import { useAudioProcessor } from './useAudioProcessor';
+import { saveMedia, loadAllMedia, deleteMediaItem, clearAllMedia, StoredMediaItem } from '../services/MediaStorageService';
 
 interface MediaItem {
   id: string;
@@ -28,6 +29,7 @@ const revokeBlobUrls = (items: MediaItem[]) => {
 export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isCountingDown, setIsCountingDown] = useState(false);
+  const [isBursting, setIsBursting] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
@@ -48,10 +50,25 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       bitrate: 2500000,
       audioSource: 'none',
       countdown: 0,
-      maxFileSize: 500 * 1024 * 1024
+      maxFileSize: 500 * 1024 * 1024,
+      burstCount: 1,
+      burstDelay: 200
   });
 
   const currentSizeRef = useRef<number>(0);
+
+  // Load persisted media on mount
+  useEffect(() => {
+    loadAllMedia().then(stored => {
+      const items = stored.map(s => ({
+        id: s.id,
+        url: URL.createObjectURL(s.blob),
+        type: s.type,
+        timestamp: s.timestamp
+      }));
+      setMediaItems(items);
+    }).catch(console.error);
+  }, []);
 
   useEffect(() => {
     mediaItemsRef.current = mediaItems;
@@ -190,13 +207,11 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         // Use actual mimeType from recorder
         const blob = new Blob(chunksRef.current, { type: actualMimeTypeRef.current });
         const url = URL.createObjectURL(blob);
+        const id = Date.now().toString();
+        const item = { id, url, type: 'video' as const, timestamp: Date.now() };
         
-        setMediaItems(prev => [...prev, {
-          id: Date.now().toString(),
-          url,
-          type: 'video',
-          timestamp: Date.now()
-        }]);
+        setMediaItems(prev => [...prev, item]);
+        saveMedia({ id, blob, type: 'video', timestamp: item.timestamp }).catch(console.error);
         
         chunksRef.current = [];
         currentSizeRef.current = 0;
@@ -274,16 +289,31 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     canvas.toBlob((blob) => {
       if (blob) {
         const url = URL.createObjectURL(blob);
-        setMediaItems(prev => [...prev, {
-          id: Date.now().toString(),
-          url,
-          type: 'image',
-          timestamp: Date.now()
-        }]);
+        const id = Date.now().toString();
+        const item = { id, url, type: 'image' as const, timestamp: Date.now() };
+        setMediaItems(prev => [...prev, item]);
+        saveMedia({ id, blob, type: 'image', timestamp: item.timestamp }).catch(console.error);
         onCapture?.(url);
       }
     }, 'image/png', 1.0);
   }, [canvasRef]);
+
+  const takeBurst = useCallback((onCapture?: (url: string) => void) => {
+    if (config.burstCount <= 1) {
+      takeScreenshot(onCapture);
+      return;
+    }
+    setIsBursting(true);
+    let taken = 0;
+    const interval = setInterval(() => {
+      takeScreenshot(taken === 0 ? onCapture : undefined);
+      taken++;
+      if (taken >= config.burstCount) {
+        clearInterval(interval);
+        setIsBursting(false);
+      }
+    }, config.burstDelay);
+  }, [config.burstCount, config.burstDelay, takeScreenshot]);
 
   const deleteMedia = useCallback((id: string) => {
     setMediaItems(prev => {
@@ -291,6 +321,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       revokeBlobUrl(item);
       return prev.filter(i => i.id !== id);
     });
+    deleteMediaItem(id).catch(console.error);
   }, []);
 
   const clearMedia = useCallback(() => {
@@ -298,6 +329,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       revokeBlobUrls(prev);
       return [];
     });
+    clearAllMedia().catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -318,6 +350,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   return {
     isRecording,
     isCountingDown,
+    isBursting,
     countdown,
     recordingTime,
     config,
@@ -325,6 +358,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     startRecording: startWithCountdown,
     stopRecording,
     takeScreenshot,
+    takeBurst,
     mediaItems,
     deleteMedia,
     clearMedia,

@@ -45,37 +45,68 @@ export const MuiRecorderSettings: React.FC<RecorderSettingsProps> = ({ config, s
         { value: 10, label: "10 Seconds" },
     ];
 
+    const burstOptions = [
+        { value: 1, label: "Single Shot" },
+        { value: 3, label: "3 Photos" },
+        { value: 5, label: "5 Photos" },
+        { value: 10, label: "10 Photos" },
+    ];
+
+    const burstDelayOptions = [
+        { value: 100, label: "100ms (Fast)" },
+        { value: 200, label: "200ms" },
+        { value: 500, label: "500ms" },
+        { value: 1000, label: "1 Second" },
+    ];
+
     return (
-        <ControlCard title="Recording Setup">
-            <MuiSelect 
-                label="Format"
-                value={config.mimeType}
-                options={formatOptions}
-                onChange={(val) => setConfig(p => ({ ...p, mimeType: val }))}
-            />
-            <MuiSelect 
-                label="Bitrate"
-                value={config.bitrate}
-                options={bitrateOptions}
-                onChange={(val) => setConfig(p => ({ ...p, bitrate: Number(val) }))}
-            />
-            <MuiSelect 
-                label="Audio Source"
-                value={config.audioSource}
-                options={audioOptions}
-                onChange={(val) => setConfig(p => ({ ...p, audioSource: val }))}
-            />
-            {config.audioSource !== 'none' && (
-                <Box sx={{ px: 1, py: 0.5 }}>
-                    <AudioMeter audioStream={audioStream} variant="horizontal" />
-                </Box>
-            )}
-            <MuiSelect 
-                label="Countdown"
-                value={config.countdown}
-                options={countdownOptions}
-                onChange={(val) => setConfig(p => ({ ...p, countdown: Number(val) }))}
-            />
-        </ControlCard>
+        <>
+            <ControlCard title="Recording Setup">
+                <MuiSelect 
+                    label="Format"
+                    value={config.mimeType}
+                    options={formatOptions}
+                    onChange={(val) => setConfig(p => ({ ...p, mimeType: val }))}
+                />
+                <MuiSelect 
+                    label="Bitrate"
+                    value={config.bitrate}
+                    options={bitrateOptions}
+                    onChange={(val) => setConfig(p => ({ ...p, bitrate: Number(val) }))}
+                />
+                <MuiSelect 
+                    label="Audio Source"
+                    value={config.audioSource}
+                    options={audioOptions}
+                    onChange={(val) => setConfig(p => ({ ...p, audioSource: val }))}
+                />
+                {config.audioSource !== 'none' && (
+                    <Box sx={{ px: 1, py: 0.5 }}>
+                        <AudioMeter audioStream={audioStream} variant="horizontal" />
+                    </Box>
+                )}
+                <MuiSelect 
+                    label="Countdown"
+                    value={config.countdown}
+                    options={countdownOptions}
+                    onChange={(val) => setConfig(p => ({ ...p, countdown: Number(val) }))}
+                />
+            </ControlCard>
+            <ControlCard title="Photo Burst">
+                <MuiSelect 
+                    label="Burst Count"
+                    value={config.burstCount}
+                    options={burstOptions}
+                    onChange={(val) => setConfig(p => ({ ...p, burstCount: Number(val) }))}
+                />
+                <MuiSelect 
+                    label="Burst Delay"
+                    value={config.burstDelay}
+                    options={burstDelayOptions}
+                    onChange={(val) => setConfig(p => ({ ...p, burstDelay: Number(val) }))}
+                    disabled={config.burstCount <= 1}
+                />
+            </ControlCard>
+        </>
     );
 };

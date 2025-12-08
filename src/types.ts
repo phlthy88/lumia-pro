@@ -51,6 +51,16 @@ export interface RecorderConfig {
     audioSource: string;
     countdown: number;
     maxFileSize?: number;
+    burstCount: number;
+    burstDelay: number;
+}
+
+export interface BeautyConfig {
+    enabled: boolean;
+    smooth: number;
+    eyeBrighten: number;
+    faceThin: number;
+    skinTone: number;
 }
 
 export interface ColorGradeParams {
