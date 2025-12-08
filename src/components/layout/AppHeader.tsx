@@ -33,7 +33,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick, navOpen, onNa
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
                     <LogoIcon sx={{ color: theme.palette.primary.main, transition: 'color 0.3s ease' }} />
                     <Typography variant="h6" component="div" sx={{ fontWeight: 500 }}>
-                        Lumina Studio
+                        Lumia Studio Pro
                     </Typography>
                 </Box>
 
