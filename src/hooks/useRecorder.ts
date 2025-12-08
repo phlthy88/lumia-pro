@@ -422,6 +422,14 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     };
   }, [cleanupTimer, cleanupStreams, cleanupAudio]);
 
+  const cancelCountdown = useCallback(() => {
+    setIsCountingDown(false);
+    setIsPhotoCountingDown(false);
+    setIsBursting(false);
+    setCountdown(0);
+    setPhotoCountdown(0);
+  }, []);
+
   return {
     isRecording,
     isCountingDown,
@@ -436,6 +444,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     stopRecording,
     takeScreenshot,
     takeBurst,
+    cancelCountdown,
     mediaItems,
     deleteMedia,
     clearMedia,

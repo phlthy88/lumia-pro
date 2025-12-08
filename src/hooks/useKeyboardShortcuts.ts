@@ -8,6 +8,7 @@ interface ShortcutActions {
   onFullscreen: () => void;
   onCycleMode: () => void;
   onCycleDevice: () => void;
+  onCancelCountdown?: () => void;
 }
 
 export const useKeyboardShortcuts = ({
@@ -15,11 +16,18 @@ export const useKeyboardShortcuts = ({
   onToggleBypass,
   onFullscreen,
   onCycleMode,
-  onCycleDevice
+  onCycleDevice,
+  onCancelCountdown
 }: ShortcutActions) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if input is focused
+      // Escape and Q always work for canceling countdowns
+      if (e.key === 'Escape' || e.key.toLowerCase() === 'q') {
+        onCancelCountdown?.();
+        return;
+      }
+
+      // Ignore other keys if input is focused
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         return;
       }
@@ -46,5 +54,5 @@ export const useKeyboardShortcuts = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onReset, onToggleBypass, onFullscreen, onCycleMode, onCycleDevice]);
+  }, [onReset, onToggleBypass, onFullscreen, onCycleMode, onCycleDevice, onCancelCountdown]);
 };

@@ -454,7 +454,7 @@ const AppContent: React.FC = () => {
     // Recorder - Add null check for canvasRef
     const { 
         isRecording, isCountingDown, isPhotoCountingDown, isBursting, countdown, photoCountdown, recordingTime, config: recConfig, setConfig: setRecConfig, 
-        startRecording, stopRecording, takeScreenshot, takeBurst, mediaItems, deleteMedia, clearMedia, audioStream, error: recordingError
+        startRecording, stopRecording, takeScreenshot, takeBurst, cancelCountdown, mediaItems, deleteMedia, clearMedia, audioStream, error: recordingError
     } = useRecorder(canvasRef as React.RefObject<HTMLCanvasElement>);
 
     // Wrapped screenshot with animation (uses burst mode if configured)
@@ -492,7 +492,8 @@ const AppContent: React.FC = () => {
                  const nextIdx = (idx + 1) % deviceList.length;
                  setActiveDeviceId(deviceList[nextIdx]?.deviceId || '');
              }
-         }
+         },
+         onCancelCountdown: cancelCountdown
     });
 
     // Gatekeeper Logic (Moved to end to prevent Hook mismatch on re-render)
