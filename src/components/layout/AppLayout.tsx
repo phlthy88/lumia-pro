@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, useTheme, useMediaQuery, Slide, Collapse, keyframes, IconButton } from '@mui/material';
+import { Box, useTheme, useMediaQuery, Slide, Grow, keyframes, IconButton } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import { Navigation } from './NavigationRail';
 import { ControlDrawer } from './ControlDrawer';
@@ -207,9 +207,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                             bgcolor: 'transparent',
                         }}
                     >
-                        <Collapse in={navOpen} timeout={400}>
-                            <Navigation activeTab={activeTab} onTabChange={onTabChange} />
-                        </Collapse>
+                        <Grow 
+                            in={navOpen} 
+                            timeout={{ enter: 350, exit: 250 }}
+                            style={{ transformOrigin: 'top right' }}
+                            easing={{ enter: m3EmphasizedDecelerate, exit: 'cubic-bezier(0.3, 0, 0.8, 0.15)' }}
+                        >
+                            <Box>
+                                <Navigation activeTab={activeTab} onTabChange={onTabChange} />
+                            </Box>
+                        </Grow>
                     </Box>
                 )}
             </Box>
