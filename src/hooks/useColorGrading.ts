@@ -144,7 +144,7 @@ export const useColorGrading = () => {
     const p = presets.find(pre => pre.id === id);
     if (p) {
       setColor({ ...DEFAULT_COLOR, ...p.data.color });
-      setTransform(p.data.transform);
+      setTransform({ ...DEFAULT_TRANSFORM, ...(p.data.transform ?? {}) });
     }
   }, [presets, setColor]);
 

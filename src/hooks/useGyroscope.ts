@@ -1,11 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 
+type Quaternion = [number, number, number, number] | Float32Array | Float64Array;
+
+interface RelativeOrientationSensorType {
+  quaternion?: Quaternion;
+  addEventListener: (type: 'reading', listener: () => void) => void;
+  start: () => void;
+  stop: () => void;
+}
+
+declare const RelativeOrientationSensor: {
+  new (options?: { frequency?: number }): RelativeOrientationSensorType;
+};
+
 export const useGyroscope = (enableState: boolean = true) => {
   const [gyroAngle, setGyroAngle] = useState(0);
   const gyroRef = useRef(0);
 
   useEffect(() => {
-    let sensor: RelativeOrientationSensor | null = null;
+    let sensor: RelativeOrientationSensorType | null = null;
 
     const updateAngle = (angle: number) => {
       gyroRef.current = angle;
@@ -19,9 +32,13 @@ export const useGyroscope = (enableState: boolean = true) => {
         sensor.addEventListener('reading', () => {
           if (sensor?.quaternion) {
             // Convert quaternion to gamma-like tilt (-90 to 90)
-            const [, , z, w] = sensor.quaternion;
-            const gamma = Math.asin(2 * (w * z)) * (180 / Math.PI);
-            updateAngle(gamma);
+            const values = Array.from(sensor.quaternion);
+            if (values.length >= 4 && values[2] !== undefined && values[3] !== undefined) {
+              const z = values[2];
+              const w = values[3];
+              const gamma = Math.asin(2 * (w * z)) * (180 / Math.PI);
+              updateAngle(gamma);
+            }
           }
         });
         sensor.start();
