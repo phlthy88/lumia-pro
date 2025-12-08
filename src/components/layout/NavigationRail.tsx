@@ -69,20 +69,22 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
     return (
         <Box
             sx={{
-                width: 80,
-                height: 'calc(100dvh - 80px - 16px)',
-                mt: 1,
-                bgcolor: theme.palette.background.default,
-                borderLeft: `1px solid ${theme.palette.divider}`,
-                borderRadius: '0 0 0 0.35rem',
+                width: 72,
+                position: 'absolute',
+                top: '50%',
+                right: 16,
+                transform: 'translateY(-50%)',
+                bgcolor: theme.palette.background.paper,
+                borderRadius: '20px',
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow: theme.shadows[8],
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                py: 1,
+                py: 1.5,
             }}
         >
-            <List sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }} role="tablist">
+            <List sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }} role="tablist">
                 {NAV_ITEMS.map((item) => {
                     const isActive = activeTab === item.id;
                     return (
@@ -94,11 +96,11 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
                                     aria-selected={isActive}
                                     aria-label={item.label}
                                     sx={{
-                                        minHeight: 56,
-                                        width: 56,
+                                        minHeight: 48,
+                                        width: 48,
                                         justifyContent: 'center',
                                         flexDirection: 'column',
-                                        borderRadius: '16px',
+                                        borderRadius: '12px',
                                         backgroundColor: isActive ? theme.palette.secondary.container : 'transparent',
                                         color: isActive ? theme.palette.secondary.onContainer : theme.palette.text.secondary,
                                         transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -119,7 +121,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
                                         primary={item.label} 
                                         primaryTypographyProps={{ 
                                             variant: 'caption', 
-                                            sx: { mt: 0.5, fontWeight: isActive ? 700 : 400 } 
+                                            sx: { mt: 0.25, fontSize: '0.65rem', fontWeight: isActive ? 700 : 400 } 
                                         }} 
                                     />
                                 </ListItemButton>
