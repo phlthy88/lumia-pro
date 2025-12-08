@@ -311,7 +311,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
           onContainer: hexFromArgb(scheme.onErrorContainer),
         },
         background: {
-          default: hexFromArgb(surfaceTokens.surface),
+          default: isDark 
+            ? hexFromArgb(Hct.from(Hct.fromInt(tertiaryMain).hue, Hct.fromInt(tertiaryMain).chroma * 0.3, 10).toInt())
+            : hexFromArgb(tertiaryMain),
           paper: hexFromArgb(surfaceTokens.surfaceContainerLow),
           // Extended M3 surface tokens
           surfaceDim: hexFromArgb(surfaceTokens.surfaceDim),

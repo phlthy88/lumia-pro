@@ -61,7 +61,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     };
 
     return (
-        <Box sx={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', flexDirection: 'column', bgcolor: 'background.default' }}>
             
             {/* Accessibility: Skip to Content */}
             <Box
