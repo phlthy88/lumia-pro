@@ -7,6 +7,12 @@ export interface PerformanceMetrics {
     isLowPerformance: boolean;
 }
 
+interface PerformanceMemory {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+}
+
 export const usePerformanceProfile = () => {
     const [metrics, setMetrics] = useState<PerformanceMetrics>({
         fps: 60,
@@ -35,8 +41,7 @@ export const usePerformanceProfile = () => {
                 // Memory Check (Chrome only, guarded)
                 let memoryMB = 0;
                 if ('memory' in performance) {
-                    // @ts-ignore
-                    const mem = performance.memory;
+                    const mem = performance.memory as PerformanceMemory;
                     if (mem && mem.usedJSHeapSize) {
                         memoryMB = Math.round(mem.usedJSHeapSize / 1024 / 1024);
                     }

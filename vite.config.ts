@@ -9,13 +9,13 @@ export default defineConfig(({ mode }) => {
     // CSP Header Construction
     const csp = [
       "default-src 'self'",
-      // Development often needs unsafe-eval for source maps/HMR
-      "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'",
-      "connect-src 'self' https://generativelanguage.googleapis.com",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval'",
+      "connect-src 'self' ws://localhost:* https://generativelanguage.googleapis.com",
       "img-src 'self' blob: data:",
       "worker-src 'self' blob:",
-      "style-src 'self' 'unsafe-inline'",
-      "font-src 'self' data:",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
     ].join('; ');
 
     return {
@@ -46,24 +46,30 @@ export default defineConfig(({ mode }) => {
           registerType: 'autoUpdate',
           workbox: {
             globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+            // Exclude large LUT files from precache
+            globIgnores: ['**/*.cube'],
             runtimeCaching: [
               {
                 urlPattern: /\.(?:task|wasm)$/,
                 handler: 'CacheFirst',
                 options: {
                   cacheName: 'ai-models',
-                  expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 }
+                  expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 7 }
                 }
               },
               {
+                // LUTs: NetworkFirst with small cache - load on demand
                 urlPattern: /\.cube$/,
-                handler: 'CacheFirst',
+                handler: 'NetworkFirst',
                 options: {
                   cacheName: 'lut-files',
-                  expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 }
+                  expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 7 },
+                  networkTimeoutSeconds: 3
                 }
               }
-            ]
+            ],
+            // Limit total cache size
+            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5MB max per file
           },
           includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png'],
           manifest: false

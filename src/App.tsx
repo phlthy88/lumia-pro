@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Box, Typography, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { PhotoLibrary } from '@mui/icons-material';
 import { ThemeProvider, useAppTheme } from './theme/ThemeContext';
@@ -284,90 +284,108 @@ const AppContent: React.FC = () => {
         }
     }, [streamReady, virtualCamera]);
 
-    // LUTs
-    const [availableLuts, setAvailableLuts] = useState<LutData[]>([]);
+    // LUTs - lazy loading to reduce memory
+    interface LutEntry { name: string; url: string | null; data: LutData | null; }
+    const [lutEntries, setLutEntries] = useState<LutEntry[]>([]);
     const [activeLutIndex, setActiveLutIndex] = useState(0);
+    const [activeLutData, setActiveLutData] = useState<LutData | null>(null);
+    const lutCacheRef = useRef<Map<number, LutData>>(new Map());
+    const MAX_CACHED_LUTS = 5; // Only keep 5 LUTs in memory
 
-    // Initial LUT Loading
+    // Available LUTs for UI (just names, not data)
+    const availableLuts = useMemo(() => 
+        lutEntries.map(e => e.data || { name: e.name, size: 0, data: new Float32Array(0) }),
+        [lutEntries]
+    );
+
+    // Initial LUT catalog (metadata only, no data loaded)
     useEffect(() => {
-        const loadLuts = async () => {
-             const basicLuts = [
-                 LutService.generateIdentity(),
-                 LutService.generateTealOrange()
-             ];
-             setAvailableLuts(basicLuts);
-
-              // Load external Film LUTs non-blocking with error handling
-              const lutPromises = [
-                  LutService.loadFromUrl('/luts/bw/kodak_tri-x_400.cube', 'Kodak Tri-X 400 (B&W)'),
-                  LutService.loadFromUrl('/luts/bw/ilford_hp_5_plus_400.cube', 'Ilford HP5+ 400 (B&W)'),
-                  LutService.loadFromUrl('/luts/kodak_ektachrome_100_vs.cube', 'Kodak Ektachrome 100'),
-                  LutService.loadFromUrl('/luts/kodak_portra_160_vc.cube', 'Kodak Portra 160'),
-                  LutService.loadFromUrl('/luts/fuji_superia_200.cube', 'Fuji Superia 200'),
-                  LutService.loadFromUrl('/luts/polaroid_690.cube', 'Polaroid 690'),
-                  
-                  // New Film Emulation LUTs
-                  LutService.loadFromUrl('/luts/film_emulation/Kodak Vision 2383.cube', 'Kodak Vision 2383'),
-                  LutService.loadFromUrl('/luts/film_emulation/Kodak Professional Portra 400.cube', 'Kodak Portra 400'),
-                  LutService.loadFromUrl('/luts/film_emulation/Fuji Provia 100F.cube', 'Fuji Provia 100F'),
-                  LutService.loadFromUrl('/luts/film_emulation/Fuji Superia Xtra 400.cube', 'Fuji Superia Xtra 400'),
-                  LutService.loadFromUrl('/luts/film_emulation/Polaroid 600.cube', 'Polaroid 600'),
-                  LutService.loadFromUrl('/luts/film_emulation/Agfa Portrait XPS 160.cube', 'Agfa Portrait XPS 160'),
-                  
-                  // Log Conversion LUTs
-                  LutService.loadFromUrl('/luts/log_conversion/Alexa LogC to Rec709.cube', 'Alexa LogC → Rec709'),
-                  LutService.loadFromUrl('/luts/log_conversion/Sony SLog3.cube', 'Sony SLog3 → Rec709'),
-                  LutService.loadFromUrl('/luts/log_conversion/Canon Log3.cube', 'Canon Log3 → Rec709'),
-                  LutService.loadFromUrl('/luts/log_conversion/RedLogFilm to Rec709.cube', 'Red LogFilm → Rec709'),
-                  LutService.loadFromUrl('/luts/log_conversion/Panasonic VLog to V709.cube', 'Panasonic VLog → V709'),
-                  LutService.loadFromUrl('/luts/log_conversion/GoPro Protune to Rec709.cube', 'GoPro Protune → Rec709'),
-                  
-                  // Creative Look LUTs
-                  LutService.loadFromUrl('/luts/creative_looks/Teal and Orange.cube', 'Teal & Orange'),
-                  LutService.loadFromUrl('/luts/creative_looks/Brooklyn.cube', 'Brooklyn'),
-                  LutService.loadFromUrl('/luts/creative_looks/Stranger Things.cube', 'Stranger Things'),
-                  LutService.loadFromUrl('/luts/creative_looks/Matrix V1.cube', 'Matrix'),
-                  LutService.loadFromUrl('/luts/creative_looks/70s.cube', '70s Vintage'),
-                  LutService.loadFromUrl('/luts/creative_looks/Her.cube', 'Her'),
-                  LutService.loadFromUrl('/luts/creative_looks/Seven.cube', 'Seven'),
-                  LutService.loadFromUrl('/luts/creative_looks/Thriller.cube', 'Thriller'),
-                  LutService.loadFromUrl('/luts/creative_looks/Fashion.cube', 'Fashion'),
-                  LutService.loadFromUrl('/luts/creative_looks/Punch.cube', 'Punch'),
-                  LutService.loadFromUrl('/luts/creative_looks/Celadon.cube', 'Celadon'),
-                  LutService.loadFromUrl('/luts/creative_looks/3Strip.cube', '3-Strip Technicolor'),
-                  LutService.loadFromUrl('/luts/creative_looks/Amelie.cube', 'Amelie'),
-              ];
-              
-              const results = await Promise.allSettled(lutPromises);
-              const successfulLuts = results
-                .filter((r): r is PromiseFulfilledResult<LutData> => r.status === 'fulfilled')
-                .map(r => r.value);
-              
-              const failedCount = results.filter(r => r.status === 'rejected').length;
-              if (failedCount > 0) {
-                setNetworkToast({
-                  open: true, 
-                  message: `${failedCount} LUT${failedCount > 1 ? 's' : ''} failed to load`, 
-                  severity: 'warning'
-                });
-              }
-              
-              results.forEach((r, i) => {
-                if (r.status === 'rejected') {
-                  console.error(`Failed to load LUT ${i}:`, r.reason);
-                }
-              });
-             
-             setAvailableLuts(prev => [...prev, ...successfulLuts]);
-        };
-        loadLuts();
+        const catalog: LutEntry[] = [
+            { name: 'Standard (Rec.709)', url: null, data: LutService.generateIdentity() },
+            { name: 'Blockbuster (Teal/Orange)', url: null, data: LutService.generateTealOrange() },
+            // Film Emulation
+            { name: 'Kodak Tri-X 400 (B&W)', url: '/luts/bw/kodak_tri-x_400.cube', data: null },
+            { name: 'Ilford HP5+ 400 (B&W)', url: '/luts/bw/ilford_hp_5_plus_400.cube', data: null },
+            { name: 'Kodak Ektachrome 100', url: '/luts/kodak_ektachrome_100_vs.cube', data: null },
+            { name: 'Kodak Portra 160', url: '/luts/kodak_portra_160_vc.cube', data: null },
+            { name: 'Fuji Superia 200', url: '/luts/fuji_superia_200.cube', data: null },
+            { name: 'Polaroid 690', url: '/luts/polaroid_690.cube', data: null },
+            { name: 'Kodak Vision 2383', url: '/luts/film_emulation/Kodak Vision 2383.cube', data: null },
+            { name: 'Kodak Portra 400', url: '/luts/film_emulation/Kodak Professional Portra 400.cube', data: null },
+            { name: 'Fuji Provia 100F', url: '/luts/film_emulation/Fuji Provia 100F.cube', data: null },
+            { name: 'Fuji Superia Xtra 400', url: '/luts/film_emulation/Fuji Superia Xtra 400.cube', data: null },
+            { name: 'Polaroid 600', url: '/luts/film_emulation/Polaroid 600.cube', data: null },
+            { name: 'Agfa Portrait XPS 160', url: '/luts/film_emulation/Agfa Portrait XPS 160.cube', data: null },
+            // Log Conversion
+            { name: 'Alexa LogC → Rec709', url: '/luts/log_conversion/Alexa LogC to Rec709.cube', data: null },
+            { name: 'Sony SLog3 → Rec709', url: '/luts/log_conversion/Sony SLog3.cube', data: null },
+            { name: 'Canon Log3 → Rec709', url: '/luts/log_conversion/Canon Log3.cube', data: null },
+            { name: 'Red LogFilm → Rec709', url: '/luts/log_conversion/RedLogFilm to Rec709.cube', data: null },
+            { name: 'Panasonic VLog → V709', url: '/luts/log_conversion/Panasonic VLog to V709.cube', data: null },
+            { name: 'GoPro Protune → Rec709', url: '/luts/log_conversion/GoPro Protune to Rec709.cube', data: null },
+            // Creative Looks
+            { name: 'Teal & Orange', url: '/luts/creative_looks/Teal and Orange.cube', data: null },
+            { name: 'Brooklyn', url: '/luts/creative_looks/Brooklyn.cube', data: null },
+            { name: 'Stranger Things', url: '/luts/creative_looks/Stranger Things.cube', data: null },
+            { name: 'Matrix', url: '/luts/creative_looks/Matrix V1.cube', data: null },
+            { name: '70s Vintage', url: '/luts/creative_looks/70s.cube', data: null },
+            { name: 'Her', url: '/luts/creative_looks/Her.cube', data: null },
+            { name: 'Seven', url: '/luts/creative_looks/Seven.cube', data: null },
+            { name: 'Thriller', url: '/luts/creative_looks/Thriller.cube', data: null },
+            { name: 'Fashion', url: '/luts/creative_looks/Fashion.cube', data: null },
+            { name: 'Punch', url: '/luts/creative_looks/Punch.cube', data: null },
+            { name: 'Celadon', url: '/luts/creative_looks/Celadon.cube', data: null },
+            { name: '3-Strip Technicolor', url: '/luts/creative_looks/3Strip.cube', data: null },
+            { name: 'Amelie', url: '/luts/creative_looks/Amelie.cube', data: null },
+        ];
+        setLutEntries(catalog);
+        // Set initial LUT data
+        setActiveLutData(catalog[0]!.data);
     }, []);
 
+    // Load LUT on demand when selection changes
     useEffect(() => {
-        if (availableLuts.length > 0 && availableLuts[activeLutIndex]) {
-            setLut(availableLuts[activeLutIndex]);
+        const entry = lutEntries[activeLutIndex];
+        if (!entry) return;
+
+        // Check cache first
+        const cached = lutCacheRef.current.get(activeLutIndex);
+        if (cached) {
+            setActiveLutData(cached);
+            return;
         }
-    }, [activeLutIndex, availableLuts, setLut, streamReady]);
+
+        // Already loaded inline (generated LUTs)
+        if (entry.data) {
+            lutCacheRef.current.set(activeLutIndex, entry.data);
+            setActiveLutData(entry.data);
+            return;
+        }
+
+        // Load from URL
+        if (entry.url) {
+            LutService.loadFromUrl(entry.url, entry.name)
+                .then(lut => {
+                    // Evict oldest if cache full
+                    if (lutCacheRef.current.size >= MAX_CACHED_LUTS) {
+                        const oldest = lutCacheRef.current.keys().next().value;
+                        if (oldest !== undefined) lutCacheRef.current.delete(oldest);
+                    }
+                    lutCacheRef.current.set(activeLutIndex, lut);
+                    setActiveLutData(lut);
+                })
+                .catch(err => {
+                    console.error(`Failed to load LUT: ${entry.name}`, err);
+                    setNetworkToast({ open: true, message: `Failed to load ${entry.name}`, severity: 'warning' });
+                });
+        }
+    }, [activeLutIndex, lutEntries]);
+
+    useEffect(() => {
+        if (activeLutData) {
+            setLut(activeLutData);
+        }
+    }, [activeLutData, setLut]);
 
     const handleLutUpload = (file: File) => {
         const reader = new FileReader();
@@ -375,11 +393,10 @@ const AppContent: React.FC = () => {
             if (e.target?.result) {
                 try {
                     const newLut = LutService.parseCube(e.target.result as string, file.name.replace('.cube', ''));
-                    setAvailableLuts(prev => {
-                        const updated = [...prev, newLut];
-                        setTimeout(() => setActiveLutIndex(updated.length - 1), 0);
-                        return updated;
-                    });
+                    const newIndex = lutEntries.length;
+                    setLutEntries(prev => [...prev, { name: newLut.name, url: null, data: newLut }]);
+                    lutCacheRef.current.set(newIndex, newLut);
+                    setTimeout(() => setActiveLutIndex(newIndex), 0);
                 } catch (err) {
                     alert("Failed to parse LUT file.");
                 }
