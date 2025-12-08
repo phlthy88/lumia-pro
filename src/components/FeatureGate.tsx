@@ -1,8 +1,8 @@
 import React from 'react';
-import { isFeatureEnabled } from '../config/features';
+import { isFeatureEnabled, type Feature } from '../config/features';
 
 interface FeatureGateProps {
-    feature: string;
+    feature: Feature;
     children: React.ReactNode;
     fallback?: React.ReactNode;
 }

@@ -26,6 +26,9 @@ const revokeBlobUrls = (items: MediaItem[]) => {
   items.forEach(revokeBlobUrl);
 };
 
+// Limit stored media to prevent memory bloat
+const MAX_MEDIA_ITEMS = 50;
+
 export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isCountingDown, setIsCountingDown] = useState(false);
@@ -61,16 +64,19 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
 
   const currentSizeRef = useRef<number>(0);
 
-  // Load persisted media on mount
+  // Load persisted media on mount (limited to MAX_MEDIA_ITEMS)
   useEffect(() => {
     loadAllMedia().then(stored => {
-      const items = stored.map(s => ({
+      // Sort by timestamp descending, take most recent MAX_MEDIA_ITEMS
+      const sorted = stored.sort((a, b) => b.timestamp - a.timestamp).slice(0, MAX_MEDIA_ITEMS);
+      const items = sorted.map(s => ({
         id: s.id,
         url: URL.createObjectURL(s.blob),
         type: s.type,
         timestamp: s.timestamp
       }));
-      setMediaItems(items);
+      // Reverse to show oldest first in array (newest at end)
+      setMediaItems(items.reverse());
     }).catch(console.error);
   }, []);
 
@@ -221,7 +227,17 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         const id = Date.now().toString();
         const item = { id, url, type: 'video' as const, timestamp: Date.now() };
         
-        setMediaItems(prev => [...prev, item]);
+        setMediaItems(prev => {
+          if (prev.length >= MAX_MEDIA_ITEMS) {
+            const oldest = prev[0];
+            if (oldest) {
+              revokeBlobUrl(oldest);
+              deleteMediaItem(oldest.id).catch(console.error);
+            }
+            return [...prev.slice(1), item];
+          }
+          return [...prev, item];
+        });
         saveMedia({ id, blob, type: 'video', timestamp: item.timestamp }).catch(console.error);
         
         chunksRef.current = [];
@@ -303,7 +319,17 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         const url = URL.createObjectURL(blob);
         const id = Date.now().toString();
         const item = { id, url, type: 'image' as const, timestamp: Date.now() };
-        setMediaItems(prev => [...prev, item]);
+        setMediaItems(prev => {
+          if (prev.length >= MAX_MEDIA_ITEMS) {
+            const oldest = prev[0];
+            if (oldest) {
+              revokeBlobUrl(oldest);
+              deleteMediaItem(oldest.id).catch(console.error);
+            }
+            return [...prev.slice(1), item];
+          }
+          return [...prev, item];
+        });
         saveMedia({ id, blob, type: 'image', timestamp: item.timestamp }).catch(console.error);
         onCapture?.(url);
       }

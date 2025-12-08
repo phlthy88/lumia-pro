@@ -83,7 +83,6 @@ if (typeof HTMLCanvasElement !== 'undefined') {
           deleteShader: vi.fn(),
           deleteTexture: vi.fn(),
           deleteBuffer: vi.fn(),
-          texImage3D: vi.fn(),
       } as unknown as WebGL2RenderingContext;
     }
     return originalGetContext.call(this, contextId as any, ...args);
