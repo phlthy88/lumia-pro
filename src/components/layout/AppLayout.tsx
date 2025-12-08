@@ -134,7 +134,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                     {/* Mobile Settings Panel with M3 transitions */}
                     <Slide direction="up" in={isMobile && mobileSettingsOpen} mountOnEnter unmountOnExit timeout={{ enter: 350, exit: 250 }} easing={{ enter: m3EmphasizedDecelerate, exit: 'cubic-bezier(0.3, 0, 0.8, 0.15)' }}>
                         <Box sx={{ 
-                            height: 'calc(65dvh - 56px)',
+                            height: 'calc(65dvh)',
                             bgcolor: theme.palette.background.paper,
                             borderTopLeftRadius: 16,
                             borderTopRightRadius: 16,
@@ -142,6 +142,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                             flexDirection: 'column',
                             flexShrink: 0,
                             overflow: 'hidden',
+                            marginBottom: '-56px',
+                            paddingBottom: '56px',
                         }}>
                             {/* Drag handle */}
                             <Box 
