@@ -111,7 +111,10 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               'react-vendor': ['react', 'react-dom'],
-              'mui-vendor': ['@mui/material', '@mui/icons-material']
+              'mui-core': ['@mui/material'],
+              'mui-icons': ['@mui/icons-material'],
+              'mediapipe': ['@mediapipe/tasks-vision'],
+              'emotion': ['@emotion/react', '@emotion/styled']
             }
           }
         }

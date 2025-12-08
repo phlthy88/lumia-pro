@@ -389,6 +389,15 @@ export class GLRenderer {
             uniform float u_gain;
             uniform float u_lutStrength;
             
+            // Details & Optics
+            uniform float u_sharpness;
+            uniform float u_vignette;
+            uniform float u_grain;
+            uniform float u_distortion;
+            uniform float u_denoise;
+            uniform float u_portraitLight;
+            uniform float u_time;
+            
             // Transform
             uniform float u_zoom;
             uniform float u_rotate;
@@ -396,6 +405,10 @@ export class GLRenderer {
             uniform vec2 u_coverScale; // NEW: For object-fit: cover
 
             out vec4 outColor;
+
+            float random(vec2 st) {
+                return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453);
+            }
 
             vec3 adjustExposure(vec3 color, float exposure) {
                 return color * pow(2.0, exposure);
@@ -456,12 +469,13 @@ export class GLRenderer {
 
             vec3 applyEyeBrighten(vec3 color, float eyeMask) {
                 if (eyeMask < 0.01 || u_eyeBrighten <= 0.0) return color;
-                // More pronounced brightening with contrast boost
-                float boost = 1.0 + u_eyeBrighten * eyeMask * 1.2;
+                // Brighten and add sparkle to eyes
+                float boost = 1.0 + u_eyeBrighten * 0.5;
                 vec3 brightened = color * boost;
-                // Add slight contrast to make eyes pop
-                brightened = mix(vec3(0.5), brightened, 1.0 + u_eyeBrighten * eyeMask * 0.3);
-                return brightened;
+                // Increase saturation slightly for more vivid eyes
+                float gray = dot(brightened, vec3(0.299, 0.587, 0.114));
+                brightened = mix(vec3(gray), brightened, 1.0 + u_eyeBrighten * 0.3);
+                return mix(color, brightened, eyeMask);
             }
 
             vec3 applySkinTone(vec3 color, float skinMask) {
@@ -475,41 +489,46 @@ export class GLRenderer {
 
             vec2 applyFaceThin(vec2 uv, float contourMask) {
                 if (u_faceThin <= 0.0 || contourMask < 0.01) return uv;
-                // Only apply to sides of face, not top/bottom
-                vec2 center = vec2(0.5, 0.5);
-                vec2 toCenter = center - uv;
-                // Horizontal slimming only to avoid glitchy top/bottom
-                float horizDist = abs(uv.x - 0.5);
-                float strength = contourMask * u_faceThin * 0.03 * horizDist;
-                return uv + vec2(toCenter.x * strength, 0.0);
+                // Push pixels toward vertical center line
+                float horizDist = uv.x - 0.5;
+                float strength = contourMask * u_faceThin * 0.08;
+                return uv - vec2(horizDist * strength, 0.0);
             }
 
             vec2 applyCheekbones(vec2 uv, float cheekMask) {
                 if (u_cheekbones <= 0.0 || cheekMask < 0.01) return uv;
-                // Sample from below to lift cheeks (positive Y = down in UV)
-                vec2 offset = vec2(0.0, 1.0) * cheekMask * u_cheekbones * 0.025;
+                // Create shadow/highlight by sampling slightly inward and up
+                float horizDist = uv.x - 0.5;
+                vec2 offset = vec2(-sign(horizDist) * 0.01, -0.015) * cheekMask * u_cheekbones;
                 return uv + offset;
             }
 
             vec2 applyNoseSlim(vec2 uv, float noseMask) {
                 if (u_noseSlim <= 0.0 || noseMask < 0.01) return uv;
                 // Push nose pixels toward center horizontally
-                float centerX = 0.5;
-                float horizOffset = (centerX - uv.x) * noseMask * u_noseSlim * 0.04;
-                return uv + vec2(horizOffset, 0.0);
+                float horizDist = uv.x - 0.5;
+                float strength = noseMask * u_noseSlim * 0.15;
+                return uv - vec2(horizDist * strength, 0.0);
             }
 
             vec2 applyLipsFuller(vec2 uv, float lipMask) {
                 if (u_lipsFuller <= 0.0 || lipMask < 0.01) return uv;
-                // Sample from center to expand lips
-                vec2 lipCenter = vec2(0.5, 0.6);
-                vec2 toCenter = lipCenter - uv;
-                return uv + toCenter * lipMask * u_lipsFuller * 0.04;
+                // Scale outward from lip center
+                vec2 lipCenter = vec2(0.5, uv.y);
+                vec2 fromCenter = uv - lipCenter;
+                return uv + fromCenter * lipMask * u_lipsFuller * 0.1;
             }
 
             void main() {
                 vec2 uv = v_texCoord;
                 uv -= 0.5;
+                
+                // Lens Distortion (barrel/pincushion)
+                if (abs(u_distortion) > 0.001) {
+                    float r = length(uv);
+                    float distortionFactor = 1.0 + u_distortion * r * r;
+                    uv *= distortionFactor;
+                }
                 
                 // Apply Cover Scale (Aspect Ratio Correction)
                 uv *= 1.0 / u_coverScale;
@@ -587,6 +606,52 @@ export class GLRenderer {
                      else if (luma < 0.6) color = vec3(0.5);
                      else if (luma < 0.8) color = vec3(1.0, 1.0, 0.0);
                      else color = vec3(1.0, 0.0, 0.0);
+                }
+
+                // Sharpness (unsharp mask)
+                if (u_sharpness > 0.0) {
+                    vec2 onePixel = vec2(1.0) / vec2(textureSize(u_videoTexture, 0));
+                    vec3 blur = (
+                        texture(u_videoTexture, warpedUv + vec2(-onePixel.x, 0.0)).rgb +
+                        texture(u_videoTexture, warpedUv + vec2(onePixel.x, 0.0)).rgb +
+                        texture(u_videoTexture, warpedUv + vec2(0.0, -onePixel.y)).rgb +
+                        texture(u_videoTexture, warpedUv + vec2(0.0, onePixel.y)).rgb
+                    ) * 0.25;
+                    color += (color - blur) * u_sharpness * 2.0;
+                }
+
+                // Denoise (simple blur on dark areas)
+                if (u_denoise > 0.0) {
+                    vec2 onePixel = vec2(1.0) / vec2(textureSize(u_videoTexture, 0));
+                    vec3 blur = vec3(0.0);
+                    for (int x = -1; x <= 1; x++) {
+                        for (int y = -1; y <= 1; y++) {
+                            blur += texture(u_videoTexture, warpedUv + vec2(float(x), float(y)) * onePixel).rgb;
+                        }
+                    }
+                    blur /= 9.0;
+                    float luma = dot(color, vec3(0.299, 0.587, 0.114));
+                    float blendFactor = u_denoise * (1.0 - luma); // More denoise in shadows
+                    color = mix(color, blur, clamp(blendFactor, 0.0, 0.5));
+                }
+
+                // Portrait Light (edge darkening with center brightening)
+                if (u_portraitLight > 0.0) {
+                    float dist = length(uv - 0.5);
+                    float light = 1.0 + u_portraitLight * 0.3 * (1.0 - dist * 2.0);
+                    color *= clamp(light, 0.8, 1.3);
+                }
+
+                // Grain
+                if (u_grain > 0.0) {
+                    float noise = random(uv + u_time) - 0.5;
+                    color += noise * u_grain * 0.3;
+                }
+
+                // Vignette
+                if (u_vignette > 0.0) {
+                    float dist = length(uv - 0.5) * 1.4;
+                    color *= mix(1.0, smoothstep(0.8, 0.2, dist), u_vignette);
                 }
 
                 // Overlay (UI is always fit to screen, so use v_texCoord directly)
@@ -799,6 +864,15 @@ export class GLRenderer {
         setUniform1f('u_gamma', params.color.gamma + 1.0);
         setUniform1f('u_gain', params.color.gain);
         setUniform1f('u_lutStrength', params.color.lutStrength);
+
+        // Details & Optics
+        setUniform1f('u_sharpness', params.color.sharpness ?? 0);
+        setUniform1f('u_vignette', params.color.vignette ?? 0);
+        setUniform1f('u_grain', params.color.grain ?? 0);
+        setUniform1f('u_distortion', params.color.distortion ?? 0);
+        setUniform1f('u_denoise', params.color.denoise ?? 0);
+        setUniform1f('u_portraitLight', params.color.portraitLight ?? 0);
+        setUniform1f('u_time', time);
 
         setUniform1f('u_zoom', params.transform.zoom);
         setUniform1f('u_rotate', params.transform.rotate);

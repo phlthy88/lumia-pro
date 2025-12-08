@@ -41,8 +41,8 @@ export const usePerformanceProfile = () => {
                 // Memory Check (Chrome only, guarded)
                 let memoryMB = 0;
                 if ('memory' in performance) {
-                    const mem = performance.memory as PerformanceMemory;
-                    if (mem && mem.usedJSHeapSize) {
+                    const mem = (performance as unknown as { memory: PerformanceMemory }).memory;
+                    if (mem?.usedJSHeapSize) {
                         memoryMB = Math.round(mem.usedJSHeapSize / 1024 / 1024);
                     }
                 }

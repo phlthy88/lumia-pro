@@ -28,7 +28,7 @@ describe('useCameraStream', () => {
 
         // Simulate loadeddata event to resolve the promise in the hook
         setTimeout(() => {
-            Object.defineProperty(mockVideo, 'readyState', { value: 4, writable: true });
+            Object.defineProperty(mockVideo, 'readyState', { value: 4, configurable: true });
             mockVideo.dispatchEvent(new Event('loadeddata'));
         }, 100);
 

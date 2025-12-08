@@ -373,7 +373,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         MuiCssBaseline: {
           styleOverrides: {
             body: {
-              backgroundColor: hexFromArgb(surfaceTokens.surface),
+              backgroundColor: hexFromArgb(darkenArgb(tertiaryMain, 75)),
             },
           },
         },

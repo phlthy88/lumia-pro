@@ -5,23 +5,23 @@ const SKIN_INDICES = [
   10, 234, 93, 132, 58, 172, 150, 176, 149, 148, 152, 377, 378, 365, 397, 288, 361, 323, 454, 356, 389, 251, 284, 332, 297, 338, 10
 ];
 
-// Eye region indices (left and right)
-const LEFT_EYE = [33, 133, 160, 159, 158, 144, 145, 153];
-const RIGHT_EYE = [362, 263, 387, 386, 385, 373, 374, 380];
+// Eye region indices (left and right) - expanded for better coverage
+const LEFT_EYE = [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7];
+const RIGHT_EYE = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382];
 
 // Face contour for slim effect (sides only - jawline)
 const FACE_CONTOUR_LEFT = [234, 93, 132, 58, 172, 136];
 const FACE_CONTOUR_RIGHT = [454, 323, 361, 288, 397, 365];
 
-// Cheekbone regions
-const LEFT_CHEEK = [116, 117, 118, 119, 100, 126, 209, 49, 129, 203];
-const RIGHT_CHEEK = [345, 346, 347, 348, 329, 355, 429, 279, 358, 423];
+// Cheekbone regions - more precise
+const LEFT_CHEEK = [116, 123, 147, 187, 207, 206, 205, 36, 142, 126];
+const RIGHT_CHEEK = [345, 352, 376, 411, 427, 426, 425, 266, 371, 355];
 
 // Lip region
 const LIPS_OUTER = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0, 37, 39, 40, 185, 61];
 
-// Nose region
-const NOSE = [168, 6, 197, 195, 5, 4, 1, 19, 94, 2, 164, 0, 11, 12, 13, 14, 168];
+// Nose region - bridge and sides
+const NOSE_BRIDGE = [6, 197, 195, 5, 4, 45, 275, 4, 1, 19, 218, 438];
 
 export class MaskGenerator {
   private canvas: OffscreenCanvas;
@@ -49,17 +49,26 @@ export class MaskGenerator {
 
     const toCanvas = (lm: NormalizedLandmark) => ({ x: lm.x * width, y: lm.y * height });
 
-    // Canvas 1: R=skin, G=eyes, B=face contour (sides only)
+    // Canvas 1: R=skin (excluding eyes), G=eyes, B=face contour
+    
+    // Draw skin first
     this.ctx.fillStyle = '#ff0000';
     this.drawPoly(this.ctx, SKIN_INDICES, landmarks, toCanvas);
+    
+    // Cut out eye regions from skin (draw black over eyes)
+    this.ctx.globalCompositeOperation = 'destination-out';
+    this.drawPoly(this.ctx, LEFT_EYE, landmarks, toCanvas);
+    this.drawPoly(this.ctx, RIGHT_EYE, landmarks, toCanvas);
+    this.ctx.globalCompositeOperation = 'source-over';
 
+    // Draw eyes in green channel
     this.ctx.fillStyle = '#00ff00';
     this.drawPoly(this.ctx, LEFT_EYE, landmarks, toCanvas);
     this.drawPoly(this.ctx, RIGHT_EYE, landmarks, toCanvas);
 
-    // Draw face contour as strokes on sides only (not chin)
+    // Draw face contour as strokes on sides only
     this.ctx.strokeStyle = '#0000ff';
-    this.ctx.lineWidth = 20;
+    this.ctx.lineWidth = 25;
     this.ctx.lineCap = 'round';
     for (const contour of [FACE_CONTOUR_LEFT, FACE_CONTOUR_RIGHT]) {
       this.ctx.beginPath();
@@ -81,17 +90,29 @@ export class MaskGenerator {
     this.ctx2.fillStyle = '#00ff00';
     this.drawPoly(this.ctx2, LIPS_OUTER, landmarks, toCanvas);
 
-    this.ctx2.fillStyle = '#0000ff';
-    this.drawPoly(this.ctx2, NOSE, landmarks, toCanvas);
+    // Nose - draw as thick line along bridge
+    this.ctx2.strokeStyle = '#0000ff';
+    this.ctx2.lineWidth = 30;
+    this.ctx2.lineCap = 'round';
+    this.ctx2.beginPath();
+    NOSE_BRIDGE.forEach((idx, i) => {
+      const lm = landmarks[idx];
+      if (!lm) return;
+      const { x, y } = toCanvas(lm);
+      if (i === 0) this.ctx2.moveTo(x, y);
+      else this.ctx2.lineTo(x, y);
+    });
+    this.ctx2.stroke();
 
     // Apply blur for soft edges
-    for (const c of [this.ctx, this.ctx2]) {
-      c.filter = 'blur(8px)';
-      c.globalCompositeOperation = 'source-atop';
-      c.drawImage(c === this.ctx ? this.canvas : this.canvas2, 0, 0);
-      c.filter = 'none';
-      c.globalCompositeOperation = 'source-over';
-    }
+    this.applyBlur(this.ctx, this.canvas);
+    this.applyBlur(this.ctx2, this.canvas2);
+  }
+
+  private applyBlur(ctx: OffscreenCanvasRenderingContext2D, canvas: OffscreenCanvas) {
+    ctx.filter = 'blur(12px)';
+    ctx.drawImage(canvas, 0, 0);
+    ctx.filter = 'none';
   }
 
   private drawPoly(ctx: OffscreenCanvasRenderingContext2D, indices: number[], landmarks: NormalizedLandmark[], toCanvas: (lm: NormalizedLandmark) => {x: number, y: number}) {

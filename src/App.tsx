@@ -24,12 +24,6 @@ import { useVisionWorker } from './hooks/useVisionWorker';
 import { MaskGenerator } from './beauty/MaskGenerator';
 
 // Components
-import { AIWidget } from './components/AIWidget';
-import { AISettings } from './components/AISettings';
-import { ThemeSettings } from './components/ThemeSettings';
-import { MuiOverlaySettings } from './components/MuiOverlaySettings';
-import { MuiRecorderSettings } from './components/MuiRecorderSettings';
-import { VirtualCameraSettings } from './components/VirtualCameraSettings';
 import { FeatureGate } from './components/FeatureGate';
 import { Features } from './config/features';
 import { MuiLutControl } from './components/controls/MuiLutControl';
@@ -41,13 +35,18 @@ import { MuiButton } from './components/controls/MuiButton';
 import { ControlCard } from './components/controls/ControlCard';
 import { StatsOverlay } from './components/StatsOverlay';
 import { StyledViewfinder } from './components/layout/StyledViewfinder';
-import { ParallaxHeader } from './components/ParallaxHeader';
-import { PlatformBoostsPanel } from './components/PlatformBoostsPanel';
 import { CaptureAnimation } from './components/CaptureAnimation';
 import { ThumbnailSwoosh } from './components/ThumbnailSwoosh';
 
 // Lazy Load Heavy Components
-const MediaLibrary = React.lazy(() => import('./components/MediaLibrary').then(module => ({ default: module.MediaLibrary })));
+const MediaLibrary = React.lazy(() => import('./components/MediaLibrary').then(m => ({ default: m.MediaLibrary })));
+const ThemeSettings = React.lazy(() => import('./components/ThemeSettings').then(m => ({ default: m.ThemeSettings })));
+const MuiOverlaySettings = React.lazy(() => import('./components/MuiOverlaySettings').then(m => ({ default: m.MuiOverlaySettings })));
+const MuiRecorderSettings = React.lazy(() => import('./components/MuiRecorderSettings').then(m => ({ default: m.MuiRecorderSettings })));
+const VirtualCameraSettings = React.lazy(() => import('./components/VirtualCameraSettings').then(m => ({ default: m.VirtualCameraSettings })));
+const PlatformBoostsPanel = React.lazy(() => import('./components/PlatformBoostsPanel').then(m => ({ default: m.PlatformBoostsPanel })));
+const ParallaxHeader = React.lazy(() => import('./components/ParallaxHeader').then(m => ({ default: m.ParallaxHeader })));
+const AISettings = React.lazy(() => import('./components/AISettings').then(m => ({ default: m.AISettings })));
 
 // Countdown Overlay with audio cues
 const CountdownOverlay: React.FC<{ count: number; type: 'video' | 'photo' }> = ({ count, type }) => {

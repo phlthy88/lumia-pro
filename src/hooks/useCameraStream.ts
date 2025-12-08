@@ -45,6 +45,17 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
     }
   }, []);
 
+  // Clear invalid device ID on mount
+  useEffect(() => {
+    if (!activeDeviceId) return;
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      const cameras = devices.filter(d => d.kind === 'videoinput');
+      if (cameras.length > 0 && !cameras.some(c => c.deviceId === activeDeviceId)) {
+        setActiveDeviceId('');
+      }
+    });
+  }, []); // Only run once on mount
+
   // Monitor device changes
   useEffect(() => {
       navigator.mediaDevices.addEventListener('devicechange', refreshDevices);

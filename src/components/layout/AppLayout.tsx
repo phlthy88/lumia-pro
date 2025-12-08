@@ -85,15 +85,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 Skip to Content
             </Box>
 
-            {/* Gooey SVG Filter */}
-            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-                <filter id="goo">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
-                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
-                    <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
-                </filter>
-            </svg>
-
             {/* Main content area */}
             <Box sx={{ 
                 display: 'flex', 
@@ -244,8 +235,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                             right: 16,
                             transform: 'translateY(-50%)',
                             zIndex: theme.zIndex.drawer + 3,
-                            filter: 'url(#goo)',
-                            bgcolor: 'transparent',
                         }}
                     >
                         <Grow 

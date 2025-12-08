@@ -17,18 +17,23 @@ export class GPUCapabilities {
         if (!gl) return 'low';
 
         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        if (!debugInfo) return 'low';
+        if (!debugInfo) return 'mid'; // Default to mid if can't detect
 
         const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL).toLowerCase();
 
-        // Simple heuristic for detection
+        // High tier: discrete GPUs
         if (renderer.includes('nvidia') || renderer.includes('radeon') || renderer.includes('apple m')) {
             return 'high';
         }
-        if (renderer.includes('intel iris') || renderer.includes('adreno 6')) {
+        // Mid tier: modern integrated GPUs
+        if (renderer.includes('intel') || renderer.includes('adreno') || renderer.includes('mali')) {
             return 'mid';
         }
-        return 'low';
+        // Low tier: software rendering or unknown
+        if (renderer.includes('swiftshader') || renderer.includes('llvmpipe')) {
+            return 'low';
+        }
+        return 'mid'; // Default to mid for unknown GPUs
     }
 
     static getProfile(tier: GPUTier): QualityProfile {
@@ -43,9 +48,9 @@ export class GPUCapabilities {
                 };
             case 'mid':
                 return {
-                    resolutionScale: 0.85,
+                    resolutionScale: 1.0,
                     lutSize: 32,
-                    precision: 'mediump',
+                    precision: 'highp',
                     maxLights: 2,
                     shadows: false
                 };
