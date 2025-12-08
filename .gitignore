@@ -2,3 +2,6 @@ node_modules
 dist
 .env
 .DS_Store
+k6
+k6.tar.gz
+k6-v0.49.0-linux-amd64/

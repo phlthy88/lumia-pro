@@ -106,6 +106,7 @@ export default defineConfig(({ mode }) => {
         })
       ],
       build: {
+        target: 'es2022',
         chunkSizeWarningLimit: 600,
         rollupOptions: {
           output: {
