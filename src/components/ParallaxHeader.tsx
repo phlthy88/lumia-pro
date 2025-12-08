@@ -53,7 +53,7 @@ export const ParallaxHeader: React.FC<ParallaxHeaderProps> = ({
                 background: `linear-gradient(135deg, ${theme.palette.primary.main}${Math.round(bgOpacity * 255).toString(16).padStart(2, '0')}, ${theme.palette.secondary.main}${Math.round(bgOpacity * 0.7 * 255).toString(16).padStart(2, '0')})`,
                 backdropFilter: `blur(${progress * 8}px)`,
                 boxShadow: isCollapsed ? `0 1px 3px ${theme.palette.divider}` : 'none',
-                transition: 'box-shadow 0.2s ease, border-radius 0.15s ease',
+                transition: 'box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
         >
             {/* Floating decorative shapes - fade out on collapse */}
@@ -68,7 +68,7 @@ export const ParallaxHeader: React.FC<ParallaxHeaderProps> = ({
                     right: 16,
                     opacity: 1 - progress,
                     transform: `scale(${1 - progress * 0.5})`,
-                    transition: 'opacity 0.2s, transform 0.2s',
+                    transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     pointerEvents: 'none',
                 }}
             />
@@ -83,7 +83,7 @@ export const ParallaxHeader: React.FC<ParallaxHeaderProps> = ({
                     right: 70,
                     opacity: 1 - progress,
                     transform: `scale(${1 - progress * 0.3})`,
-                    transition: 'opacity 0.2s, transform 0.2s',
+                    transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     pointerEvents: 'none',
                 }}
             />
@@ -97,7 +97,6 @@ export const ParallaxHeader: React.FC<ParallaxHeaderProps> = ({
                     flexDirection: 'column',
                     justifyContent: 'center',
                     px: 2,
-                    transition: 'padding 0.2s ease',
                 }}
             >
                 <Typography 
@@ -107,7 +106,7 @@ export const ParallaxHeader: React.FC<ParallaxHeaderProps> = ({
                         fontWeight: isCollapsed ? 500 : 600,
                         color: theme.palette.text.primary,
                         lineHeight: 1.2,
-                        transition: 'font-size 0.15s ease, font-weight 0.15s ease',
+                        transition: 'font-size 0.2s cubic-bezier(0.4, 0, 0.2, 1), font-weight 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                 >
                     {title}
@@ -122,7 +121,7 @@ export const ParallaxHeader: React.FC<ParallaxHeaderProps> = ({
                             fontSize: '0.75rem',
                             height: subtitleOpacity > 0 ? 'auto' : 0,
                             overflow: 'hidden',
-                            transition: 'opacity 0.15s ease',
+                            transition: 'opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                         }}
                     >
                         {subtitle}

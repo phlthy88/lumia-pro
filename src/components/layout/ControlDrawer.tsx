@@ -73,7 +73,7 @@ export const ControlDrawer: React.FC<ControlDrawerProps> = ({ title, children, o
                     pointerEvents: 'none',
                     zIndex: 2,
                     opacity: showTopFade ? 1 : 0,
-                    transition: 'opacity 0.3s ease',
+                    transition: 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&::before': {
                         content: '""',
                         position: 'absolute',
@@ -85,8 +85,8 @@ export const ControlDrawer: React.FC<ControlDrawerProps> = ({ title, children, o
                             transparent 8px
                         )`,
                         backgroundSize: '100% 40px',
-                        animation: `${conveyorDown} 0.8s linear infinite`,
-                        opacity: 0.6,
+                        animation: `${conveyorDown} 1s linear infinite`,
+                        opacity: 0.5,
                         maskImage: 'linear-gradient(to bottom, black, transparent)',
                     },
                 }}
@@ -103,7 +103,7 @@ export const ControlDrawer: React.FC<ControlDrawerProps> = ({ title, children, o
                     pointerEvents: 'none',
                     zIndex: 2,
                     opacity: showBottomFade ? 1 : 0,
-                    transition: 'opacity 0.3s ease',
+                    transition: 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&::before': {
                         content: '""',
                         position: 'absolute',
@@ -115,8 +115,8 @@ export const ControlDrawer: React.FC<ControlDrawerProps> = ({ title, children, o
                             transparent 8px
                         )`,
                         backgroundSize: '100% 40px',
-                        animation: `${conveyorUp} 0.8s linear infinite`,
-                        opacity: 0.6,
+                        animation: `${conveyorUp} 1s linear infinite`,
+                        opacity: 0.5,
                         maskImage: 'linear-gradient(to top, black, transparent)',
                     },
                 }}
