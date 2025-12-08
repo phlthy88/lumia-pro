@@ -5,7 +5,7 @@ export const Features = {
     BEAUTY_EFFECTS: 'BEAUTY_EFFECTS'
 } as const;
 
-type Feature = typeof Features[keyof typeof Features];
+export type Feature = typeof Features[keyof typeof Features];
 
 const defaultFeatures: Record<Feature, boolean> = {
     [Features.AI_SCENE_ANALYSIS]: false,
