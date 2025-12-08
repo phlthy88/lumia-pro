@@ -8,6 +8,9 @@ interface GLParams {
     mode: RenderMode;
     gyroAngle: number;
     bypass: boolean;
+    beauty?: {
+        smoothStrength: number;
+    };
 }
 
 export const useGLRenderer = (
@@ -175,5 +178,9 @@ export const useGLRenderer = (
       }
   }, []);
 
-  return { canvasRef, statsRef, setLut };
+  const setBeautyMask = useCallback((mask: OffscreenCanvas | HTMLCanvasElement | null) => {
+      rendererRef.current?.setBeautyMask(mask);
+  }, []);
+
+  return { canvasRef, statsRef, setLut, setBeautyMask };
 };

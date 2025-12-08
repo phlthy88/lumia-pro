@@ -5,9 +5,11 @@ export class GLRenderer {
     private gl: WebGL2RenderingContext;
     private videoSource: HTMLVideoElement | null = null;
     private overlaySource: HTMLCanvasElement | null = null;
+    private beautyMaskSource: OffscreenCanvas | HTMLCanvasElement | null = null;
     
     private program: WebGLProgram | null = null;
     private lutTexture: WebGLTexture | null = null;
+    private beautyMaskTexture: WebGLTexture | null = null;
     private textures: Map<string, WebGLTexture> = new Map();
     private positionBuffer: WebGLBuffer | null = null;
     private frameId: number | null = null;
@@ -87,6 +89,28 @@ export class GLRenderer {
     public setOverlaySource(canvas: HTMLCanvasElement) {
         this.overlaySource = canvas;
         this.createTexture('overlay');
+    }
+
+    public setBeautyMask(mask: OffscreenCanvas | HTMLCanvasElement | null) {
+        this.beautyMaskSource = mask;
+        if (!this.textures.get('beautyMask')) {
+            this.createTexture('beautyMask');
+        }
+        const texture = this.textures.get('beautyMask');
+        if (!texture) return;
+
+        this.gl.activeTexture(this.gl.TEXTURE3);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+
+        if (mask) {
+            this.beautyMaskTexture = texture;
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
+        } else {
+            // Upload a 1x1 transparent pixel when mask disabled
+            const empty = new Uint8Array([0, 0, 0, 0]);
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, empty);
+            this.beautyMaskTexture = texture;
+        }
     }
 
     public setLut(lut: LutData) {
@@ -274,9 +298,12 @@ export class GLRenderer {
             uniform sampler2D u_videoTexture;
             uniform sampler2D u_overlayTexture;
             uniform sampler3D u_lutTexture;
+            uniform sampler2D u_beautyMask;
             
             uniform int u_mode;
             uniform int u_bypass;
+
+            uniform float u_skinSmoothStrength;
 
             // Color Grading
             uniform float u_exposure;
@@ -331,6 +358,23 @@ export class GLRenderer {
                 return mix(color, lutColor, u_lutStrength);
             }
 
+            vec3 applySkinSmoothing(vec2 uv, vec3 baseColor, float maskWeight) {
+                if (maskWeight < 0.01 || u_skinSmoothStrength <= 0.0) return baseColor;
+                vec2 onePixel = vec2(1.0) / vec2(textureSize(u_videoTexture, 0));
+                vec3 accum = vec3(0.0);
+                float total = 0.0;
+                for (int x = -1; x <= 1; x++) {
+                  for (int y = -1; y <= 1; y++) {
+                    float w = 1.0;
+                    vec3 sample = texture(u_videoTexture, uv + vec2(float(x), float(y)) * onePixel).rgb;
+                    accum += sample * w;
+                    total += w;
+                  }
+                }
+                vec3 blurred = accum / max(total, 0.0001);
+                return mix(baseColor, blurred, clamp(maskWeight * u_skinSmoothStrength, 0.0, 1.0));
+            }
+
             void main() {
                 vec2 uv = v_texCoord;
                 uv -= 0.5;
@@ -355,6 +399,10 @@ export class GLRenderer {
 
                 vec4 video = texture(u_videoTexture, uv);
                 vec3 color = video.rgb;
+
+                // Beauty smoothing before grading
+                float skinMask = texture(u_beautyMask, uv).r;
+                color = applySkinSmoothing(uv, color, skinMask);
 
                 if (u_bypass == 0) {
                     color = colorGrade(color);
@@ -567,9 +615,11 @@ export class GLRenderer {
         setUniform1i('u_videoTexture', 0);
         setUniform1i('u_overlayTexture', 1);
         setUniform1i('u_lutTexture', 2);
+        setUniform1i('u_beautyMask', 3);
 
         setUniform1i('u_mode', this.getModeInt(params.mode));
         setUniform1i('u_bypass', params.bypass ? 1 : 0);
+        setUniform1f('u_skinSmoothStrength', params.beauty?.smoothStrength ?? 0);
 
         setUniform1f('u_exposure', params.color.exposure);
         setUniform1f('u_contrast', params.color.contrast);
@@ -605,6 +655,11 @@ export class GLRenderer {
         if (this.lutTexture) {
             this.gl.activeTexture(this.gl.TEXTURE2);
             this.gl.bindTexture(this.gl.TEXTURE_3D, this.lutTexture);
+        }
+
+        if (this.beautyMaskTexture) {
+            this.gl.activeTexture(this.gl.TEXTURE3);
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.beautyMaskTexture);
         }
 
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);

@@ -1,4 +1,4 @@
-import { FilesetResolver, FaceLandmarker, FaceLandmarkerResult } from "@mediapipe/tasks-vision";
+import type { FaceLandmarkerResult } from "@mediapipe/tasks-vision";
 import { ColorGradeParams } from "../types";
 
 export interface ImageQualityScore {
@@ -17,10 +17,8 @@ export interface AnalysisResult {
 }
 
 export class AIAnalysisService {
-  private faceLandmarker: FaceLandmarker | null = null;
   private canvas: OffscreenCanvas;
   private ctx: OffscreenCanvasRenderingContext2D;
-  private isInitializing = false;
   private isAnalyzing = false; // Mutex to prevent concurrent analysis
 
   constructor() {
@@ -29,34 +27,7 @@ export class AIAnalysisService {
     this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })!;
   }
 
-  async initialize() {
-    if (this.faceLandmarker) return;
-    if (this.isInitializing) return; // Simple guard
-    this.isInitializing = true;
-
-    try {
-      const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-      );
-      
-      this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: `/models/face_landmarker.task`,
-          delegate: "GPU"
-        },
-        runningMode: "IMAGE",
-        numFaces: 1
-      });
-      console.log("AI Service Initialized");
-    } catch (e) {
-      console.error("AI Init Failed", e);
-      throw e;
-    } finally {
-      this.isInitializing = false;
-    }
-  }
-
-  async analyze(video: HTMLVideoElement): Promise<AnalysisResult> {
+  async analyze(video: HTMLVideoElement, faceResult?: FaceLandmarkerResult | null): Promise<AnalysisResult> {
     // Prevent concurrent analysis - shared canvas would corrupt data
     if (this.isAnalyzing) {
       throw new Error('Analysis already in progress');
@@ -64,8 +35,6 @@ export class AIAnalysisService {
     this.isAnalyzing = true;
 
     try {
-      if (!this.faceLandmarker) await this.initialize();
-
       // 1. Draw frame to small canvas for pixel analysis
       this.ctx.drawImage(video, 0, 0, this.canvas.width, this.canvas.height);
       const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
@@ -94,11 +63,7 @@ export class AIAnalysisService {
     const avgB = bSum / pixelCount;
 
     // 3. AI Face Detection (Composition & Focus)
-    let faceResult: FaceLandmarkerResult | null = null;
-    if (this.faceLandmarker) {
-        // @ts-ignore
-        faceResult = this.faceLandmarker.detect(this.canvas);
-    }
+    const faceData: FaceLandmarkerResult | null = faceResult ?? null;
 
     // --- SCORING LOGIC ---
     
@@ -153,8 +118,8 @@ export class AIAnalysisService {
     let compScore = 100;
     let focusScore = 80; // Baseline
     
-    if (faceResult && faceResult.faceLandmarks.length > 0) {
-        const face = faceResult.faceLandmarks[0];
+    if (faceData && faceData.faceLandmarks.length > 0) {
+        const face = faceData.faceLandmarks[0];
         // Nose tip is usually index 1 or 4
         const nose = face?.[1]; 
         
@@ -193,7 +158,7 @@ export class AIAnalysisService {
       },
       tips: tips.slice(0, 3), // Top 3 tips
       autoParams,
-      faces: faceResult?.faceLandmarks.length || 0
+      faces: faceData?.faceLandmarks.length || 0
     };
     } finally {
       // Release mutex

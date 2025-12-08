@@ -19,6 +19,8 @@ import { useVirtualCamera } from './hooks/useVirtualCamera';
 import { useMidi } from './hooks/useMidi';
 import { LutService } from './services/LutService';
 import { useAIAnalysis } from './hooks/useAIAnalysis';
+import { useVisionWorker } from './hooks/useVisionWorker';
+import { MaskGenerator } from './beauty/MaskGenerator';
 
 // Components
 import { AIWidget } from './components/AIWidget';
@@ -85,6 +87,9 @@ const AppContent: React.FC = () => {
         savePreset, loadPreset, deletePreset, importPresets, exportPresets
     } = useColorGrading();
 
+    const [beautyEnabled, setBeautyEnabled] = useState(true);
+    const [beautySmooth, setBeautySmooth] = useState(0.35);
+
     // MIDI Control Integration
     const { connected: midiConnected } = useMidi(handleColorChange);
 
@@ -121,7 +126,8 @@ const AppContent: React.FC = () => {
 
 
     // AI - Add null check for videoRef
-    const ai = useAIAnalysis(videoRef as React.RefObject<HTMLVideoElement>);
+    const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady);
+    const ai = useAIAnalysis(videoRef as React.RefObject<HTMLVideoElement>, vision.landmarks);
     const handleAutoFix = () => {
         if (ai.autoParams) {
             setColor({ ...color, ...ai.autoParams });
@@ -130,17 +136,43 @@ const AppContent: React.FC = () => {
 
     // Renderer
     // Keep a ref of the latest state to pass to renderer without re-binding
-    const latestStateRef = useRef({ color, transform, mode, bypass });
+    const latestStateRef = useRef({ color, transform, mode, bypass, beauty: { smoothStrength: beautyEnabled ? beautySmooth : 0 } });
     useEffect(() => {
-        latestStateRef.current = { color, transform, mode, bypass };
-    }, [color, transform, mode, bypass]);
+        latestStateRef.current = { 
+            color, 
+            transform, 
+            mode, 
+            bypass,
+            beauty: { smoothStrength: beautyEnabled ? beautySmooth : 0 }
+        };
+    }, [color, transform, mode, bypass, beautyEnabled, beautySmooth]);
 
     const getParams = useCallback(() => ({
         ...latestStateRef.current,
         gyroAngle: gyroRef.current
-    }), []);
+    }), [gyroRef]);
 
-    const { canvasRef, statsRef, setLut } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
+    const { canvasRef, statsRef, setLut, setBeautyMask } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
+
+    // Beauty mask generation
+    const maskGeneratorRef = useRef<MaskGenerator | null>(null);
+    useEffect(() => {
+        if (!maskGeneratorRef.current) {
+            maskGeneratorRef.current = new MaskGenerator();
+        }
+        if (!beautyEnabled) {
+            setBeautyMask(null);
+            return;
+        }
+        const face = vision.landmarks?.faceLandmarks?.[0];
+        const video = videoRef.current;
+        if (!face || !video || video.videoWidth === 0 || video.videoHeight === 0) {
+            setBeautyMask(null);
+            return;
+        }
+        maskGeneratorRef.current?.update(face, video.videoWidth, video.videoHeight);
+        setBeautyMask(maskGeneratorRef.current?.getCanvas() ?? null);
+    }, [vision.landmarks, beautyEnabled, setBeautyMask, videoRef]);
 
     // Virtual Camera - for use with Zoom/Meet/Teams etc.
     const virtualCamera = useVirtualCamera();
@@ -319,6 +351,28 @@ const AppContent: React.FC = () => {
                             onUndo={undo}
                             canUndo={canUndo}
                         />
+
+                        <ControlCard title="Beauty">
+                            <MuiSwitch 
+                                label="Enable Beauty" 
+                                checked={beautyEnabled} 
+                                onChange={setBeautyEnabled} 
+                            />
+                            <MuiSlider 
+                                label="Skin Smooth" 
+                                value={beautySmooth} 
+                                min={0} 
+                                max={1} 
+                                step={0.01} 
+                                onChange={setBeautySmooth} 
+                                disabled={!beautyEnabled}
+                            />
+                            {!vision.hasFace && (
+                                <Typography variant="caption" color="text.secondary">
+                                    Beauty will auto-disable until a face is detected.
+                                </Typography>
+                            )}
+                        </ControlCard>
 
                         <ControlCard title="Source & Mode">
                             <MuiSelect 
