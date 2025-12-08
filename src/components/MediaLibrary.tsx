@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { Box, IconButton, Dialog, Paper, Button, Typography, useTheme, Fade, Checkbox, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import React, { useRef, useState, useCallback } from 'react';
+import { Box, IconButton, Dialog, Paper, Button, Typography, useTheme, Fade, Checkbox } from '@mui/material';
 import { keyframes } from '@mui/system';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -11,8 +11,6 @@ import WarningIcon from '@mui/icons-material/Warning';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 import DownloadIcon from '@mui/icons-material/Download';
 import FolderZipIcon from '@mui/icons-material/FolderZip';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 const DELETE_ANIMATION_DURATION = 320;
 
@@ -197,8 +195,6 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
     clearSelection();
   };
 
-  const [bulkMenuAnchor, setBulkMenuAnchor] = useState<null | HTMLElement>(null);
-
   const getSelectedItems = () => items.filter(i => selectedIds.has(i.id));
 
   const downloadAll = async () => {
@@ -208,9 +204,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
       a.href = item.url;
       a.download = `lumina_${item.type}_${item.timestamp}.${item.type === 'image' ? 'png' : 'webm'}`;
       a.click();
-      await new Promise(r => setTimeout(r, 100)); // Small delay between downloads
+      await new Promise(r => setTimeout(r, 100));
     }
-    setBulkMenuAnchor(null);
   };
 
   const downloadAsZip = async () => {
@@ -231,7 +226,6 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
     a.download = `lumia_media_${Date.now()}.zip`;
     a.click();
     URL.revokeObjectURL(a.href);
-    setBulkMenuAnchor(null);
   };
 
   const shareSelected = async () => {
@@ -251,7 +245,6 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
     } catch (e) {
       console.error('Share failed', e);
     }
-    setBulkMenuAnchor(null);
   };
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -363,7 +356,6 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
           height: 100,
           borderRadius: 3,
           mb: 3,
-          overflow: 'hidden',
           background: `linear-gradient(135deg, ${theme.palette.primary.main}33, ${theme.palette.secondary.main}33)`,
         }}
       >
@@ -371,11 +363,20 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
           sx={{
             position: 'absolute',
             inset: 0,
-            transform: `translateY(${scrollY * 0.4}px)`,
-            background: `radial-gradient(circle at 30% 50%, ${theme.palette.primary.main}44 0%, transparent 60%)`,
-            transition: 'transform 0.1s ease-out',
+            overflow: 'hidden',
+            borderRadius: 3,
           }}
-        />
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              transform: `translateY(${scrollY * 0.4}px)`,
+              background: `radial-gradient(circle at 30% 50%, ${theme.palette.primary.main}44 0%, transparent 60%)`,
+              transition: 'transform 0.1s ease-out',
+            }}
+          />
+        </Box>
         <Box
           sx={{
             position: 'relative',
@@ -397,58 +398,38 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
               {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
             </Typography>
           </Box>
-          {items.length > 0 && (
-            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-              {selectMode ? (
-                <>
-                  <Button size="small" onClick={selectAll} startIcon={<SelectAllIcon />}>All</Button>
-                  <Button size="small" onClick={clearSelection}>Cancel</Button>
-                  {selectedIds.size > 0 && (
-                    <>
-                      <Button size="small" color="error" onClick={deleteSelected} startIcon={<DeleteIcon />}>
-                        ({selectedIds.size})
-                      </Button>
-                      <Button size="small" onClick={downloadAll} startIcon={<DownloadIcon />}>
-                        Save
-                      </Button>
-                      <IconButton size="small" onClick={(e) => setBulkMenuAnchor(e.currentTarget)}>
-                        <MoreVertIcon />
-                      </IconButton>
-                    </>
-                  )}
-                </>
-              ) : (
-                <Button size="small" onClick={() => setSelectMode(true)}>Select</Button>
-              )}
-            </Box>
-          )}
         </Box>
       </Box>
 
-      {/* Bulk Actions Menu - rendered at root level */}
-      <Menu
-        anchorEl={bulkMenuAnchor}
-        open={Boolean(bulkMenuAnchor)}
-        onClose={() => setBulkMenuAnchor(null)}
-        sx={{ zIndex: 9999 }}
-      >
-        <MenuItem onClick={downloadAll}>
-          <ListItemIcon><DownloadIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Download All</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={downloadAsZip}>
-          <ListItemIcon><FolderZipIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Download as ZIP</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={shareSelected}>
-          <ListItemIcon><ShareIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Share</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={deleteSelected}>
-          <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
-          <ListItemText>Delete All</ListItemText>
-        </MenuItem>
-      </Menu>
+      {/* Selection Controls - Outside header for visibility */}
+      {items.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+          {selectMode ? (
+            <>
+              <Button size="small" variant="outlined" onClick={selectAll} startIcon={<SelectAllIcon />}>Select All</Button>
+              <Button size="small" variant="outlined" onClick={clearSelection}>Cancel</Button>
+              {selectedIds.size > 0 && (
+                <>
+                  <Button size="small" variant="contained" color="error" onClick={deleteSelected} startIcon={<DeleteIcon />}>
+                    Delete ({selectedIds.size})
+                  </Button>
+                  <Button size="small" variant="contained" onClick={downloadAll} startIcon={<DownloadIcon />}>
+                    Download
+                  </Button>
+                  <Button size="small" variant="outlined" onClick={downloadAsZip} startIcon={<FolderZipIcon />}>
+                    ZIP
+                  </Button>
+                  <Button size="small" variant="outlined" onClick={shareSelected} startIcon={<ShareIcon />}>
+                    Share
+                  </Button>
+                </>
+              )}
+            </>
+          ) : (
+            <Button size="small" variant="outlined" onClick={() => setSelectMode(true)}>Select</Button>
+          )}
+        </Box>
+      )}
 
       {items.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
