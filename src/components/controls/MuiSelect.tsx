@@ -20,7 +20,7 @@ export const MuiSelect: React.FC<MuiSelectProps> = ({ label, value, options, onC
     }, [value, options]);
     
     return (
-        <Box sx={{ minWidth: 120, mb: 2 }}>
+        <Box sx={{ flex: 1, minWidth: 0, mb: 2 }}>
             <FormControl fullWidth size="small" disabled={disabled}>
                 <InputLabel id={labelId}>{label}</InputLabel>
                 <Select

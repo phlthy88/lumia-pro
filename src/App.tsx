@@ -30,11 +30,13 @@ const Vectorscope = React.lazy(() => import('./components/Vectorscope').then(m =
 import { ParallaxHeader } from './components/ParallaxHeader';
 import { PerformanceModeToggle, PerformanceTier } from './components/PerformanceModeToggle';
 import { ControlCard } from './components/controls/ControlCard';
+import { MuiSwitch } from './components/controls/MuiToggle';
+import { MuiSlider } from './components/controls/MuiSlider';
 
 // Separate component for drawer content to consume contexts
 const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
     const { activeTab } = useUIState();
-    const { overlayConfig, setOverlayConfig, midi, virtualCamera } = useRenderContext();
+    const { overlayConfig, setOverlayConfig, midi, virtualCamera, wipePosition, setWipePosition } = useRenderContext();
     const { mediaItems, deleteMedia, loadItemUrl } = useRecordingContext();
     const { videoRef } = useCameraContext();
     const [performanceTier, setPerformanceTier] = useState<PerformanceTier>('auto');
@@ -61,11 +63,20 @@ const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
                 <>
                     <ParallaxHeader title="Overlays" subtitle="Grids, guides & display options" scrollY={scrollY} />
                     <Suspense fallback={<CircularProgress />}><MuiOverlaySettings config={overlayConfig} setConfig={setOverlayConfig} /></Suspense>
+                    <ControlCard title="A/B Comparison">
+                        <MuiSwitch label="Enable Wipe" checked={wipePosition > 0} onChange={(enabled) => setWipePosition(enabled ? 0.5 : 0)} />
+                        {wipePosition > 0 && (
+                            <MuiSlider label="Wipe Position" value={wipePosition} min={0.01} max={0.99} step={0.01} onChange={setWipePosition} />
+                        )}
+                    </ControlCard>
+                </>
+            );
+        case 'METERS':
+            return (
+                <>
+                    <ParallaxHeader title="Meters" subtitle="Scopes & analysis tools" scrollY={scrollY} />
                     <ControlCard title="Scopes">
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2">Vectorscope</Typography>
-                            <input type="checkbox" checked={vectorscopeEnabled} onChange={e => setVectorscopeEnabled(e.target.checked)} />
-                        </Box>
+                        <MuiSwitch label="Vectorscope" checked={vectorscopeEnabled} onChange={setVectorscopeEnabled} />
                         {vectorscopeEnabled && (
                             <Suspense fallback={<CircularProgress size={20} />}>
                                 <Vectorscope videoRef={videoRef} enabled={vectorscopeEnabled} size={140} />

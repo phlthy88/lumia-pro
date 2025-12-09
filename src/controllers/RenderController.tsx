@@ -42,6 +42,8 @@ interface RenderContextState {
   presets: Preset[];
   activeLutIndex: number;
   availableLuts: LutData[];
+  wipePosition: number;
+  setWipePosition: (pos: number) => void;
 
   setMode: (mode: RenderMode) => void;
   toggleBypass: () => void;
@@ -141,6 +143,7 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
   const [lutEntries, setLutEntries] = useState<LutEntry[]>([]);
   const [activeLutIndex, setActiveLutIndex] = useState(0);
   const [activeLutData, setActiveLutData] = useState<LutData | null>(null);
+  const [wipePosition, setWipePosition] = useState(0);
   const lutCacheRef = useRef<Map<number, LutData>>(new Map());
   const MAX_CACHED_LUTS = 5;
 
@@ -334,16 +337,16 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
 
   // Renderer Setup
   const latestStateRef = useRef({
-      color, transform, mode, bypass,
+      color, transform, mode, bypass, wipePosition,
       ...beautyParams
   });
 
   useEffect(() => {
       latestStateRef.current = {
-          color, transform, mode, bypass,
+          color, transform, mode, bypass, wipePosition,
           ...beautyParams
       };
-  }, [color, transform, mode, bypass, beautyParams]);
+  }, [color, transform, mode, bypass, wipePosition, beautyParams]);
 
   const getParams = useCallback(() => {
       // Read latest state without invoking hooks inside the render loop
@@ -465,7 +468,7 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
     <RenderContext.Provider value={{
       canvasRef, setCanvasRef, statsRef, gyroRef,
       color, transform, mode, bypass, presets,
-      activeLutIndex, availableLuts,
+      activeLutIndex, availableLuts, wipePosition, setWipePosition,
       setMode, toggleBypass, handleColorChange, handleTransformChange,
       setActiveLutIndex, handleLutUpload,
       resetAll, resetColorWheels, resetGrading, resetDetailOptics, resetTransform,
