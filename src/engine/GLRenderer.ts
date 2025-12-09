@@ -217,7 +217,7 @@ export class GLRenderer {
 
     public start(
         // Note: gyroAngle is reserved for future gyroscope-based rotation feature
-        getParams: () => { color: ColorGradeParams, transform: TransformParams, mode: RenderMode, gyroAngle: number, bypass: boolean },
+        getParams: () => { color: ColorGradeParams, transform: TransformParams, mode: RenderMode, gyroAngle: number, bypass: boolean, wipePosition?: number },
         onStats: (fps: number) => void,
         onDrawOverlay: (ctx: CanvasRenderingContext2D, width: number, height: number, time: number) => boolean
     ) {
@@ -401,6 +401,7 @@ export class GLRenderer {
             
             uniform int u_mode;
             uniform int u_bypass;
+            uniform float u_wipe_position;
 
             // Quality Scale Uniform
             uniform float u_qualityScale;
@@ -770,7 +771,20 @@ export class GLRenderer {
                 vec4 overlay = texture(u_overlayTexture, v_texCoord); 
                 color = mix(color, overlay.rgb, overlay.a);
 
-                outColor = vec4(color, 1.0);
+                // A/B Wipe comparison
+                vec3 finalColor = color;
+                if (u_wipe_position > 0.0 && u_wipe_position < 1.0) {
+                    vec3 originalColor = texture(u_videoTexture, uv).rgb;
+                    if (uv.x > u_wipe_position) {
+                        finalColor = originalColor;
+                    }
+                    // Draw wipe line
+                    if (abs(uv.x - u_wipe_position) < 0.003) {
+                        finalColor = vec3(1.0);
+                    }
+                }
+
+                outColor = vec4(finalColor, 1.0);
             }`;
 
             const vs = this.compileShader(this.gl.VERTEX_SHADER, vsSource);
@@ -956,6 +970,7 @@ export class GLRenderer {
 
         setUniform1i('u_mode', this.getModeInt(params.mode));
         setUniform1i('u_bypass', params.bypass ? 1 : 0);
+        setUniform1f('u_wipe_position', params.wipePosition ?? 0);
 
         setUniform1f('u_qualityScale', this.qualityProfile.resolutionScale);
 

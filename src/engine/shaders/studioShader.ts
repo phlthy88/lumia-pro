@@ -58,6 +58,7 @@ uniform float u_rotate;
 uniform int u_mode; 
 uniform float u_gyro_angle; 
 uniform bool u_bypass;
+uniform float u_wipe_position; // A/B wipe: 0.0 = all processed, 1.0 = all bypass, 0.5 = split
 
 out vec4 outColor;
 
@@ -287,6 +288,17 @@ void main() {
           }
 
           finalColor = vec4(color, 1.0);
+      }
+      
+      // A/B Wipe comparison (0.0 = all processed, 1.0 = all bypass)
+      if (u_wipe_position > 0.0 && u_wipe_position < 1.0) {
+          if (transUV.x > u_wipe_position) {
+              finalColor = baseColor; // Show original on right side
+          }
+          // Draw wipe line
+          if (abs(transUV.x - u_wipe_position) < 0.002) {
+              finalColor = vec4(1.0, 1.0, 1.0, 1.0);
+          }
       }
   }
 

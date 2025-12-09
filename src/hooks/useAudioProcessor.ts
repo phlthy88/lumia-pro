@@ -7,6 +7,10 @@ interface AudioProcessorConfig {
   compRatio: number;
   eqLowCut: number;
   eqHighBoost: number;
+  deEsserEnabled: boolean;
+  deEsserThreshold: number;
+  limiterEnabled: boolean;
+  limiterThreshold: number;
 }
 
 const DEFAULT_CONFIG: AudioProcessorConfig = {
@@ -16,6 +20,10 @@ const DEFAULT_CONFIG: AudioProcessorConfig = {
   compRatio: 12,
   eqLowCut: 80,
   eqHighBoost: 8000,
+  deEsserEnabled: true,
+  deEsserThreshold: -30,
+  limiterEnabled: true,
+  limiterThreshold: -1, // Brickwall at -1dB
 };
 
 export const useAudioProcessor = () => {
@@ -26,6 +34,9 @@ export const useAudioProcessor = () => {
     compressor?: DynamicsCompressorNode;
     lowCut?: BiquadFilterNode;
     highBoost?: BiquadFilterNode;
+    deEsserFilter?: BiquadFilterNode;
+    deEsserComp?: DynamicsCompressorNode;
+    limiter?: DynamicsCompressorNode;
     destination?: MediaStreamAudioDestinationNode;
   }>({});
 
@@ -67,14 +78,63 @@ export const useAudioProcessor = () => {
     highBoost.Q.value = 1.0;
     highBoost.gain.value = 3;
 
-    // Chain: source -> lowCut -> gate -> compressor -> highBoost -> destination
-    source.connect(lowCut);
-    lowCut.connect(gate);
-    gate.connect(compressor);
-    compressor.connect(highBoost);
-    highBoost.connect(destination);
+    // De-Esser: Sidechain compression on sibilant frequencies (4-8kHz)
+    // Uses a bandpass filter to detect sibilance, then compresses
+    const deEsserFilter = ctx.createBiquadFilter();
+    deEsserFilter.type = 'peaking';
+    deEsserFilter.frequency.value = 6000; // Target sibilant range
+    deEsserFilter.Q.value = 2.0;
+    deEsserFilter.gain.value = 0; // Detection only
 
-    nodesRef.current = { source, gate, compressor, lowCut, highBoost, destination };
+    const deEsserComp = ctx.createDynamicsCompressor();
+    deEsserComp.threshold.value = config.deEsserThreshold;
+    deEsserComp.knee.value = 0;
+    deEsserComp.ratio.value = 10; // Aggressive on sibilance
+    deEsserComp.attack.value = 0.001; // Fast attack for transients
+    deEsserComp.release.value = 0.1;
+
+    // Limiter: Brickwall to prevent clipping
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = config.limiterThreshold;
+    limiter.knee.value = 0; // Hard knee for brickwall
+    limiter.ratio.value = 20; // Near-infinite ratio
+    limiter.attack.value = 0.001; // Instant attack
+    limiter.release.value = 0.1;
+
+    // Build chain: source -> lowCut -> gate -> compressor -> deEsser -> highBoost -> limiter -> destination
+    let lastNode: AudioNode = source;
+
+    lastNode.connect(lowCut);
+    lastNode = lowCut;
+
+    lastNode.connect(gate);
+    lastNode = gate;
+
+    lastNode.connect(compressor);
+    lastNode = compressor;
+
+    // De-Esser (if enabled)
+    if (config.deEsserEnabled) {
+      lastNode.connect(deEsserFilter);
+      deEsserFilter.connect(deEsserComp);
+      lastNode = deEsserComp;
+    }
+
+    lastNode.connect(highBoost);
+    lastNode = highBoost;
+
+    // Limiter (if enabled) - always last before output
+    if (config.limiterEnabled) {
+      lastNode.connect(limiter);
+      lastNode = limiter;
+    }
+
+    lastNode.connect(destination);
+
+    nodesRef.current = { 
+      source, gate, compressor, lowCut, highBoost, 
+      deEsserFilter, deEsserComp, limiter, destination 
+    };
 
     return destination.stream;
   }, []);
@@ -88,3 +148,5 @@ export const useAudioProcessor = () => {
 
   return { processStream, cleanup };
 };
+
+export type { AudioProcessorConfig };

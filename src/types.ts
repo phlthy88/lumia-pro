@@ -207,6 +207,7 @@ export interface RenderParams {
     mode: RenderMode;
     gyroAngle: number;
     bypass: boolean;
+    wipePosition?: number; // A/B wipe: 0.0 = all processed, 1.0 = all bypass, 0.5 = split
     beauty?: BeautyParams;
     faceCenter?: Point2D;
     mouthCenter?: Point2D;
