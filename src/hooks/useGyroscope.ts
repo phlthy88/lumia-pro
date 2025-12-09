@@ -57,7 +57,9 @@ export const useGyroscope = (enableState: boolean = true) => {
     }
 
     return () => {
-      if (sensor) sensor.stop();
+      if (sensor) {
+        sensor.stop();
+      }
       window.removeEventListener('deviceorientation', handleOrientation);
     };
   }, [enableState]);

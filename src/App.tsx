@@ -23,6 +23,12 @@ import { useAIAnalysis } from './hooks/useAIAnalysis';
 import { useVisionWorker } from './hooks/useVisionWorker';
 import { MaskGenerator } from './beauty/MaskGenerator';
 
+// Services
+import { aiService } from './services/AIAnalysisService';
+import { virtualCameraService } from './services/VirtualCameraService';
+import { useMemoryMonitor } from './hooks/useMemoryMonitor';
+import { migrateSettings } from './services/SettingsMigration';
+
 // Components
 import { FeatureGate } from './components/FeatureGate';
 import { Features } from './config/features';
@@ -111,6 +117,20 @@ const CountdownOverlay: React.FC<{ count: number; type: 'video' | 'photo' }> = (
 };
 
 const AppContent: React.FC = () => {
+    // Memory Monitor
+    useMemoryMonitor();
+
+    // Cleanup on unload
+    useEffect(() => {
+        const handleUnload = () => {
+             // Dispose critical services
+             virtualCameraService.dispose();
+             aiService.dispose();
+        };
+        window.addEventListener('beforeunload', handleUnload);
+        return () => window.removeEventListener('beforeunload', handleUnload);
+    }, []);
+
     // Layout State
     const [activeTab, setActiveTab] = useState('ADJUST');
     const [drawerScrollY, setDrawerScrollY] = useState(0);
@@ -295,6 +315,8 @@ const AppContent: React.FC = () => {
             transform, 
             mode, 
             bypass,
+            faceCenter: latestStateRef.current.faceCenter, // Persist previous values
+            mouthCenter: latestStateRef.current.mouthCenter,
             beauty: { 
                 smoothStrength: beauty.enabled ? beauty.smooth : 0,
                 eyeBrighten: beauty.enabled ? beauty.eyeBrighten : 0,

@@ -66,8 +66,11 @@ export const useMidi = (
   useEffect(() => {
     if (!enabled || !navigator.requestMIDIAccess || midiAccess) return;
 
+    let isMounted = true;
+
     navigator.requestMIDIAccess()
       .then(access => {
+        if (!isMounted) return;
         setMidiAccess(access);
         
         access.inputs.forEach(input => {
@@ -77,6 +80,7 @@ export const useMidi = (
         });
 
         access.onstatechange = (e) => {
+          if (!isMounted) return;
           const port = e.port as MIDIInput;
           if (port.type === 'input') {
             if (port.state === 'connected') {
@@ -89,8 +93,15 @@ export const useMidi = (
           }
         };
       })
-      .catch(() => setConnected(false));
-  }, [enabled, midiAccess, handleMidiMessage]);
+      .catch(() => {
+        if (isMounted) setConnected(false);
+      });
+
+    return () => {
+      isMounted = false;
+      disconnect();
+    };
+  }, [enabled, midiAccess, handleMidiMessage, disconnect]);
 
   return { connected, midiAccess, requestAccess, disconnect, enabled, lastVelocity };
 };
