@@ -200,22 +200,12 @@ const ShortcutsListener = () => {
 
 export default function App() {
   // videoRef is managed by CameraController (hookVideoRef).
-  // RenderController needs it.
-  // We don't create it here.
-
-  // Wait, the plan said:
-  // <CameraController videoRef={videoRef} />
-  // <RenderController videoRef={videoRef} canvasRef={canvasRef} />
-  // But I found I couldn't pass videoRef easily to `useCameraStream`.
-  // So I modified CameraController to expose it.
-  // And RenderController consumes it from context.
-  // So App doesn't need to create it.
 
   return (
     <ErrorBoundary>
         <ThemeProvider>
             <UIStateProvider>
-                <CameraController videoRef={null as any /* Ref managed internally */}>
+                <CameraController>
                     <RenderController>
                         <AIController>
                             <RecordingController>

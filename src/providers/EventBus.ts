@@ -6,9 +6,13 @@ type EventMap = {
   'gl:contextlost': void;
   'gl:contextrestored': void;
   'ai:result': { params: Partial<ColorGradeParams> };
+  'ai:masks': { mask1: OffscreenCanvas | HTMLCanvasElement | null; mask2: OffscreenCanvas | HTMLCanvasElement | null };
+  'ai:landmarks': { faceCenter: { x: number; y: number }; mouthCenter: { x: number; y: number } };
   'virtualcam:status': { active: boolean };
   'recording:start': void;
   'recording:stop': { blob: Blob };
+  'recording:toggle': void;
+  'recording:snapshot': void;
   'memory:warning': { usedMB: number };
 };
 

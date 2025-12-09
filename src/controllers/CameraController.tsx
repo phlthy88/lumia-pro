@@ -41,11 +41,10 @@ export const useCameraContext = () => {
 };
 
 interface CameraControllerProps {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
   children?: ReactNode;
 }
 
-export const CameraController: React.FC<CameraControllerProps> = ({ videoRef, children }) => {
+export const CameraController: React.FC<CameraControllerProps> = ({ children }) => {
   const [streamCapabilities, setStreamCapabilities] = useState<{maxFrameRate?: number, maxWidth?: number, maxHeight?: number}>({});
 
   const {
