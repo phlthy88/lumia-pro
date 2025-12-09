@@ -6,27 +6,39 @@ interface ThumbnailSwooshProps {
     onComplete: () => void;
 }
 
-const swoosh = keyframes`
-    0% {
-        transform: translate(0, 0) scale(1);
-        opacity: 1;
-    }
-    100% {
-        transform: translate(calc(50vw - 50px), calc(-50vh + 50px)) scale(0.3);
-        opacity: 0;
-    }
-`;
-
 export const ThumbnailSwoosh: React.FC<ThumbnailSwooshProps> = ({ thumbnailUrl, onComplete }) => {
     const [show, setShow] = useState(false);
+    const [targetPos, setTargetPos] = useState({ x: 0, y: 0 });
+    const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+    const [imageLoaded, setImageLoaded] = useState(false);
 
     useEffect(() => {
         if (thumbnailUrl) {
+            setImageLoaded(false);
             setShow(true);
+            
+            // Calculate start position (center-bottom of screen, above controls)
+            const startX = window.innerWidth / 2;
+            const startY = window.innerHeight - 150;
+            setStartPos({ x: startX, y: startY });
+            
+            // Find the Media nav item
+            const mediaBtn = document.querySelector('[aria-label="Media"]') as HTMLElement;
+            if (mediaBtn) {
+                const rect = mediaBtn.getBoundingClientRect();
+                setTargetPos({
+                    x: rect.left + rect.width / 2 - startX,
+                    y: rect.top + rect.height / 2 - startY
+                });
+            } else {
+                // Fallback
+                setTargetPos({ x: -startX + 60, y: -startY + window.innerHeight - 60 });
+            }
+            
             const timer = setTimeout(() => {
                 setShow(false);
                 onComplete();
-            }, 1200);
+            }, 800);
             return () => clearTimeout(timer);
         }
         return undefined;
@@ -34,26 +46,39 @@ export const ThumbnailSwoosh: React.FC<ThumbnailSwooshProps> = ({ thumbnailUrl, 
 
     if (!show || !thumbnailUrl) return null;
 
+    const swoosh = keyframes`
+        0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: translate(${targetPos.x}px, ${targetPos.y}px) scale(0.2);
+            opacity: 0;
+        }
+    `;
+
     return (
         <Box
             sx={{
                 position: 'fixed',
-                bottom: 100,
-                left: '50%',
-                transform: 'translateX(-50%)',
+                left: startPos.x - 40,
+                top: startPos.y - 40,
                 width: 80,
                 height: 80,
                 borderRadius: 2,
                 overflow: 'hidden',
-                boxShadow: 4,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
                 zIndex: 9999,
                 pointerEvents: 'none',
-                animation: `${swoosh} 1.2s cubic-bezier(0.4, 0.0, 0.2, 1) forwards`,
+                border: '2px solid white',
+                animation: imageLoaded ? `${swoosh} 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) forwards` : 'none',
+                opacity: imageLoaded ? 1 : 0,
             }}
         >
             <Box
                 component="img"
                 src={thumbnailUrl}
+                onLoad={() => setImageLoaded(true)}
                 sx={{
                     width: '100%',
                     height: '100%',

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { ColorGradeParams } from '../types';
 
 interface MidiMapping {
@@ -25,6 +25,8 @@ export const useMidi = (
   const [midiAccess, setMidiAccess] = useState<MIDIAccess | null>(null);
   const [connected, setConnected] = useState(false);
   const [enabled, setEnabled] = useState(false);
+  const [lastVelocity, setLastVelocity] = useState(0);
+  const inputsRef = useRef<MIDIInput[]>([]);
 
   const handleMidiMessage = useCallback((event: MIDIMessageEvent) => {
     const data = event.data;
@@ -32,6 +34,8 @@ export const useMidi = (
     
     const [status, cc, velocity] = Array.from(data);
     if (status === undefined || cc === undefined || velocity === undefined) return;
+    
+    setLastVelocity(velocity);
     
     if (status === 176) { // Control Change
       const mapping = DEFAULT_MAPPINGS.find(m => m.cc === cc);
@@ -48,6 +52,17 @@ export const useMidi = (
     setEnabled(true);
   }, [midiAccess]);
 
+  const disconnect = useCallback(() => {
+    inputsRef.current.forEach(input => {
+      input.onmidimessage = null;
+    });
+    inputsRef.current = [];
+    setMidiAccess(null);
+    setConnected(false);
+    setEnabled(false);
+    setLastVelocity(0);
+  }, []);
+
   useEffect(() => {
     if (!enabled || !navigator.requestMIDIAccess || midiAccess) return;
 
@@ -57,6 +72,7 @@ export const useMidi = (
         
         access.inputs.forEach(input => {
           input.onmidimessage = handleMidiMessage;
+          inputsRef.current.push(input);
           setConnected(true);
         });
 
@@ -65,6 +81,7 @@ export const useMidi = (
           if (port.type === 'input') {
             if (port.state === 'connected') {
               port.onmidimessage = handleMidiMessage;
+              inputsRef.current.push(port);
               setConnected(true);
             } else {
               setConnected(false);
@@ -75,5 +92,5 @@ export const useMidi = (
       .catch(() => setConnected(false));
   }, [enabled, midiAccess, handleMidiMessage]);
 
-  return { connected, midiAccess, requestAccess, enabled };
+  return { connected, midiAccess, requestAccess, disconnect, enabled, lastVelocity };
 };

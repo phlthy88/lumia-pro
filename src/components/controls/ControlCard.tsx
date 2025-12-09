@@ -8,7 +8,7 @@ const spin = keyframes`
 `;
 
 interface ControlCardProps {
-    title: string;
+    title: React.ReactNode;
     children: React.ReactNode;
     defaultExpanded?: boolean;
     onReset?: () => void;

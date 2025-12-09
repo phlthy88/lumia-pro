@@ -30,6 +30,8 @@ const DEFAULT_TRANSFORM: TransformParams = {
   panX: 0,
   panY: 0,
   rotate: 0,
+  flipX: false,
+  flipY: false,
 };
 
 const FACTORY_PRESETS: Preset[] = [
@@ -113,7 +115,7 @@ export const useColorGrading = () => {
 
   const canUndo = historyIndex > 0;
 
-  const handleTransformChange = useCallback((key: keyof TransformParams, value: number) => {
+  const handleTransformChange = useCallback((key: keyof TransformParams, value: number | boolean) => {
     setTransform(prev => ({ ...prev, [key]: value }));
   }, []);
 

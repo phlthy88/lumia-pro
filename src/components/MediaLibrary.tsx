@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { Box, IconButton, Dialog, Paper, Button, Typography, useTheme, Fade, Checkbox } from '@mui/material';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { Box, IconButton, Dialog, Paper, Button, Typography, useTheme, Fade, Checkbox, CircularProgress } from '@mui/material';
 import { keyframes } from '@mui/system';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -51,16 +51,32 @@ interface ParallaxMediaItemProps {
   isSelected?: boolean;
   onSelect?: () => void;
   selectMode?: boolean;
+  onLoadUrl?: () => void;
 }
 
 const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({ 
-  item, index, scrollY, onSave, onEdit, onShare, onDelete, isDeleting = false, isSelected = false, onSelect, selectMode = false
+  item, index, scrollY, onSave, onEdit, onShare, onDelete, isDeleting = false, isSelected = false, onSelect, selectMode = false, onLoadUrl
 }) => {
   const theme = useTheme();
   const parallaxOffset = (scrollY * 0.1) * (index % 3 === 0 ? 1 : index % 3 === 1 ? 0.7 : 0.4);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Lazy-load URL when item becomes visible
+  useEffect(() => {
+    if (!ref.current || item.url) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        onLoadUrl?.();
+        observer.disconnect();
+      }
+    }, { rootMargin: '100px' });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [item.url, onLoadUrl]);
   
   return (
     <Box 
+      ref={ref}
       data-media-item
       onClick={selectMode ? onSelect : undefined}
        sx={{ 
@@ -97,9 +113,14 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({
           height: '100%',
           transform: `translateY(${parallaxOffset}px)`,
           transition: 'transform 0.4s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        {item.type === 'image' ? (
+        {!item.url ? (
+          <CircularProgress size={24} />
+        ) : item.type === 'image' ? (
           <img src={item.url} alt={`Captured photo from ${new Date(item.timestamp).toLocaleString()}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
           <video src={item.url} preload="metadata" aria-label={`Captured video from ${new Date(item.timestamp).toLocaleString()}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -160,10 +181,11 @@ interface MediaLibraryProps {
   items: MediaItem[];
   onClose?: () => void;
   onDelete: (id: string) => void;
+  loadItemUrl?: (id: string) => Promise<string>;
   mode?: 'dialog' | 'panel';
 }
 
-export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDelete, mode = 'dialog' }) => {
+export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDelete, loadItemUrl, mode = 'dialog' }) => {
   const theme = useTheme();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -453,6 +475,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
               isSelected={selectedIds.has(item.id)}
               onSelect={() => toggleSelect(item.id)}
               selectMode={selectMode}
+              onLoadUrl={loadItemUrl ? () => loadItemUrl(item.id) : undefined}
             />
           ))}
         </Box>

@@ -3,7 +3,7 @@ import { Box, Typography, CircularProgress, Snackbar, Alert } from '@mui/materia
 import { PhotoLibrary } from '@mui/icons-material';
 import { ThemeProvider, useAppTheme } from './theme/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
-import { RenderMode, LutData, BeautyConfig, FallbackMode } from './types';
+import { RenderMode, LutData, BeautyConfig, FallbackMode, AudioConfig } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ErrorScreen } from './components/ErrorScreen';
 
@@ -204,6 +204,8 @@ const AppContent: React.FC = () => {
         handleTransformChange('rotate', 0);
         handleTransformChange('panX', 0);
         handleTransformChange('panY', 0);
+        handleTransformChange('flipX', false);
+        handleTransformChange('flipY', false);
     }, [handleTransformChange]);
 
     const resetBeauty = useCallback(() => {
@@ -455,7 +457,8 @@ const AppContent: React.FC = () => {
     // Recorder - Add null check for canvasRef
     const { 
         isRecording, isCountingDown, isPhotoCountingDown, isBursting, countdown, photoCountdown, recordingTime, config: recConfig, setConfig: setRecConfig, 
-        startRecording, stopRecording, takeScreenshot, takeBurst, cancelCountdown, mediaItems, deleteMedia, clearMedia, audioStream, error: recordingError
+        audioConfig, setAudioConfig,
+        startRecording, stopRecording, takeScreenshot, takeBurst, cancelCountdown, mediaItems, loadItemUrl, deleteMedia, clearMedia, audioStream, error: recordingError
     } = useRecorder(canvasRef as React.RefObject<HTMLCanvasElement>);
 
     // Wrapped screenshot with animation (uses burst mode if configured)
@@ -564,6 +567,8 @@ const AppContent: React.FC = () => {
                                     { value: RenderMode.Zebras, label: 'ZEBRA' },
                                     { value: RenderMode.Level, label: 'LEVEL' },
                                     { value: RenderMode.Heatmap, label: 'IRE' },
+                                    { value: RenderMode.RGBAParade, label: 'PARADE' },
+                                    { value: RenderMode.Histogram, label: 'HIST' },
                                 ]}
                                 onChange={(v) => setMode(v as RenderMode)}
                             />
@@ -609,6 +614,30 @@ const AppContent: React.FC = () => {
                             <MuiSlider label="Rotation" value={transform.rotate} min={-45} max={45} step={0.1} onChange={(v) => handleTransformChange('rotate', v)} unit="°" />
                             <MuiSlider label="Pan X" value={transform.panX} min={-1.0} max={1.0} step={0.01} onChange={(v) => handleTransformChange('panX', v)} />
                             <MuiSlider label="Pan Y" value={transform.panY} min={-1.0} max={1.0} step={0.01} onChange={(v) => handleTransformChange('panY', v)} />
+                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                                <MuiButton 
+                                    variant={transform.flipX ? 'contained' : 'outlined'}
+                                    onClick={() => handleTransformChange('flipX', !transform.flipX)}
+                                    sx={{ 
+                                        flex: 1,
+                                        transition: 'transform 0.3s ease',
+                                        transform: transform.flipX ? 'scaleX(-1)' : 'scaleX(1)'
+                                    }}
+                                >
+                                    ↔ Flip X
+                                </MuiButton>
+                                <MuiButton 
+                                    variant={transform.flipY ? 'contained' : 'outlined'}
+                                    onClick={() => handleTransformChange('flipY', !transform.flipY)}
+                                    sx={{ 
+                                        flex: 1,
+                                        transition: 'transform 0.3s ease',
+                                        transform: transform.flipY ? 'scaleY(-1)' : 'scaleY(1)'
+                                    }}
+                                >
+                                    ↕ Flip Y
+                                </MuiButton>
+                            </Box>
                         </ControlCard>
 
                         <MuiLutControl 
@@ -707,21 +736,59 @@ const AppContent: React.FC = () => {
                             subtitle="Recording, export & virtual camera"
                             scrollY={drawerScrollY}
                         />
-                        <MuiRecorderSettings config={recConfig} setConfig={setRecConfig} audioStream={audioStream} />
+                        <MuiRecorderSettings config={recConfig} setConfig={setRecConfig} audioConfig={audioConfig} setAudioConfig={setAudioConfig} audioStream={audioStream} />
                         <VirtualCameraSettings virtualCamera={virtualCamera} />
                         <ControlCard title="MIDI Controller">
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <MuiButton 
-                                    onClick={midi.requestAccess} 
-                                    disabled={midi.enabled}
-                                    variant={midi.connected ? 'outlined' : 'contained'}
-                                >
-                                    {midi.connected ? 'Connected' : midi.enabled ? 'Connecting...' : 'Connect MIDI'}
-                                </MuiButton>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                                {!midi.connected ? (
+                                    <MuiButton 
+                                        onClick={midi.requestAccess} 
+                                        disabled={midi.enabled}
+                                        variant="contained"
+                                    >
+                                        {midi.enabled ? 'Connecting...' : 'Connect MIDI'}
+                                    </MuiButton>
+                                ) : (
+                                    <MuiButton 
+                                        onClick={midi.disconnect} 
+                                        variant="outlined"
+                                        color="error"
+                                    >
+                                        Disconnect
+                                    </MuiButton>
+                                )}
                                 {midi.connected && (
                                     <Typography variant="caption" color="success.main">● Device active</Typography>
                                 )}
                             </Box>
+                            {midi.connected && (
+                                <Box sx={{ mt: 2 }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                                        MIDI Activity
+                                    </Typography>
+                                    <Box sx={{ 
+                                        height: 8, 
+                                        bgcolor: 'action.hover', 
+                                        borderRadius: 1, 
+                                        overflow: 'hidden',
+                                        position: 'relative'
+                                    }}>
+                                        <Box sx={{ 
+                                            position: 'absolute',
+                                            left: 0,
+                                            top: 0,
+                                            height: '100%',
+                                            width: `${(midi.lastVelocity / 127) * 100}%`,
+                                            bgcolor: midi.lastVelocity > 100 ? 'error.main' : midi.lastVelocity > 64 ? 'warning.main' : 'success.main',
+                                            transition: 'width 0.05s ease-out, background-color 0.1s',
+                                            borderRadius: 1
+                                        }} />
+                                    </Box>
+                                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                        Velocity: {midi.lastVelocity}
+                                    </Typography>
+                                </Box>
+                            )}
                         </ControlCard>
                     </>
                 );
@@ -752,7 +819,7 @@ const AppContent: React.FC = () => {
                             </Box>
                         ) : (
                             <React.Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
-                                <MediaLibrary items={mediaItems} onDelete={deleteMedia} mode="panel" />
+                                <MediaLibrary items={mediaItems} onDelete={deleteMedia} loadItemUrl={loadItemUrl} mode="panel" />
                             </React.Suspense>
                         )}
                     </>

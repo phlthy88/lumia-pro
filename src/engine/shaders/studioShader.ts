@@ -43,6 +43,11 @@ uniform float u_portrait_light;
 uniform float u_distortion;
 uniform float u_lut_strength;
 uniform float u_skin_smoothing;
+uniform sampler2D u_beautyMask;
+uniform sampler2D u_beautyMask2;
+uniform float u_lips_fuller;
+uniform float u_nose_slim;
+uniform float u_cheekbones;
 
 // Transform Params
 uniform float u_zoom;

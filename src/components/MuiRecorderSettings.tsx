@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Chip } from '@mui/material';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { MuiSelect } from './controls/MuiSelect';
+import { MuiSwitch } from './controls/MuiToggle';
 import { ControlCard } from './controls/ControlCard';
-import { RecorderConfig } from '../types';
+import { RecorderConfig, AudioConfig, AudioPreset, AUDIO_PRESETS } from '../types';
 import { AudioMeter } from './AudioMeter';
 
 interface RecorderSettingsProps {
     config: RecorderConfig;
     setConfig: React.Dispatch<React.SetStateAction<RecorderConfig>>;
+    audioConfig: AudioConfig;
+    setAudioConfig: React.Dispatch<React.SetStateAction<AudioConfig>>;
     audioStream?: MediaStream | null;
 }
 
-export const MuiRecorderSettings: React.FC<RecorderSettingsProps> = ({ config, setConfig, audioStream }) => {
+export const MuiRecorderSettings: React.FC<RecorderSettingsProps> = ({ config, setConfig, audioConfig, setAudioConfig, audioStream }) => {
     const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
     const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceInfo[]>([]);
 
@@ -21,6 +25,17 @@ export const MuiRecorderSettings: React.FC<RecorderSettingsProps> = ({ config, s
             setAudioOutputDevices(devices.filter(d => d.kind === 'audiooutput'));
         });
     }, []);
+
+    const applyPreset = (preset: AudioPreset) => {
+        const settings = AUDIO_PRESETS[preset];
+        setAudioConfig({ ...settings, preset });
+    };
+
+    const handleAudioChange = <K extends keyof AudioConfig>(key: K, value: AudioConfig[K]) => {
+        setAudioConfig(prev => ({ ...prev, [key]: value, preset: 'custom' as AudioPreset }));
+    };
+
+    const aiActive = audioConfig.noiseSuppression || audioConfig.echoCancellation || audioConfig.autoGainControl;
 
     const formatOptions = [
         { value: "video/webm;codecs=vp9", label: "WebM (VP9)" },
@@ -61,6 +76,27 @@ export const MuiRecorderSettings: React.FC<RecorderSettingsProps> = ({ config, s
         { value: 1000, label: "1 Second" },
     ];
 
+    const presetOptions: { value: AudioPreset; label: string }[] = [
+        { value: 'custom', label: 'Custom' },
+        { value: 'bandwidth_saver', label: '📶 Bandwidth Saver' },
+        { value: 'video_conference', label: '💼 Video Conference' },
+        { value: 'asmr', label: '🎧 ASMR' },
+        { value: 'podcast', label: '🎙️ Podcast' },
+        { value: 'broadcast', label: '📺 Broadcast' },
+    ];
+
+    const sampleRateOptions = [
+        { value: 16000, label: '16 kHz' },
+        { value: 22050, label: '22.05 kHz' },
+        { value: 44100, label: '44.1 kHz' },
+        { value: 48000, label: '48 kHz' },
+    ];
+
+    const channelOptions = [
+        { value: 1, label: 'Mono' },
+        { value: 2, label: 'Stereo' },
+    ];
+
     return (
         <>
             <ControlCard title="Recording Setup">
@@ -83,7 +119,22 @@ export const MuiRecorderSettings: React.FC<RecorderSettingsProps> = ({ config, s
                     onChange={(val) => setConfig(p => ({ ...p, countdown: Number(val) }))}
                 />
             </ControlCard>
-            <ControlCard title="Audio">
+            <ControlCard 
+                title={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        Audio
+                        {aiActive && (
+                            <Chip 
+                                icon={<AutoFixHighIcon sx={{ fontSize: 14 }} />} 
+                                label="AI" 
+                                size="small" 
+                                color="primary"
+                                sx={{ height: 20, '& .MuiChip-label': { px: 0.5, fontSize: 11 } }}
+                            />
+                        )}
+                    </Box>
+                }
+            >
                 <MuiSelect 
                     label="Microphone"
                     value={config.audioSource}
@@ -91,13 +142,57 @@ export const MuiRecorderSettings: React.FC<RecorderSettingsProps> = ({ config, s
                     onChange={(val) => setConfig(p => ({ ...p, audioSource: val }))}
                 />
                 {config.audioSource !== 'none' && (
-                    <Box sx={{ px: 1, pt: 1, pb: 2 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>Input Level</Typography>
-                        <AudioMeter audioStream={audioStream} variant="horizontal" />
-                    </Box>
+                    <>
+                        <Box sx={{ px: 1, pt: 1, pb: 2 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>Input Level</Typography>
+                            <AudioMeter audioStream={audioStream} variant="horizontal" />
+                        </Box>
+                        
+                        <MuiSelect 
+                            label="Preset Profile"
+                            value={audioConfig.preset}
+                            options={presetOptions}
+                            onChange={(val) => applyPreset(val as AudioPreset)}
+                        />
+                        
+                        <Typography variant="caption" color="text.secondary" sx={{ px: 1, pt: 1, display: 'block' }}>
+                            AI Processing
+                        </Typography>
+                        <MuiSwitch 
+                            label="Noise Suppression" 
+                            checked={audioConfig.noiseSuppression} 
+                            onChange={(v: boolean) => handleAudioChange('noiseSuppression', v)} 
+                        />
+                        <MuiSwitch 
+                            label="Echo Cancellation" 
+                            checked={audioConfig.echoCancellation} 
+                            onChange={(v: boolean) => handleAudioChange('echoCancellation', v)} 
+                        />
+                        <MuiSwitch 
+                            label="Auto Gain Control" 
+                            checked={audioConfig.autoGainControl} 
+                            onChange={(v: boolean) => handleAudioChange('autoGainControl', v)} 
+                        />
+                        
+                        <Typography variant="caption" color="text.secondary" sx={{ px: 1, pt: 1, display: 'block' }}>
+                            Format
+                        </Typography>
+                        <MuiSelect 
+                            label="Sample Rate"
+                            value={audioConfig.sampleRate}
+                            options={sampleRateOptions}
+                            onChange={(val) => handleAudioChange('sampleRate', Number(val))}
+                        />
+                        <MuiSelect 
+                            label="Channels"
+                            value={audioConfig.channelCount}
+                            options={channelOptions}
+                            onChange={(val) => handleAudioChange('channelCount', Number(val) as 1 | 2)}
+                        />
+                    </>
                 )}
                 {audioOutputDevices.length > 0 && (
-                    <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ px: 1, pt: 1 }}>
                         Output: {audioOutputDevices[0]?.label || 'Default'}
                     </Typography>
                 )}

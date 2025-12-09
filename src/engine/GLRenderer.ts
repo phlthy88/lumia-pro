@@ -129,7 +129,10 @@ export class GLRenderer {
 
         if (mask) {
             this.beautyMaskTexture = texture;
+            // Flip Y to match Canvas (top-left origin) to WebGL (bottom-left origin)
+            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
+            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, false);
         } else {
             // Upload a 1x1 transparent pixel when mask disabled
             const empty = new Uint8Array([0, 0, 0, 0]);
@@ -151,7 +154,10 @@ export class GLRenderer {
 
         if (mask) {
             this.beautyMask2Texture = texture;
+            // Flip Y to match Canvas to WebGL coordinates
+            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
+            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, false);
         } else {
             const empty = new Uint8Array([0, 0, 0, 0]);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, empty);
@@ -425,6 +431,8 @@ export class GLRenderer {
             uniform float u_rotate;
             uniform vec2 u_pan;
             uniform vec2 u_coverScale; // NEW: For object-fit: cover
+            uniform float u_flipX;
+            uniform float u_flipY;
 
             out vec4 outColor;
 
@@ -563,6 +571,10 @@ export class GLRenderer {
                 
                 uv += 0.5;
                 uv -= u_pan * 0.5;
+                
+                // Apply flip transforms
+                if (u_flipX > 0.5) uv.x = 1.0 - uv.x;
+                if (u_flipY > 0.5) uv.y = 1.0 - uv.y;
 
                 // Check bounds (Hard crop outside texture)
                 if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
@@ -628,6 +640,52 @@ export class GLRenderer {
                      else if (luma < 0.6) color = vec3(0.5);
                      else if (luma < 0.8) color = vec3(1.0, 1.0, 0.0);
                      else color = vec3(1.0, 0.0, 0.0);
+                }
+
+                if (u_mode == 5) { // RGBA Parade - show RGB channels side by side
+                    vec2 paradeUv = uv;
+                    vec3 paradeColor = vec3(0.0);
+                    float section = floor(uv.x * 3.0);
+                    paradeUv.x = fract(uv.x * 3.0);
+                    vec3 samp = texture(u_videoTexture, paradeUv).rgb;
+                    
+                    // Draw waveform for each channel
+                    float threshold = 0.02;
+                    if (section == 0.0) {
+                        // Red channel
+                        if (abs(uv.y - (1.0 - samp.r)) < threshold) paradeColor.r = 1.0;
+                    } else if (section == 1.0) {
+                        // Green channel
+                        if (abs(uv.y - (1.0 - samp.g)) < threshold) paradeColor.g = 1.0;
+                    } else {
+                        // Blue channel
+                        if (abs(uv.y - (1.0 - samp.b)) < threshold) paradeColor.b = 1.0;
+                    }
+                    // Add grid lines
+                    if (fract(uv.y * 10.0) < 0.02) paradeColor += vec3(0.1);
+                    color = paradeColor;
+                }
+
+                if (u_mode == 6) { // Histogram overlay
+                    // Sample multiple points to build histogram approximation
+                    float rHist = 0.0, gHist = 0.0, bHist = 0.0;
+                    for (int i = 0; i < 16; i++) {
+                        vec2 sampleUv = vec2(float(i) / 16.0, uv.y);
+                        vec3 sc = texture(u_videoTexture, sampleUv).rgb;
+                        float binX = uv.x;
+                        if (abs(sc.r - binX) < 0.05) rHist += 0.1;
+                        if (abs(sc.g - binX) < 0.05) gHist += 0.1;
+                        if (abs(sc.b - binX) < 0.05) bHist += 0.1;
+                    }
+                    // Show histogram at bottom, video above
+                    if (uv.y > 0.75) {
+                        float histY = (uv.y - 0.75) * 4.0;
+                        vec3 histColor = vec3(0.0);
+                        if (rHist > histY) histColor.r = 0.8;
+                        if (gHist > histY) histColor.g = 0.8;
+                        if (bHist > histY) histColor.b = 0.8;
+                        color = mix(color * 0.3, histColor, 0.7);
+                    }
                 }
 
                 // Sharpness (unsharp mask)
@@ -899,6 +957,8 @@ export class GLRenderer {
         setUniform1f('u_zoom', params.transform.zoom);
         setUniform1f('u_rotate', params.transform.rotate);
         this.gl.uniform2f(this.getUniformLoc('u_pan'), params.transform.panX, params.transform.panY);
+        setUniform1f('u_flipX', params.transform.flipX ? 1.0 : 0.0);
+        setUniform1f('u_flipY', params.transform.flipY ? 1.0 : 0.0);
         
         // --- Calculate Cover Scale ---
         let scaleX = 1.0;
@@ -949,6 +1009,8 @@ export class GLRenderer {
             case RenderMode.Zebras: return 2;
             case RenderMode.Level: return 3;
             case RenderMode.Heatmap: return 4;
+            case RenderMode.RGBAParade: return 5;
+            case RenderMode.Histogram: return 6;
             default: return 0;
         }
     }

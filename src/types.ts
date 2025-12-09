@@ -28,7 +28,9 @@ export enum RenderMode {
     FocusPeaking = 'focus_peaking',
     Zebras = 'zebras',
     Level = 'level',
-    Heatmap = 'heatmap'
+    Heatmap = 'heatmap',
+    RGBAParade = 'rgba_parade',
+    Histogram = 'histogram'
 }
 
 export enum GridType {
@@ -65,6 +67,26 @@ export interface RecorderConfig {
     burstCount: number;
     burstDelay: number;
 }
+
+export type AudioPreset = 'custom' | 'bandwidth_saver' | 'video_conference' | 'asmr' | 'podcast' | 'broadcast';
+
+export interface AudioConfig {
+    noiseSuppression: boolean;
+    echoCancellation: boolean;
+    autoGainControl: boolean;
+    sampleRate: number;
+    channelCount: 1 | 2;
+    preset: AudioPreset;
+}
+
+export const AUDIO_PRESETS: Record<AudioPreset, Omit<AudioConfig, 'preset'>> = {
+    custom: { noiseSuppression: false, echoCancellation: false, autoGainControl: false, sampleRate: 48000, channelCount: 2 },
+    bandwidth_saver: { noiseSuppression: true, echoCancellation: true, autoGainControl: true, sampleRate: 16000, channelCount: 1 },
+    video_conference: { noiseSuppression: true, echoCancellation: true, autoGainControl: true, sampleRate: 48000, channelCount: 1 },
+    asmr: { noiseSuppression: false, echoCancellation: false, autoGainControl: false, sampleRate: 48000, channelCount: 2 },
+    podcast: { noiseSuppression: true, echoCancellation: false, autoGainControl: true, sampleRate: 48000, channelCount: 1 },
+    broadcast: { noiseSuppression: true, echoCancellation: true, autoGainControl: true, sampleRate: 48000, channelCount: 2 },
+};
 
 export interface BeautyConfig {
     enabled: boolean;
@@ -106,6 +128,8 @@ export interface TransformParams {
     rotate: number;
     panX: number;
     panY: number;
+    flipX: boolean;
+    flipY: boolean;
 }
 
 export interface PresetData {

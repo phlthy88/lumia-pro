@@ -1,27 +1,29 @@
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision';
 
-// Face skin polygon using jawline + forehead
-const SKIN_INDICES = [
-  10, 234, 93, 132, 58, 172, 150, 176, 149, 148, 152, 377, 378, 365, 397, 288, 361, 323, 454, 356, 389, 251, 284, 332, 297, 338, 10
+// Face oval - sorted perimeter order for clean polygon
+const FACE_OVAL = [
+  10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
+  397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
+  172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10
 ];
 
-// Eye region indices (left and right) - expanded for better coverage
-const LEFT_EYE = [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7];
-const RIGHT_EYE = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382];
+// Eye region indices (left and right)
+const LEFT_EYE = [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7, 33];
+const RIGHT_EYE = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382, 362];
 
 // Face contour for slim effect (sides only - jawline)
 const FACE_CONTOUR_LEFT = [234, 93, 132, 58, 172, 136];
 const FACE_CONTOUR_RIGHT = [454, 323, 361, 288, 397, 365];
 
-// Cheekbone regions - more precise
-const LEFT_CHEEK = [116, 123, 147, 187, 207, 206, 205, 36, 142, 126];
-const RIGHT_CHEEK = [345, 352, 376, 411, 427, 426, 425, 266, 371, 355];
+// Cheekbone regions
+const LEFT_CHEEK = [116, 117, 118, 119, 100, 142, 203, 206, 216, 116];
+const RIGHT_CHEEK = [345, 346, 347, 348, 329, 371, 423, 426, 436, 345];
 
-// Lip region
+// Lip region - outer contour sorted
 const LIPS_OUTER = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0, 37, 39, 40, 185, 61];
 
-// Nose region - bridge and sides
-const NOSE_BRIDGE = [6, 197, 195, 5, 4, 45, 275, 4, 1, 19, 218, 438];
+// Nose region
+const NOSE = [168, 6, 197, 195, 5, 4, 1, 19, 94, 2, 98, 97, 326, 327, 168];
 
 export class MaskGenerator {
   private canvas: OffscreenCanvas;
@@ -42,20 +44,32 @@ export class MaskGenerator {
   }
 
   update(landmarks: NormalizedLandmark[] | undefined, videoWidth: number, videoHeight: number) {
-    const { width, height } = this.canvas;
+    if (!landmarks || videoWidth === 0 || videoHeight === 0) return;
+
+    // Resize canvas to match video for accurate mapping
+    if (this.canvas.width !== videoWidth || this.canvas.height !== videoHeight) {
+      this.canvas.width = videoWidth;
+      this.canvas.height = videoHeight;
+      this.canvas2.width = videoWidth;
+      this.canvas2.height = videoHeight;
+    }
+
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+    
+    // Clear previous frame
     this.ctx.clearRect(0, 0, width, height);
     this.ctx2.clearRect(0, 0, width, height);
-    if (!landmarks || videoWidth === 0 || videoHeight === 0) return;
 
     const toCanvas = (lm: NormalizedLandmark) => ({ x: lm.x * width, y: lm.y * height });
 
     // Canvas 1: R=skin (excluding eyes), G=eyes, B=face contour
     
-    // Draw skin first
+    // Draw face oval for skin
     this.ctx.fillStyle = '#ff0000';
-    this.drawPoly(this.ctx, SKIN_INDICES, landmarks, toCanvas);
+    this.drawPoly(this.ctx, FACE_OVAL, landmarks, toCanvas);
     
-    // Cut out eye regions from skin (draw black over eyes)
+    // Cut out eye regions from skin
     this.ctx.globalCompositeOperation = 'destination-out';
     this.drawPoly(this.ctx, LEFT_EYE, landmarks, toCanvas);
     this.drawPoly(this.ctx, RIGHT_EYE, landmarks, toCanvas);
@@ -68,7 +82,7 @@ export class MaskGenerator {
 
     // Draw face contour as strokes on sides only
     this.ctx.strokeStyle = '#0000ff';
-    this.ctx.lineWidth = 25;
+    this.ctx.lineWidth = Math.max(15, width * 0.02);
     this.ctx.lineCap = 'round';
     for (const contour of [FACE_CONTOUR_LEFT, FACE_CONTOUR_RIGHT]) {
       this.ctx.beginPath();
@@ -90,19 +104,8 @@ export class MaskGenerator {
     this.ctx2.fillStyle = '#00ff00';
     this.drawPoly(this.ctx2, LIPS_OUTER, landmarks, toCanvas);
 
-    // Nose - draw as thick line along bridge
-    this.ctx2.strokeStyle = '#0000ff';
-    this.ctx2.lineWidth = 30;
-    this.ctx2.lineCap = 'round';
-    this.ctx2.beginPath();
-    NOSE_BRIDGE.forEach((idx, i) => {
-      const lm = landmarks[idx];
-      if (!lm) return;
-      const { x, y } = toCanvas(lm);
-      if (i === 0) this.ctx2.moveTo(x, y);
-      else this.ctx2.lineTo(x, y);
-    });
-    this.ctx2.stroke();
+    this.ctx2.fillStyle = '#0000ff';
+    this.drawPoly(this.ctx2, NOSE, landmarks, toCanvas);
 
     // Apply blur for soft edges
     this.applyBlur(this.ctx, this.canvas);
@@ -110,7 +113,7 @@ export class MaskGenerator {
   }
 
   private applyBlur(ctx: OffscreenCanvasRenderingContext2D, canvas: OffscreenCanvas) {
-    ctx.filter = 'blur(12px)';
+    ctx.filter = 'blur(8px)';
     ctx.drawImage(canvas, 0, 0);
     ctx.filter = 'none';
   }

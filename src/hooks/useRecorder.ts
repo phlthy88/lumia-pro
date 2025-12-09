@@ -1,12 +1,12 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { FallbackMode, RecorderConfig } from '../types';
+import { FallbackMode, RecorderConfig, AudioConfig } from '../types';
 import { useAudioProcessor } from './useAudioProcessor';
-import { saveMedia, loadAllMedia, deleteMediaItem, clearAllMedia, StoredMediaItem } from '../services/MediaStorageService';
+import { saveMedia, loadMediaMetadata, loadMediaBlob, deleteMediaItem, clearAllMedia } from '../services/MediaStorageService';
 
 interface MediaItem {
   id: string;
-  url: string;
+  url: string; // Empty string until loaded
   type: 'image' | 'video';
   timestamp: number;
 }
@@ -62,22 +62,37 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       burstDelay: 200
   });
 
+  const [audioConfig, setAudioConfig] = useState<AudioConfig>({
+      noiseSuppression: true,
+      echoCancellation: true,
+      autoGainControl: true,
+      sampleRate: 48000,
+      channelCount: 1,
+      preset: 'video_conference'
+  });
+
   const currentSizeRef = useRef<number>(0);
 
-  // Load persisted media on mount (limited to MAX_MEDIA_ITEMS)
+  // Load only metadata on mount - blobs loaded on demand
   useEffect(() => {
-    loadAllMedia().then(stored => {
-      // Sort by timestamp descending, take most recent MAX_MEDIA_ITEMS
-      const sorted = stored.sort((a, b) => b.timestamp - a.timestamp).slice(0, MAX_MEDIA_ITEMS);
-      const items = sorted.map(s => ({
-        id: s.id,
-        url: URL.createObjectURL(s.blob),
-        type: s.type,
-        timestamp: s.timestamp
-      }));
-      // Reverse to show oldest first in array (newest at end)
+    loadMediaMetadata().then(meta => {
+      const sorted = meta.sort((a, b) => b.timestamp - a.timestamp).slice(0, MAX_MEDIA_ITEMS);
+      const items = sorted.map(m => ({ id: m.id, url: '', type: m.type, timestamp: m.timestamp }));
       setMediaItems(items.reverse());
     }).catch(console.error);
+  }, []);
+
+  // Lazy-load blob URL for a specific item
+  const loadItemUrl = useCallback(async (id: string): Promise<string> => {
+    const existing = mediaItemsRef.current.find(i => i.id === id);
+    if (existing?.url) return existing.url;
+    
+    const blob = await loadMediaBlob(id);
+    if (!blob) return '';
+    
+    const url = URL.createObjectURL(blob);
+    setMediaItems(prev => prev.map(i => i.id === id ? { ...i, url } : i));
+    return url;
   }, []);
 
   useEffect(() => {
@@ -97,11 +112,15 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
 
     const setupPreviewAudio = async () => {
       try {
-        const constraints: MediaStreamConstraints = {
-          audio: config.audioSource === 'default' 
-            ? true 
-            : { deviceId: { ideal: config.audioSource } }
+        const audioConstraints: MediaTrackConstraints = {
+          ...(config.audioSource !== 'default' && { deviceId: { ideal: config.audioSource } }),
+          noiseSuppression: audioConfig.noiseSuppression,
+          echoCancellation: audioConfig.echoCancellation,
+          autoGainControl: audioConfig.autoGainControl,
+          sampleRate: audioConfig.sampleRate,
+          channelCount: audioConfig.channelCount,
         };
+        const constraints: MediaStreamConstraints = { audio: audioConstraints };
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         audioStreamRef.current = stream;
         setAudioStream(stream);
@@ -120,7 +139,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         setAudioStream(null);
       }
     };
-  }, [config.audioSource, isRecording]);
+  }, [config.audioSource, audioConfig, isRecording]);
 
   // Cleanup helper for streams
   const cleanupStreams = useCallback(() => {
@@ -156,11 +175,15 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       
       if (config.audioSource !== 'none') {
         try {
-          const constraints: MediaStreamConstraints = {
-            audio: config.audioSource === 'default' 
-              ? true 
-              : { deviceId: { ideal: config.audioSource } }
+          const audioConstraints: MediaTrackConstraints = {
+            ...(config.audioSource !== 'default' && { deviceId: { ideal: config.audioSource } }),
+            noiseSuppression: audioConfig.noiseSuppression,
+            echoCancellation: audioConfig.echoCancellation,
+            autoGainControl: audioConfig.autoGainControl,
+            sampleRate: audioConfig.sampleRate,
+            channelCount: audioConfig.channelCount,
           };
+          const constraints: MediaStreamConstraints = { audio: audioConstraints };
           const recordAudioStream = await navigator.mediaDevices.getUserMedia(constraints);
           
           // Process audio through broadcast chain
@@ -440,12 +463,15 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     recordingTime,
     config,
     setConfig,
+    audioConfig,
+    setAudioConfig,
     startRecording: startWithCountdown,
     stopRecording,
     takeScreenshot,
     takeBurst,
     cancelCountdown,
     mediaItems,
+    loadItemUrl,
     deleteMedia,
     clearMedia,
     audioStream,
