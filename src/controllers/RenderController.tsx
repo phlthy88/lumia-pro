@@ -32,6 +32,9 @@ import { useUIState } from '../providers/UIStateProvider';
 // Context Definition
 interface RenderContextState {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  setCanvasRef: (node: HTMLCanvasElement | null) => void;
+  statsRef: React.MutableRefObject<EngineStats>;
+  gyroRef: React.MutableRefObject<number>;
   color: ColorGradeParams;
   transform: TransformParams;
   mode: RenderMode;
@@ -69,6 +72,8 @@ interface RenderContextState {
   virtualCamera: any;
 
   glError: FallbackMode | null;
+  useFallbackVideo: boolean;
+  renderHealthy: boolean;
 
   // Animation Triggers (exposed for RecordingController)
   triggerCaptureAnim: (url: string) => void;
@@ -341,15 +346,50 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
   }, [color, transform, mode, bypass, beautyParams]);
 
   const getParams = useCallback(() => {
-      const { gyroRef } = require('../hooks/useGyroscope').useGyroscope(false); // Quick hack to get ref, or use the one we have
-      // Wait, we have `gyroRef` from `useGyroscope` above.
+      // Read latest state without invoking hooks inside the render loop
       return {
           ...latestStateRef.current,
           gyroAngle: gyroRef.current
       };
   }, [gyroRef]);
 
-  const { canvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error: glError } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
+  const { canvasRef, setCanvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error: glError } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
+
+  // Renderer health watchdog: if GL never produces frames, fall back to raw video display
+  const [renderHealthy, setRenderHealthy] = useState(false);
+  const [useFallbackVideo, setUseFallbackVideo] = useState(false);
+
+  useEffect(() => {
+      setRenderHealthy(false);
+      setUseFallbackVideo(false);
+      if (!streamReady) return;
+
+      const start = performance.now();
+      const interval = window.setInterval(() => {
+          const hasVideo = !!(videoRef.current && videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0);
+          const hasFps = statsRef.current.fps > 0;
+
+          if (hasVideo && hasFps) {
+              setRenderHealthy(true);
+              setUseFallbackVideo(false);
+              window.clearInterval(interval);
+              return;
+          }
+
+          if (performance.now() - start > 3000) {
+              setUseFallbackVideo(true);
+          }
+      }, 150);
+
+      return () => window.clearInterval(interval);
+  }, [streamReady, videoRef, statsRef]);
+
+  useEffect(() => {
+      if (glError) {
+          setUseFallbackVideo(true);
+          setRenderHealthy(false);
+      }
+  }, [glError]);
 
   // Sync LUT
   useEffect(() => {
@@ -423,14 +463,15 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
 
   return (
     <RenderContext.Provider value={{
-      canvasRef, color, transform, mode, bypass, presets,
+      canvasRef, setCanvasRef, statsRef, gyroRef,
+      color, transform, mode, bypass, presets,
       activeLutIndex, availableLuts,
       setMode, toggleBypass, handleColorChange, handleTransformChange,
       setActiveLutIndex, handleLutUpload,
       resetAll, resetColorWheels, resetGrading, resetDetailOptics, resetTransform,
       savePreset, loadPreset: loadPreset as any, deletePreset, importPresets: importPresets as any, exportPresets,
       overlayConfig, setOverlayConfig,
-      midi, virtualCamera, glError,
+      midi, virtualCamera, glError, useFallbackVideo, renderHealthy,
       triggerCaptureAnim: setCaptureAnim,
       triggerSwooshAnim: setSwooshThumbnail,
       setColor: setColor as any, undo, canUndo
@@ -442,12 +483,12 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
 
 // Viewfinder component to be rendered inside AppLayout
 export const Viewfinder: React.FC = () => {
-  const { canvasRef, bypass, toggleBypass, midi, glError } = useRenderContext();
+  const { setCanvasRef, statsRef, gyroRef, bypass, toggleBypass, midi, glError, useFallbackVideo } = useRenderContext();
+  const { videoRef, streamReady } = useCameraContext();
   const [captureAnim, setCaptureAnim] = React.useState<string | null>(null);
   const [swooshThumbnail, setSwooshThumbnail] = React.useState<string | null>(null);
   const [showPerfOverlay, setShowPerfOverlay] = React.useState(false);
-  const statsRef = React.useRef<EngineStats>({ fps: 0, frameTime: 0, droppedFrames: 0, resolution: '' });
-  const gyroRef = React.useRef(0);
+  const fallbackVideoRef = React.useRef<HTMLVideoElement | null>(null);
 
   // Keyboard shortcut for Perf Overlay
   React.useEffect(() => {
@@ -460,6 +501,16 @@ export const Viewfinder: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Mirror camera stream to visible fallback video element without stealing the ref used by the hooks
+  React.useEffect(() => {
+    if (!fallbackVideoRef.current || !videoRef.current) return;
+    const stream = videoRef.current.srcObject as MediaStream | null;
+    if (stream && fallbackVideoRef.current.srcObject !== stream) {
+        fallbackVideoRef.current.srcObject = stream;
+        fallbackVideoRef.current.play().catch(() => {});
+    }
+  }, [streamReady, videoRef]);
+
   return (
     <>
       <StyledViewfinder
@@ -470,9 +521,36 @@ export const Viewfinder: React.FC = () => {
         isBypass={bypass}
         audioStream={null}
       >
+        {/* Raw video fallback if GL renderer stays blank */}
+        <video
+          ref={fallbackVideoRef}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: useFallbackVideo ? 1 : 0,
+            transition: 'opacity 0.3s ease',
+            zIndex: 0
+          }}
+          muted
+          playsInline
+          autoPlay
+          data-testid="fallback-video"
+        />
         <canvas
-          ref={canvasRef}
-          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
+          ref={setCanvasRef}
+          style={{ 
+              width: '100%', 
+              height: '100%', 
+              display: 'block', 
+              objectFit: 'cover',
+              position: 'relative',
+              zIndex: 1,
+              opacity: useFallbackVideo ? 0 : 1,
+              transition: 'opacity 0.3s ease'
+          }}
         />
         <StatsOverlay
           statsRef={statsRef}

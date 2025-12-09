@@ -26,7 +26,7 @@ const ThemeSettings = React.lazy(() => import('./components/ThemeSettings').then
 const MuiOverlaySettings = React.lazy(() => import('./components/MuiOverlaySettings').then(m => ({ default: m.MuiOverlaySettings })));
 const VirtualCameraSettings = React.lazy(() => import('./components/VirtualCameraSettings').then(m => ({ default: m.VirtualCameraSettings })));
 const PlatformBoostsPanel = React.lazy(() => import('./components/PlatformBoostsPanel').then(m => ({ default: m.PlatformBoostsPanel })));
-const ParallaxHeader = React.lazy(() => import('./components/ParallaxHeader').then(m => ({ default: m.ParallaxHeader })));
+import { ParallaxHeader } from './components/ParallaxHeader';
 
 // Separate component for drawer content to consume contexts
 const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {

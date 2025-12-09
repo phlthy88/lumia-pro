@@ -21,6 +21,7 @@ export const useGLRenderer = (
     performanceMode: boolean = false
 ) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasMounted, setCanvasMounted] = useState(false);
   const rendererRef = useRef<GLRenderer | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastValidSizeRef = useRef<{w: number, h: number}>({w: 1920, h: 1080});
@@ -174,7 +175,7 @@ export const useGLRenderer = (
     return () => {
        rendererRef.current?.stop();
     };
-  }, [streamReady, contextLost, startRenderer, performanceMode]);
+  }, [streamReady, contextLost, startRenderer, performanceMode, canvasMounted]);
 
   // Global cleanup
   useEffect(() => {
@@ -198,5 +199,11 @@ export const useGLRenderer = (
       rendererRef.current?.setBeautyMask2(mask);
   }, []);
 
-  return { canvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error };
+  // Callback ref to detect when canvas is mounted
+  const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
+    (canvasRef as any).current = node;
+    setCanvasMounted(!!node);
+  }, []);
+
+  return { canvasRef, setCanvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error };
 };
