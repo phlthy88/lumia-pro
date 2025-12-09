@@ -9,7 +9,7 @@ import { useVirtualCamera } from '../hooks/useVirtualCamera';
 import { useCameraContext } from './CameraController';
 import { useAIContext } from './AIController';
 import { eventBus } from '../providers/EventBus';
-import { LutData, RenderMode, ColorGradeParams, TransformParams, FallbackMode, Preset } from '../types';
+import { LutData, RenderMode, ColorGradeParams, TransformParams, FallbackMode, Preset, EngineStats } from '../types';
 import { LutService } from '../services/LutService';
 import { virtualCameraService } from '../services/VirtualCameraService';
 
@@ -436,35 +436,52 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
       setColor: setColor as any, undo, canUndo
     }}>
       {children}
+    </RenderContext.Provider>
+  );
+};
 
-      {/* Viewfinder & Overlays */}
+// Viewfinder component to be rendered inside AppLayout
+export const Viewfinder: React.FC = () => {
+  const { canvasRef, bypass, toggleBypass, midi, glError } = useRenderContext();
+  const [captureAnim, setCaptureAnim] = React.useState<string | null>(null);
+  const [swooshThumbnail, setSwooshThumbnail] = React.useState<string | null>(null);
+  const [showPerfOverlay, setShowPerfOverlay] = React.useState(false);
+  const statsRef = React.useRef<EngineStats>({ fps: 0, frameTime: 0, droppedFrames: 0, resolution: '' });
+  const gyroRef = React.useRef(0);
+
+  // Keyboard shortcut for Perf Overlay
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key === 'P') {
+        setShowPerfOverlay(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return (
+    <>
       <StyledViewfinder
-          isRecording={false} // Managed by RecordingController, visual only here?
-          // Wait, StyledViewfinder needs recording state.
-          // We can use RecordingContext if we are a child, or pass it in?
-          // We are siblings.
-          // Let's leave isRecording false here, and let the RecordingController overlay handle the "Recording" indicator?
-          // Actually StyledViewfinder adds the red border.
-          // We might need to listen to 'recording:start' event to update local state.
-          onRecordToggle={() => eventBus.emit('recording:toggle' as any, undefined)} // Dispatch event
-          onSnapshot={() => eventBus.emit('recording:snapshot' as any, undefined)}
-          onCompareToggle={toggleBypass}
-          isBypass={bypass}
-          audioStream={null} // TODO: Audio stream from RecordingController?
+        isRecording={false}
+        onRecordToggle={() => eventBus.emit('recording:toggle' as any, undefined)}
+        onSnapshot={() => eventBus.emit('recording:snapshot' as any, undefined)}
+        onCompareToggle={toggleBypass}
+        isBypass={bypass}
+        audioStream={null}
       >
-           {/* We need to pass children to StyledViewfinder? No it expects children */}
-           <canvas
-              ref={canvasRef}
-              style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
-           />
-           <StatsOverlay
-              statsRef={statsRef}
-              gyroAngleRef={gyroRef}
-              bypass={bypass}
-              isRecording={false} // Todo: Sync
-              recordingTime={0} // Todo: Sync
-              midiConnected={midi.connected}
-           />
+        <canvas
+          ref={canvasRef}
+          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
+        />
+        <StatsOverlay
+          statsRef={statsRef}
+          gyroAngleRef={gyroRef}
+          bypass={bypass}
+          isRecording={false}
+          recordingTime={0}
+          midiConnected={midi.connected}
+        />
       </StyledViewfinder>
 
       <CaptureAnimation imageUrl={captureAnim} onComplete={() => setCaptureAnim(null)} />
@@ -472,7 +489,7 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
       <PerformanceOverlay visible={showPerfOverlay} engineStats={statsRef.current} />
 
       {glError && <ErrorScreen mode={glError} />}
-    </RenderContext.Provider>
+    </>
   );
 };
 

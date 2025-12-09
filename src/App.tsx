@@ -7,8 +7,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Providers & Controllers
 import { UIStateProvider, useUIState } from './providers/UIStateProvider';
-import { CameraController, CameraSettings } from './controllers/CameraController';
-import { RenderController, RenderSettings } from './controllers/RenderController';
+import { CameraController, CameraSettings, useCameraContext } from './controllers/CameraController';
+import { RenderController, RenderSettings, Viewfinder } from './controllers/RenderController';
 import { AIController, AISettingsPanel } from './controllers/AIController';
 import { RecordingController, RecordingSettings, useRecordingContext } from './controllers/RecordingController';
 
@@ -17,6 +17,8 @@ import { virtualCameraService } from './services/VirtualCameraService';
 import { aiService } from './services/AIAnalysisService';
 import { useMemoryMonitor } from './hooks/useMemoryMonitor';
 import { useRenderContext } from './controllers/RenderController';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { RenderMode } from './types';
 
 // Components (Lazy)
 const MediaLibrary = React.lazy(() => import('./components/MediaLibrary').then(m => ({ default: m.MediaLibrary })));
@@ -104,26 +106,6 @@ const AppContent: React.FC = () => {
     useMemoryMonitor();
     const { activeTab, setActiveTab } = useUIState();
     const [drawerScrollY, setDrawerScrollY] = React.useState(0);
-    const { resetAll, toggleBypass, setMode, deviceList, activeDeviceId, setActiveDeviceId } = useRenderContext() as any;
-    // Typescript might complain about mixed context properties if I wasn't careful with types.
-    // Actually deviceList is in CameraContext.
-    // shortcuts are handled in UIStateProvider, but they need access to handlers.
-    // This is a tricky part: UIStateProvider shortcuts need handlers from controllers.
-    // But UIStateProvider is at the top.
-    // Solution: Pass handlers to UIStateProvider via a ref or setter?
-    // Or just move shortcuts to a child component that has access to contexts?
-    // Let's create a ShortcutsHandler component.
-
-    const { toggleBypass: toggleBypassAction, resetAll: resetAllAction, setMode: setModeAction, mode } = useRenderContext();
-    const { deviceList: cams, activeDeviceId: camId, setActiveDeviceId: setCamId } = React.useContext(require('./controllers/CameraController').default.Context || React.createContext({})) as any || {};
-    // Context access from siblings is hard without a common consumer.
-    // AppContent is inside all providers, so it can consume them.
-    // I need to import CameraContext from CameraController to consume it properly.
-    // But I didn't export it in the file block above (I exported useCameraContext).
-
-    // Actually, I can use the hooks: useRenderContext, useCameraContext, etc.
-    // But I need to handle the shortcuts.
-    // Let's defer shortcut handler to a sub-component or effect inside AppContent.
 
     // Cleanup on unload
     React.useEffect(() => {
@@ -143,7 +125,7 @@ const AppContent: React.FC = () => {
             drawerTitle={activeTab === 'ADJUST' ? 'Adjustments' : activeTab === 'MEDIA' ? 'Media' : activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}
             onDrawerScroll={setDrawerScrollY}
         >
-             {/* Controllers render their own invisible or visible elements */}
+             <Viewfinder />
              <ShortcutsListener />
         </AppLayout>
     );
@@ -152,26 +134,8 @@ const AppContent: React.FC = () => {
 // Component to bind shortcuts using contexts
 const ShortcutsListener = () => {
     const { resetAll, toggleBypass, setMode, mode } = useRenderContext();
-    const { deviceList, activeDeviceId, setActiveDeviceId } = require('./controllers/CameraController').useCameraContext();
+    const { deviceList, activeDeviceId, setActiveDeviceId } = useCameraContext();
     const { cancelCountdown } = useRecordingContext();
-    const { showToast } = useUIState();
-
-    // We can't use useKeyboardShortcuts directly if it's already used in UIStateProvider.
-    // But UIStateProvider delegates to props.
-    // Wait, UIStateProvider is above us.
-    // If UIStateProvider uses the hook, it needs the handlers.
-    // But handlers are here.
-    // Circular dependency of logic.
-    // Solution: Move useKeyboardShortcuts call HERE (inside AppContent/ShortcutsListener) and REMOVE it from UIStateProvider.
-    // The prompt said "Extract keyboard shortcut logic... into this provider".
-    // But if logic depends on Controller state, the Provider (parent) can't see it.
-    // So the Provider can only provide the *registration* capability, or we move the hook to a child.
-    // Given the constraints, I will move the hook usage to `ShortcutsListener` which is inside all contexts.
-    // `UIStateProvider` will just provide the `showToast` and other UI state.
-
-    // Re-importing hook here
-    const { useKeyboardShortcuts } = require('./hooks/useKeyboardShortcuts');
-    const { RenderMode } = require('./types');
 
     useKeyboardShortcuts({
         onReset: resetAll,
