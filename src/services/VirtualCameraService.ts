@@ -4,6 +4,30 @@
 // Enables Lumina Studio Pro effects to work in Zoom, Meet, Teams, etc.
 // Uses a dedicated pop-out window that can be screen-shared as a "camera"
 
+export interface VirtualCamCapabilities {
+  supported: boolean;
+  captureStream: boolean;
+  displayMedia: boolean;
+  popoutWindow: boolean;
+  reason?: string;
+}
+
+export function detectCapabilities(): VirtualCamCapabilities {
+  const canvas = document.createElement('canvas');
+  const captureStream = 'captureStream' in canvas;
+  const displayMedia = typeof navigator.mediaDevices?.getDisplayMedia === 'function';
+  const popoutWindow = typeof window.open === 'function';
+  const supported = captureStream;
+
+  return {
+    supported,
+    captureStream,
+    displayMedia,
+    popoutWindow,
+    reason: !supported ? 'Canvas captureStream not supported in this browser' : undefined
+  };
+}
+
 export interface VirtualCameraConfig {
   width: number;
   height: number;

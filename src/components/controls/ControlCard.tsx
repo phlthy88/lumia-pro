@@ -9,12 +9,13 @@ const spin = keyframes`
 
 interface ControlCardProps {
     title: React.ReactNode;
+    subtitle?: string;
     children: React.ReactNode;
     defaultExpanded?: boolean;
     onReset?: () => void;
 }
 
-export const ControlCard: React.FC<ControlCardProps> = ({ title, children, defaultExpanded = true, onReset }) => {
+export const ControlCard: React.FC<ControlCardProps> = ({ title, subtitle, children, defaultExpanded = true, onReset }) => {
     const [expanded, setExpanded] = useState(defaultExpanded);
     const [spinning, setSpinning] = useState(false);
     const theme = useTheme();
@@ -43,7 +44,9 @@ export const ControlCard: React.FC<ControlCardProps> = ({ title, children, defau
         >
             <CardHeader
                 title={title}
+                subheader={subtitle}
                 titleTypographyProps={{ variant: 'subtitle2', fontWeight: 'bold' }}
+                subheaderTypographyProps={{ variant: 'caption', color: 'text.secondary' }}
                 action={
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         {onReset && (

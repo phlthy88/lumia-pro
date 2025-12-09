@@ -32,7 +32,7 @@ Most webcam software gives you basic filters. Lumia Pro gives you a **full color
 | Professional LUTs | ✅ ~30 cinematic looks | ❌ Basic filters |
 | Real-time GPU rendering | ✅ WebGL 2.0 | ❌ CPU-based |
 | AI scene optimization | ✅ MediaPipe & Heuristic-based | ❌ None |
-| Virtual camera output | ✅ Works with Zoom, OBS | ❌ Limited |
+| Virtual camera output | ✅ Window sharing for Zoom, OBS* | ❌ Limited |
 | MIDI controller support | ✅ Full mapping | ❌ None |
 | Offline PWA | ✅ Install & use anywhere | ❌ Online only |
 
@@ -87,7 +87,7 @@ Open **http://localhost:3000** → Allow camera → Start creating.
 <td width="50%">
 
 ### Connectivity
-- Virtual camera for Zoom, Meet, OBS
+- Virtual camera via window sharing (Zoom, Meet, OBS)
 - MIDI controller mapping
 - Keyboard shortcuts
 - Mobile gyroscope support

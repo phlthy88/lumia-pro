@@ -89,7 +89,10 @@ export const AIWidget: React.FC<AIWidgetProps> = ({
     const theme = useTheme();
 
     return (
-        <ControlCard title="AI Assistant">
+        <ControlCard 
+            title="Smart Assist" 
+            subtitle="Rule-based analysis (not AI/ML)"
+        >
             <Box sx={{ position: 'relative' }}>
                 {/* Header Actions */}
                 <Box display="flex" justifyContent="flex-end" mb={2}>

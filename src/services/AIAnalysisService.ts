@@ -10,12 +10,21 @@ export interface ImageQualityScore {
 }
 
 export interface AnalysisResult {
+  type: 'heuristic'; // Clearly indicates this is rule-based, not ML
   score: ImageQualityScore;
   tips: string[];
   autoParams: Partial<ColorGradeParams>; // The "Auto Fix" values
   faces: number;
+  reasoning: string[]; // Human-readable explanation of suggestions
 }
 
+/**
+ * AI Analysis Service - Heuristic-Based Image Analysis
+ * 
+ * This service analyzes video frames using rule-based color science heuristics,
+ * NOT machine learning or AI models. It examines pixel statistics to suggest
+ * color corrections based on established photography principles.
+ */
 export class AIAnalysisService {
   private canvas: OffscreenCanvas;
   private ctx: OffscreenCanvasRenderingContext2D;
@@ -27,6 +36,10 @@ export class AIAnalysisService {
     this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })!;
   }
 
+  /**
+   * Analyzes a video frame using rule-based heuristics (not machine learning).
+   * Examines pixel statistics to suggest color corrections.
+   */
   async analyze(video: HTMLVideoElement, faceResult?: FaceLandmarkerResult | null): Promise<AnalysisResult> {
     // Prevent concurrent analysis - shared canvas would corrupt data
     if (this.isAnalyzing) {
@@ -155,6 +168,7 @@ export class AIAnalysisService {
     const overallScore = (exposureScore + compScore + focusScore) / 3;
 
     return {
+      type: 'heuristic' as const,
       score: {
         overall: Math.round(overallScore),
         exposure: Math.round(exposureScore),
@@ -164,7 +178,8 @@ export class AIAnalysisService {
       },
       tips: tips.slice(0, 3), // Top 3 tips
       autoParams,
-      faces: faceData?.faceLandmarks.length || 0
+      faces: faceData?.faceLandmarks.length || 0,
+      reasoning: tips.length > 0 ? tips : ['Image looks well-balanced']
     };
     } finally {
       // Release mutex
