@@ -221,33 +221,41 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
 
   const downloadAll = async () => {
     const selected = getSelectedItems();
-    for (const item of selected) {
-      const a = document.createElement('a');
-      a.href = item.url;
-      a.download = `lumina_${item.type}_${item.timestamp}.${item.type === 'image' ? 'png' : 'webm'}`;
-      a.click();
-      await new Promise(r => setTimeout(r, 100));
+    try {
+      for (const item of selected) {
+        const a = document.createElement('a');
+        a.href = item.url;
+        a.download = `lumina_${item.type}_${item.timestamp}.${item.type === 'image' ? 'png' : 'webm'}`;
+        a.click();
+        await new Promise(r => setTimeout(r, 100));
+      }
+    } catch (e) {
+      console.error('Download failed', e);
     }
   };
 
   const downloadAsZip = async () => {
     const selected = getSelectedItems();
-    const { default: JSZip } = await import('jszip');
-    const zip = new JSZip();
-    
-    for (const item of selected) {
-      const response = await fetch(item.url);
-      const blob = await response.blob();
-      const ext = item.type === 'image' ? 'png' : 'webm';
-      zip.file(`lumina_${item.type}_${item.timestamp}.${ext}`, blob);
+    try {
+      const { default: JSZip } = await import('jszip');
+      const zip = new JSZip();
+      
+      for (const item of selected) {
+        const response = await fetch(item.url);
+        const blob = await response.blob();
+        const ext = item.type === 'image' ? 'png' : 'webm';
+        zip.file(`lumina_${item.type}_${item.timestamp}.${ext}`, blob);
+      }
+      
+      const content = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(content);
+      a.download = `lumia_media_${Date.now()}.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      console.error('Zip download failed', e);
     }
-    
-    const content = await zip.generateAsync({ type: 'blob' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(content);
-    a.download = `lumia_media_${Date.now()}.zip`;
-    a.click();
-    URL.revokeObjectURL(a.href);
   };
 
   const shareSelected = async () => {

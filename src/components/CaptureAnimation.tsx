@@ -38,7 +38,7 @@ export const CaptureAnimation: React.FC<CaptureAnimationProps> = ({ imageUrl, on
 
     // Show flash effect
     setShowFlash(true);
-    setTimeout(() => setShowFlash(false), 150);
+    const flashTimer = setTimeout(() => setShowFlash(false), 150);
 
     // Find the Media nav item
     const mediaBtn = document.querySelector('[aria-label="Media"]') as HTMLElement;
@@ -51,12 +51,14 @@ export const CaptureAnimation: React.FC<CaptureAnimationProps> = ({ imageUrl, on
         y: rect.top + rect.height / 2 - startY
       });
     } else {
-      // Fallback: bottom-left corner
       setTargetPos({ x: -window.innerWidth / 2 + 60, y: window.innerHeight / 2 - 60 });
     }
 
-    const timer = setTimeout(onComplete, 1000);
-    return () => clearTimeout(timer);
+    const completeTimer = setTimeout(onComplete, 1000);
+    return () => {
+      clearTimeout(flashTimer);
+      clearTimeout(completeTimer);
+    };
   }, [imageUrl, onComplete]);
 
   if (!imageUrl) return null;

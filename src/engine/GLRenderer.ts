@@ -129,12 +129,9 @@ export class GLRenderer {
 
         if (mask) {
             this.beautyMaskTexture = texture;
-            // Flip Y to match Canvas (top-left origin) to WebGL (bottom-left origin)
-            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
-            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
             this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, false);
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
         } else {
-            // Upload a 1x1 transparent pixel when mask disabled
             const empty = new Uint8Array([0, 0, 0, 0]);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, empty);
             this.beautyMaskTexture = texture;
@@ -154,10 +151,8 @@ export class GLRenderer {
 
         if (mask) {
             this.beautyMask2Texture = texture;
-            // Flip Y to match Canvas to WebGL coordinates
-            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
-            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
             this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, false);
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
         } else {
             const empty = new Uint8Array([0, 0, 0, 0]);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, empty);

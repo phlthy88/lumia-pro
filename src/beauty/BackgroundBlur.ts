@@ -4,6 +4,9 @@ import type { NormalizedLandmark } from '@mediapipe/tasks-vision';
  * BackgroundBlur generates a segmentation mask for background blur effects
  * Uses face landmarks to create a person silhouette mask
  * 
+ * STATUS: Future feature - not yet integrated into the render pipeline
+ * TODO: Integrate with GLRenderer when MediaPipe Selfie Segmentation is added
+ * 
  * Future: Can be enhanced with MediaPipe Selfie Segmentation for better results
  */
 
@@ -184,6 +187,13 @@ export class BackgroundBlur {
   }
 
   dispose(): void {
-    // Cleanup if needed
+    // Clear canvas contexts to release memory
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.blurCtx.clearRect(0, 0, this.blurCanvas.width, this.blurCanvas.height);
+    // Resize to 1x1 to free GPU memory
+    this.canvas.width = 1;
+    this.canvas.height = 1;
+    this.blurCanvas.width = 1;
+    this.blurCanvas.height = 1;
   }
 }

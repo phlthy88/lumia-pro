@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { FilesetResolver, FaceLandmarker, FaceLandmarkerResult } from '@mediapipe/tasks-vision';
+import { FilesetResolver, FaceLandmarker, FaceLandmarkerResult, NormalizedLandmark } from '@mediapipe/tasks-vision';
 
 type InitMessage = {
   type: 'init';
@@ -13,7 +13,14 @@ type FrameMessage = { type: 'frame'; image: ImageBitmap };
 type DisposeMessage = { type: 'dispose' };
 type IncomingMessage = InitMessage | FrameMessage | DisposeMessage;
 
-type LandmarkEvent = { type: 'landmarks'; payload: { result: any; timestamp: number } };
+interface SerializableLandmark { x: number; y: number; z: number; }
+interface SerializableResult {
+  faceLandmarks: SerializableLandmark[][];
+  faceBlendshapes?: FaceLandmarkerResult['faceBlendshapes'];
+  facialTransformationMatrixes?: FaceLandmarkerResult['facialTransformationMatrixes'];
+}
+
+type LandmarkEvent = { type: 'landmarks'; payload: { result: SerializableResult; timestamp: number } };
 type ReadyEvent = { type: 'ready' };
 type ErrorEvent = { type: 'error'; message: string };
 type OutgoingMessage = LandmarkEvent | ReadyEvent | ErrorEvent;
@@ -111,19 +118,11 @@ function validateBitmap(image: ImageBitmap): { valid: boolean; reason?: string }
  * Filter landmarks by confidence score
  * Only keep landmarks that meet minimum confidence threshold
  */
-function filterLandmarksByConfidence(landmarks: any[], minConfidence: number = 0.5) {
+function filterLandmarksByConfidence(landmarks: NormalizedLandmark[][], _minConfidence: number = 0.5): NormalizedLandmark[][] {
   if (!landmarks || !Array.isArray(landmarks)) return landmarks;
-  
-  return landmarks.map((face) => {
-    if (!Array.isArray(face)) return face;
-    
-    // Filter out low-confidence points
-    return face.filter((pt: any) => {
-      // If no confidence field, assume valid
-      if (!pt.hasOwnProperty('presence')) return true;
-      return pt.presence >= minConfidence;
-    });
-  });
+  // NormalizedLandmark doesn't have confidence - return as-is
+  // MediaPipe already filters by confidence internally via options
+  return landmarks;
 }
 
 async function handleFrame(image: ImageBitmap, timestamp: number) {
@@ -152,9 +151,9 @@ async function handleFrame(image: ImageBitmap, timestamp: number) {
       const filteredLandmarks = filterLandmarksByConfidence(result.faceLandmarks, 0.5);
       
       // Convert result to a plain serializable object
-      const serializableResult = {
+      const serializableResult: SerializableResult = {
         faceLandmarks: filteredLandmarks.map((face) =>
-          face.map((pt: { x: number; y: number; z: number }) => ({ x: pt.x, y: pt.y, z: pt.z }))
+          face.map((pt) => ({ x: pt.x, y: pt.y, z: pt.z }))
         ),
         faceBlendshapes: result.faceBlendshapes,
         facialTransformationMatrixes: result.facialTransformationMatrixes

@@ -19,10 +19,15 @@ export const useGyroscope = (enableState: boolean = true) => {
 
   useEffect(() => {
     let sensor: RelativeOrientationSensorType | null = null;
+    let usingSensor = false;
 
     const updateAngle = (angle: number) => {
       gyroRef.current = angle;
       if (enableState) setGyroAngle(angle);
+    };
+
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (e.gamma !== null) updateAngle(e.gamma);
     };
 
     // Try modern Sensor API first
@@ -31,29 +36,30 @@ export const useGyroscope = (enableState: boolean = true) => {
         sensor = new RelativeOrientationSensor({ frequency: 60 });
         sensor.addEventListener('reading', () => {
           if (sensor?.quaternion) {
-            // Convert quaternion to gamma-like tilt (-90 to 90)
             const values = Array.from(sensor.quaternion);
             if (values.length >= 4 && values[2] !== undefined && values[3] !== undefined) {
-              const z = values[2];
-              const w = values[3];
-              const gamma = Math.asin(2 * (w * z)) * (180 / Math.PI);
+              const gamma = Math.asin(2 * (values[3] * values[2])) * (180 / Math.PI);
               updateAngle(gamma);
             }
           }
         });
         sensor.start();
-        return () => sensor?.stop();
+        usingSensor = true;
       } catch {
         // Sensor API failed, fall through to legacy
+        usingSensor = false;
       }
     }
 
-    // Fallback to deprecated deviceorientation
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      if (e.gamma !== null) updateAngle(e.gamma);
+    // Fallback to deprecated deviceorientation only if sensor failed
+    if (!usingSensor) {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+
+    return () => {
+      if (sensor) sensor.stop();
+      window.removeEventListener('deviceorientation', handleOrientation);
     };
-    window.addEventListener('deviceorientation', handleOrientation);
-    return () => window.removeEventListener('deviceorientation', handleOrientation);
   }, [enableState]);
 
   return { gyroAngle, gyroRef };
