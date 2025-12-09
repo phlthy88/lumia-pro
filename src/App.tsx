@@ -1,4 +1,4 @@
-import React, { useRef, Suspense } from 'react';
+import React, { useRef, Suspense, useState } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { PhotoLibrary } from '@mui/icons-material';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -26,13 +26,19 @@ const ThemeSettings = React.lazy(() => import('./components/ThemeSettings').then
 const MuiOverlaySettings = React.lazy(() => import('./components/MuiOverlaySettings').then(m => ({ default: m.MuiOverlaySettings })));
 const VirtualCameraSettings = React.lazy(() => import('./components/VirtualCameraSettings').then(m => ({ default: m.VirtualCameraSettings })));
 const PlatformBoostsPanel = React.lazy(() => import('./components/PlatformBoostsPanel').then(m => ({ default: m.PlatformBoostsPanel })));
+const Vectorscope = React.lazy(() => import('./components/Vectorscope').then(m => ({ default: m.Vectorscope })));
 import { ParallaxHeader } from './components/ParallaxHeader';
+import { PerformanceModeToggle, PerformanceTier } from './components/PerformanceModeToggle';
+import { ControlCard } from './components/controls/ControlCard';
 
 // Separate component for drawer content to consume contexts
 const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
     const { activeTab } = useUIState();
     const { overlayConfig, setOverlayConfig, midi, virtualCamera } = useRenderContext();
     const { mediaItems, deleteMedia, loadItemUrl } = useRecordingContext();
+    const { videoRef } = useCameraContext();
+    const [performanceTier, setPerformanceTier] = useState<PerformanceTier>('auto');
+    const [vectorscopeEnabled, setVectorscopeEnabled] = useState(false);
 
     switch (activeTab) {
         case 'ADJUST':
@@ -55,12 +61,26 @@ const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
                 <>
                     <ParallaxHeader title="Overlays" subtitle="Grids, guides & display options" scrollY={scrollY} />
                     <Suspense fallback={<CircularProgress />}><MuiOverlaySettings config={overlayConfig} setConfig={setOverlayConfig} /></Suspense>
+                    <ControlCard title="Scopes">
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="body2">Vectorscope</Typography>
+                            <input type="checkbox" checked={vectorscopeEnabled} onChange={e => setVectorscopeEnabled(e.target.checked)} />
+                        </Box>
+                        {vectorscopeEnabled && (
+                            <Suspense fallback={<CircularProgress size={20} />}>
+                                <Vectorscope videoRef={videoRef} enabled={vectorscopeEnabled} size={140} />
+                            </Suspense>
+                        )}
+                    </ControlCard>
                 </>
             );
         case 'BOOSTS':
             return (
                 <>
                     <ParallaxHeader title="Platform Boosts" subtitle="Performance optimization" scrollY={scrollY} />
+                    <ControlCard title="Quality Mode">
+                        <PerformanceModeToggle currentTier={performanceTier} onTierChange={setPerformanceTier} />
+                    </ControlCard>
                     <Suspense fallback={<CircularProgress />}><PlatformBoostsPanel /></Suspense>
                 </>
             );
