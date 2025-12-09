@@ -1,37 +1,76 @@
+export interface QualityState {
+  tier: 'high' | 'medium' | 'low';
+  resolutionScale: number;
+  targetFps: number;
+  beautyEnabled: boolean;
+  reason?: string;
+}
 
 export class AdaptiveQuality {
-    private frameTimes: number[] = [];
-    private readonly sampleSize = 120; // 2 seconds of samples
-    private readonly targetFrameTime = 50; // ~20fps threshold (more lenient)
-    private consecutiveBadSamples = 0;
+  private frameTimesMs: number[] = [];
+  private readonly windowSize = 60; // 1 second at 60fps
+  private consecutiveBadSamples = 0;
 
-    addFrameTime(ms: number) {
-        this.frameTimes.push(ms);
-        if (this.frameTimes.length > this.sampleSize) {
-            this.frameTimes.shift();
-        }
+  addFrameTime(ms: number): void {
+    this.frameTimesMs.push(ms);
+    if (this.frameTimesMs.length > this.windowSize) {
+      this.frameTimesMs.shift();
+    }
+  }
+
+  getRecommendation(): QualityState {
+    if (this.frameTimesMs.length < 30) {
+      return { tier: 'high', resolutionScale: 1.0, targetFps: 60, beautyEnabled: true };
     }
 
-    shouldDownscale(): boolean {
-        if (this.frameTimes.length < this.sampleSize) return false;
+    const avgMs = this.frameTimesMs.reduce((a, b) => a + b, 0) / this.frameTimesMs.length;
+    const avgFps = 1000 / avgMs;
 
-        const avg = this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;
-        if (avg > this.targetFrameTime) {
-            this.consecutiveBadSamples++;
-        } else {
-            this.consecutiveBadSamples = 0;
-        }
-        // Only downscale after 3 consecutive bad checks (~6 seconds of poor performance)
-        return this.consecutiveBadSamples >= 3;
+    if (avgFps < 20) {
+      return {
+        tier: 'low',
+        resolutionScale: 0.5,
+        targetFps: 30,
+        beautyEnabled: false,
+        reason: `Low FPS: ${avgFps.toFixed(1)}`
+      };
     }
 
-    getAverageFrameTime(): number {
-        if (this.frameTimes.length === 0) return 0;
-        return this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;
+    if (avgFps < 30) {
+      return {
+        tier: 'medium',
+        resolutionScale: 0.75,
+        targetFps: 30,
+        beautyEnabled: true,
+        reason: `Medium FPS: ${avgFps.toFixed(1)}`
+      };
     }
 
-    reset() {
-        this.frameTimes = [];
-        this.consecutiveBadSamples = 0;
+    return { tier: 'high', resolutionScale: 1.0, targetFps: 60, beautyEnabled: true };
+  }
+
+  shouldDownscale(): boolean {
+    const rec = this.getRecommendation();
+    if (rec.tier === 'low' || rec.tier === 'medium') {
+      this.consecutiveBadSamples++;
+    } else {
+      this.consecutiveBadSamples = 0;
     }
+    return this.consecutiveBadSamples >= 3;
+  }
+
+  getAverageFrameTime(): number {
+    if (this.frameTimesMs.length === 0) return 0;
+    return this.frameTimesMs.reduce((a, b) => a + b, 0) / this.frameTimesMs.length;
+  }
+
+  getAverageFps(): number {
+    const avgMs = this.getAverageFrameTime();
+    return avgMs > 0 ? 1000 / avgMs : 0;
+  }
+
+  reset(): void {
+    this.frameTimesMs = [];
+    this.consecutiveBadSamples = 0;
+  }
 }

@@ -274,6 +274,14 @@ export class GLRenderer {
         if (this.frameId) cancelAnimationFrame(this.frameId);
     }
 
+    public getQualityRecommendation() {
+        return this.adaptiveQuality.getRecommendation();
+    }
+
+    public getAverageFps(): number {
+        return this.adaptiveQuality.getAverageFps();
+    }
+
     public dispose() {
         this.stop();
         

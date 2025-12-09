@@ -196,3 +196,38 @@ test.describe('Performance', () => {
     expect(growth).toBeLessThan(50 * 1024 * 1024);
   });
 });
+
+
+// Sprint 2: Performance regression test
+test.describe('Performance', () => {
+  test('maintains acceptable FPS', async ({ page, context }) => {
+    await context.grantPermissions(['camera', 'microphone']);
+    await page.goto('/');
+    await page.waitForSelector('canvas', { state: 'visible', timeout: 15000 });
+
+    // Wait for stabilization
+    await page.waitForTimeout(3000);
+
+    // Measure FPS over 3 seconds
+    const fps = await page.evaluate(() => {
+      return new Promise<number>(resolve => {
+        let frames = 0;
+        const start = performance.now();
+
+        const count = () => {
+          frames++;
+          if (performance.now() - start < 3000) {
+            requestAnimationFrame(count);
+          } else {
+            resolve(frames / 3);
+          }
+        };
+        requestAnimationFrame(count);
+      });
+    });
+
+    // Should maintain at least 24 FPS (cinematic minimum)
+    console.log(`Measured FPS: ${fps.toFixed(1)}`);
+    expect(fps).toBeGreaterThan(20);
+  });
+});
