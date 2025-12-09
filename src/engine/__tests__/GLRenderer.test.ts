@@ -86,8 +86,8 @@ describe('GLRenderer', () => {
       mockGL.getShaderInfoLog = vi.fn(() => "ERROR: 'sample' is reserved");
       
       // This would throw in real GLRenderer
-      expect(mockGL.getShaderParameter({}, mockGL.COMPILE_STATUS)).toBe(false);
-      expect(mockGL.getShaderInfoLog({})).toContain('ERROR');
+      expect(mockGL.getShaderParameter()).toBe(false);
+      expect(mockGL.getShaderInfoLog()).toContain('ERROR');
     });
 
     it('should not use GLSL reserved keywords', () => {

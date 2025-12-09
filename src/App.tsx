@@ -37,6 +37,7 @@ import { StatsOverlay } from './components/StatsOverlay';
 import { StyledViewfinder } from './components/layout/StyledViewfinder';
 import { CaptureAnimation } from './components/CaptureAnimation';
 import { ThumbnailSwoosh } from './components/ThumbnailSwoosh';
+import { PerformanceOverlay } from './components/PerformanceOverlay';
 
 // Lazy Load Heavy Components
 const MediaLibrary = React.lazy(() => import('./components/MediaLibrary').then(m => ({ default: m.MediaLibrary })));
@@ -147,6 +148,9 @@ const AppContent: React.FC = () => {
     // Thumbnail Swoosh Animation
     const [swooshThumbnail, setSwooshThumbnail] = useState<string | null>(null);
 
+    // Performance overlay (toggle with Shift+P)
+    const [showPerfOverlay, setShowPerfOverlay] = useState(false);
+
     useEffect(() => {
         const handleOffline = () => {
             setIsOffline(true);
@@ -156,11 +160,19 @@ const AppContent: React.FC = () => {
             setIsOffline(false);
             setNetworkToast({open: true, message: 'Connection restored.', severity: 'success'});
         };
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Shift+P toggles performance overlay
+            if (e.shiftKey && e.key === 'P') {
+                setShowPerfOverlay(prev => !prev);
+            }
+        };
         window.addEventListener('offline', handleOffline);
         window.addEventListener('online', handleOnline);
+        window.addEventListener('keydown', handleKeyDown);
         return () => {
             window.removeEventListener('offline', handleOffline);
             window.removeEventListener('online', handleOnline);
+            window.removeEventListener('keydown', handleKeyDown);
         };
     }, []);
     
@@ -876,6 +888,9 @@ const AppContent: React.FC = () => {
             
             {/* Thumbnail Swoosh Animation */}
             <ThumbnailSwoosh thumbnailUrl={swooshThumbnail} onComplete={() => setSwooshThumbnail(null)} />
+
+            {/* Performance Overlay (Shift+P to toggle) */}
+            <PerformanceOverlay visible={showPerfOverlay} engineStats={statsRef.current} />
 
             {/* Global Loading Overlay */}
             {!streamReady && (

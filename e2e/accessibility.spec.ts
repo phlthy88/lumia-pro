@@ -112,8 +112,8 @@ test.describe('Accessibility', () => {
     const headings = await page.evaluate(() => {
       const h = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
       return Array.from(h).map(el => ({
-        level: parseInt(el.tagName[1]),
-        text: el.textContent?.slice(0, 30)
+        level: parseInt(el.tagName[1] || '0'),
+        text: el.textContent?.slice(0, 30) || ''
       }));
     });
 
