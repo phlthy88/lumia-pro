@@ -77,44 +77,39 @@ export const useVisionWorker = (
     }
   }, [streamReady, enabled]);
 
-  // Detection loop - RAF-based with frame rate limiting (no requestIdleCallback)
+  // Detection loop - setInterval to avoid idle callback starvation
   useEffect(() => {
     if (!state.ready || !enabled) return;
 
-    let rafId: number;
-    let lastRun = 0;
-    const TARGET_INTERVAL = 66; // ~15 FPS for face detection
+    let timerId: number;
+    let isProcessing = false;
 
     const detect = () => {
-      const now = performance.now();
-      
-      // Rate limit to save CPU
-      if (now - lastRun < TARGET_INTERVAL) {
-        rafId = requestAnimationFrame(detect);
-        return;
-      }
-
       const video = videoRef.current;
       const landmarker = landmarkerRef.current;
       
       if (!video || !landmarker || video.readyState < 2 || video.paused) {
-        rafId = requestAnimationFrame(detect);
         return;
       }
 
+      if (isProcessing) return;
+
+      isProcessing = true;
+      
       try {
+        const now = performance.now();
         const result = landmarker.detectForVideo(video, now);
         setState(prev => ({ ...prev, result }));
-        lastRun = now;
-      } catch {
-        // Skip frame on error
+      } catch (e) {
+        console.warn('AI Detection dropped frame', e);
+      } finally {
+        isProcessing = false;
       }
-
-      rafId = requestAnimationFrame(detect);
     };
 
-    rafId = requestAnimationFrame(detect);
-    return () => cancelAnimationFrame(rafId);
+    timerId = window.setInterval(detect, 33);
+
+    return () => clearInterval(timerId);
   }, [state.ready, enabled, videoRef]);
 
   const hasFace = useMemo(() => (state.result?.faceLandmarks?.length ?? 0) > 0, [state.result]);
