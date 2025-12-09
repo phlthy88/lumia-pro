@@ -122,9 +122,8 @@ export const Vectorscope: React.FC<Props> = ({ videoRef, enabled, size = 150 }) 
   if (!enabled) return null;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-      <canvas ref={canvasRef} width={size} height={size} style={{ borderRadius: 4 }} />
-      <Typography variant="caption" color="text.secondary">Vectorscope</Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mt: 1 }}>
+      <canvas ref={canvasRef} width={size} height={size} style={{ borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }} />
     </Box>
   );
 };

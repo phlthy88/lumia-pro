@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
+import { MuiToggleGroup } from './controls/MuiToggle';
 import type { QualityState } from '../engine/AdaptiveQuality';
 
 export type PerformanceTier = 'auto' | 'high' | 'medium' | 'low';
@@ -18,19 +19,17 @@ export const PerformanceModeToggle: React.FC<Props> = ({
   fps 
 }) => {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <ToggleButtonGroup
+    <>
+      <MuiToggleGroup
         value={currentTier}
-        exclusive
-        onChange={(_, v) => v && onTierChange(v)}
-        size="small"
-        fullWidth
-      >
-        <ToggleButton value="auto">Auto</ToggleButton>
-        <ToggleButton value="high">High</ToggleButton>
-        <ToggleButton value="medium">Medium</ToggleButton>
-        <ToggleButton value="low">Low</ToggleButton>
-      </ToggleButtonGroup>
+        options={[
+          { value: 'auto', label: 'Auto' },
+          { value: 'high', label: 'High' },
+          { value: 'medium', label: 'Med' },
+          { value: 'low', label: 'Low' },
+        ]}
+        onChange={(v) => onTierChange(v as PerformanceTier)}
+      />
 
       {currentTier === 'auto' && recommendation && (
         <Typography variant="caption" color="text.secondary">
@@ -43,6 +42,6 @@ export const PerformanceModeToggle: React.FC<Props> = ({
           {fps.toFixed(0)} FPS
         </Typography>
       )}
-    </Box>
+    </>
   );
 };
