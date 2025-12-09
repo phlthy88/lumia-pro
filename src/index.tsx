@@ -1,7 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { injectSpeedInsights } from '@vercel/speed-insights';
 import App from './App';
 import { migrateSettings } from './services/SettingsMigration';
+
+// Initialize Vercel Speed Insights
+injectSpeedInsights();
 
 // Run migrations before render
 migrateSettings();
