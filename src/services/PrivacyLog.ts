@@ -2,7 +2,7 @@
 export interface LogEntry {
     timestamp: number;
     type: 'permission' | 'error' | 'performance';
-    data: any;
+    data: unknown;
 }
 
 const DB_NAME = 'LumiaPrivacyLog';
@@ -33,7 +33,7 @@ export class PrivacyLog {
         });
     }
 
-    static async log(type: LogEntry['type'], data: any): Promise<void> {
+    static async log(type: LogEntry['type'], data: unknown): Promise<void> {
         // Privacy Guard: Ensure no PII is logged (simplified check)
         // In a real app, we would sanitize `data` recursively.
 

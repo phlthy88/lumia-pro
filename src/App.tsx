@@ -276,7 +276,9 @@ const AppContent: React.FC = () => {
     // Renderer
     // Keep a ref of the latest state to pass to renderer without re-binding
     const latestStateRef = useRef({ 
-        color, transform, mode, bypass, 
+        color, transform, mode, bypass,
+        faceCenter: { x: 0.5, y: 0.5 },
+        mouthCenter: { x: 0.5, y: 0.7 },
         beauty: { 
             smoothStrength: beauty.enabled ? beauty.smooth : 0,
             eyeBrighten: beauty.enabled ? beauty.eyeBrighten : 0,
@@ -305,10 +307,25 @@ const AppContent: React.FC = () => {
         };
     }, [color, transform, mode, bypass, beauty]);
 
-    const getParams = useCallback(() => ({
-        ...latestStateRef.current,
-        gyroAngle: gyroRef.current
-    }), [gyroRef]);
+    const getParams = useCallback(() => {
+        const face = vision.landmarks?.faceLandmarks?.[0];
+        let faceCenter = { x: 0.5, y: 0.5 };
+        let mouthCenter = { x: 0.5, y: 0.7 };
+
+        if (face && face[4] && face[13] && face[14]) {
+            faceCenter = { x: face[4].x, y: 1.0 - face[4].y };
+            const mouthX = (face[13].x + face[14].x) / 2;
+            const mouthY = (face[13].y + face[14].y) / 2;
+            mouthCenter = { x: mouthX, y: 1.0 - mouthY };
+        }
+
+        return {
+            ...latestStateRef.current,
+            faceCenter,
+            mouthCenter,
+            gyroAngle: gyroRef.current
+        };
+    }, [gyroRef, vision.landmarks]);
 
     const { canvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error: glError } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
 

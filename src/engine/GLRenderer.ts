@@ -1,4 +1,4 @@
-import { ColorGradeParams, TransformParams, RenderMode, EngineStats, LutData } from '../types';
+import { ColorGradeParams, TransformParams, RenderMode, EngineStats, LutData, RenderParams } from '../types';
 import { GPUCapabilities, GPUTier, QualityProfile } from './GPUCapabilities';
 import { AdaptiveQuality } from './AdaptiveQuality';
 
@@ -401,6 +401,9 @@ export class GLRenderer {
             uniform float u_lipsFuller;
             uniform float u_noseSlim;
 
+            uniform vec2 u_faceCenter;
+            uniform vec2 u_mouthCenter;
+
             // Color Grading
             uniform float u_exposure;
             uniform float u_contrast;
@@ -540,34 +543,30 @@ export class GLRenderer {
 
             vec2 applyFaceThin(vec2 uv, float contourMask) {
                 if (u_faceThin <= 0.0 || contourMask < 0.01) return uv;
-                // Only apply where mask is present, push inward
-                // Mask is on face edges, so push toward center
-                float strength = contourMask * u_faceThin * 0.02;
-                float dir = uv.x < 0.5 ? 1.0 : -1.0;
+                float strength = contourMask * u_faceThin * 0.03;
+                float dir = uv.x < u_faceCenter.x ? -1.0 : 1.0;
                 return uv + vec2(dir * strength, 0.0);
             }
 
             vec2 applyCheekbones(vec2 uv, float cheekMask) {
                 if (u_cheekbones <= 0.0 || cheekMask < 0.01) return uv;
-                // Subtle inward pull for cheekbone definition
-                float strength = cheekMask * u_cheekbones * 0.015;
-                float dir = uv.x < 0.5 ? 1.0 : -1.0;
-                return uv + vec2(dir * strength, -strength * 0.5);
+                float strength = cheekMask * u_cheekbones * 0.02;
+                float dir = uv.x < u_faceCenter.x ? -1.0 : 1.0;
+                return uv + vec2(dir * strength, 0.0);
             }
 
             vec2 applyNoseSlim(vec2 uv, float noseMask) {
                 if (u_noseSlim <= 0.0 || noseMask < 0.01) return uv;
-                // Push nose pixels toward center - only where mask is blue
-                float strength = noseMask * u_noseSlim * 0.03;
-                float dir = uv.x < 0.5 ? 1.0 : -1.0;
+                float strength = noseMask * u_noseSlim * 0.04;
+                float dir = uv.x < u_faceCenter.x ? -1.0 : 1.0;
                 return uv + vec2(dir * strength, 0.0);
             }
 
             vec2 applyLipsFuller(vec2 uv, float lipMask) {
                 if (u_lipsFuller <= 0.0 || lipMask < 0.01) return uv;
-                // Expand lips outward from their center vertically
-                float strength = lipMask * u_lipsFuller * 0.02;
-                return uv + vec2(0.0, (uv.y - 0.5) * strength);
+                vec2 delta = uv - u_mouthCenter;
+                float strength = lipMask * u_lipsFuller * 0.15;
+                return uv - delta * strength;
             }
 
             void main() {
@@ -930,7 +929,7 @@ export class GLRenderer {
         }
     }
 
-    private render(params: any, time: number) {
+    private render(params: RenderParams, time: number) {
         if (!this.program) return;
         this.gl.useProgram(this.program);
 
@@ -955,6 +954,9 @@ export class GLRenderer {
         setUniform1f('u_cheekbones', params.beauty?.cheekbones ?? 0);
         setUniform1f('u_lipsFuller', params.beauty?.lipsFuller ?? 0);
         setUniform1f('u_noseSlim', params.beauty?.noseSlim ?? 0);
+
+        this.gl.uniform2f(this.getUniformLoc('u_faceCenter'), params.faceCenter?.x ?? 0.5, params.faceCenter?.y ?? 0.5);
+        this.gl.uniform2f(this.getUniformLoc('u_mouthCenter'), params.mouthCenter?.x ?? 0.5, params.mouthCenter?.y ?? 0.7);
 
         setUniform1f('u_exposure', params.color.exposure);
         setUniform1f('u_contrast', params.color.contrast);

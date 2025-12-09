@@ -83,9 +83,9 @@ async function ensureLandmarker(
     
     consecutiveErrors = 0;
     postMessage({ type: 'ready' } satisfies ReadyEvent);
-  } catch (err: any) {
+  } catch (err) {
     console.error('[VisionWorker] FaceLandmarker initialization failed:', err);
-    postMessage({ type: 'error', message: `Init failed: ${err?.message ?? 'Unknown error'}` } satisfies ErrorEvent);
+    postMessage({ type: 'error', message: `Init failed: ${err instanceof Error ? err.message : 'Unknown error'}` } satisfies ErrorEvent);
   }
 }
 
@@ -171,14 +171,14 @@ async function handleFrame(image: ImageBitmap, timestamp: number) {
         payload: { result: { faceLandmarks: [] }, timestamp: performance.now() }
       } satisfies LandmarkEvent);
     }
-  } catch (err: any) {
+  } catch (err) {
     consecutiveErrors++;
     console.error(`[VisionWorker] Detection error (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}):`, err);
     
     if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
       postMessage({
         type: 'error',
-        message: `Detection failed ${MAX_CONSECUTIVE_ERRORS} times: ${err?.message ?? 'Unknown error'}`
+        message: `Detection failed ${MAX_CONSECUTIVE_ERRORS} times: ${err instanceof Error ? err.message : 'Unknown error'}`
       } satisfies ErrorEvent);
     }
   } finally {
@@ -199,10 +199,10 @@ self.onmessage = async (event: MessageEvent<IncomingMessage>) => {
           data.minFacePresenceConfidence,
           data.minTrackingConfidence
         );
-      } catch (err: any) {
+      } catch (err) {
         postMessage({
           type: 'error',
-          message: err?.message ?? 'Vision worker init failed'
+          message: err instanceof Error ? err.message : 'Vision worker init failed'
         } satisfies ErrorEvent);
       }
       break;

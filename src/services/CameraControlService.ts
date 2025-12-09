@@ -3,7 +3,7 @@
 export class CameraControlService {
     private stream: MediaStream | null = null;
     private track: MediaStreamTrack | null = null;
-    private constraintQueue: Array<{constraints: MediaTrackConstraints, resolve: () => void, reject: (error: any) => void}> = [];
+    private constraintQueue: Array<{constraints: MediaTrackConstraints, resolve: () => void, reject: (error: unknown) => void}> = [];
     private isProcessingQueue = false;
 
     // Mutex-like lock for constraints application with proper queuing

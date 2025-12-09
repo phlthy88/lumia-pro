@@ -5,10 +5,17 @@
 
 export interface WebGPUInfo {
   supported: boolean;
-  adapter: any | null;
+  adapter: GPUAdapterInfo | null;
   features: string[];
   limits: Record<string, number>;
   preferredFormat: string | null;
+}
+
+interface GPUAdapterInfo {
+  vendor?: string;
+  architecture?: string;
+  device?: string;
+  description?: string;
 }
 
 export class WebGPUCapabilities {

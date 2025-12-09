@@ -186,4 +186,30 @@ export interface EngineStats {
     droppedFrames: number;
 }
 
+export interface BeautyParams {
+    smoothStrength: number;
+    eyeBrighten: number;
+    faceThin: number;
+    skinTone: number;
+    cheekbones: number;
+    lipsFuller: number;
+    noseSlim: number;
+}
+
+export interface Point2D {
+    x: number;
+    y: number;
+}
+
+export interface RenderParams {
+    color: ColorGradeParams;
+    transform: TransformParams;
+    mode: RenderMode;
+    gyroAngle: number;
+    bypass: boolean;
+    beauty?: BeautyParams;
+    faceCenter?: Point2D;
+    mouthCenter?: Point2D;
+}
+
 export type SidebarPosition = 'left' | 'right';

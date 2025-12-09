@@ -135,13 +135,15 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
         
         if (isMounted) setStatus('streaming');
 
-      } catch (err: any) {
+      } catch (err) {
         console.error("Stream error", err);
         if (isMounted) {
             let mode = FallbackMode.GENERIC_ERROR;
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            // DOMException has .name property directly
+            const errorName = (err as { name?: string })?.name || '';
+            if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
                 mode = FallbackMode.CAMERA_DENIED;
-            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            } else if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
                 mode = FallbackMode.CAMERA_NOT_FOUND;
             }
 

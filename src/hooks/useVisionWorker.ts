@@ -54,9 +54,9 @@ export const useVisionWorker = (
         landmarkerRef.current = landmarker;
         console.log('[useVisionWorker] FaceLandmarker ready');
         setState(prev => ({ ...prev, ready: true }));
-      } catch (err: any) {
+      } catch (err) {
         console.error('[useVisionWorker] Init failed:', err);
-        setState(prev => ({ ...prev, error: err?.message || 'Init failed' }));
+        setState(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Init failed' }));
       }
     })();
 
