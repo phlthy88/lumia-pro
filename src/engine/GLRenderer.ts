@@ -474,38 +474,64 @@ export class GLRenderer {
                 return mix(color, lutColor, u_lutStrength);
             }
 
+            // Bilateral filter for skin smoothing - preserves edges while smoothing
             vec3 applySkinSmoothing(vec2 uv, vec3 baseColor, float maskWeight) {
                 if (maskWeight < 0.01 || u_skinSmoothStrength <= 0.0) return baseColor;
-                vec2 onePixel = vec2(1.0) / vec2(textureSize(u_videoTexture, 0));
-                vec3 accum = vec3(0.0);
-                float total = 0.0;
-                // Larger kernel for more pronounced smoothing
-                int radius = int(2.0 + u_skinSmoothStrength * 3.0);
-                for (int x = -3; x <= 3; x++) {
-                  for (int y = -3; y <= 3; y++) {
-                    if (abs(x) > radius || abs(y) > radius) continue;
-                    float w = 1.0 - length(vec2(float(x), float(y))) / 5.0;
-                    vec3 samp = texture(u_videoTexture, uv + vec2(float(x), float(y)) * onePixel * 2.0).rgb;
-                    accum += samp * w;
-                    total += w;
-                  }
+                
+                vec2 texelSize = vec2(1.0) / vec2(textureSize(u_videoTexture, 0));
+                vec3 result = vec3(0.0);
+                float totalWeight = 0.0;
+                
+                // Bilateral filter parameters
+                float sigmaSpatial = 2.0 + u_skinSmoothStrength * 4.0;
+                float sigmaRange = 0.1 + u_skinSmoothStrength * 0.15;
+                int radius = int(sigmaSpatial);
+                
+                float baseLuma = dot(baseColor, vec3(0.299, 0.587, 0.114));
+                
+                for (int x = -4; x <= 4; x++) {
+                    for (int y = -4; y <= 4; y++) {
+                        if (abs(x) > radius || abs(y) > radius) continue;
+                        
+                        vec2 offset = vec2(float(x), float(y)) * texelSize * 1.5;
+                        vec3 sampleColor = texture(u_videoTexture, uv + offset).rgb;
+                        float sampleLuma = dot(sampleColor, vec3(0.299, 0.587, 0.114));
+                        
+                        // Spatial weight (Gaussian)
+                        float spatialDist = length(vec2(float(x), float(y)));
+                        float spatialWeight = exp(-spatialDist * spatialDist / (2.0 * sigmaSpatial * sigmaSpatial));
+                        
+                        // Range weight (color similarity) - preserves edges
+                        float lumaDiff = abs(sampleLuma - baseLuma);
+                        float rangeWeight = exp(-lumaDiff * lumaDiff / (2.0 * sigmaRange * sigmaRange));
+                        
+                        float weight = spatialWeight * rangeWeight;
+                        result += sampleColor * weight;
+                        totalWeight += weight;
+                    }
                 }
-                vec3 blurred = accum / max(total, 0.0001);
-                // Preserve some detail by mixing with original
-                vec3 detail = baseColor - blurred;
-                vec3 smoothed = blurred + detail * (1.0 - u_skinSmoothStrength * 0.8);
-                return mix(baseColor, smoothed, clamp(maskWeight * u_skinSmoothStrength * 1.5, 0.0, 1.0));
+                
+                vec3 smoothed = result / max(totalWeight, 0.001);
+                
+                // High-frequency detail preservation
+                vec3 detail = baseColor - smoothed;
+                float detailPreserve = 1.0 - u_skinSmoothStrength * 0.7;
+                smoothed = smoothed + detail * detailPreserve * 0.3;
+                
+                return mix(baseColor, smoothed, clamp(maskWeight * u_skinSmoothStrength, 0.0, 1.0));
             }
 
             vec3 applyEyeBrighten(vec3 color, float eyeMask) {
                 if (eyeMask < 0.01 || u_eyeBrighten <= 0.0) return color;
                 // Brighten and add sparkle to eyes
-                float boost = 1.0 + u_eyeBrighten * 0.5;
+                float boost = 1.0 + u_eyeBrighten * 0.4;
                 vec3 brightened = color * boost;
-                // Increase saturation slightly for more vivid eyes
+                // Increase saturation for vivid eyes
                 float gray = dot(brightened, vec3(0.299, 0.587, 0.114));
-                brightened = mix(vec3(gray), brightened, 1.0 + u_eyeBrighten * 0.3);
-                return mix(color, brightened, eyeMask);
+                brightened = mix(vec3(gray), brightened, 1.0 + u_eyeBrighten * 0.25);
+                // Add subtle highlight
+                brightened += vec3(u_eyeBrighten * 0.05);
+                return mix(color, clamp(brightened, 0.0, 1.0), eyeMask);
             }
 
             vec3 applySkinTone(vec3 color, float skinMask) {
