@@ -77,6 +77,16 @@ export const useVisionWorker = (
     }
   }, [streamReady, enabled]);
 
+  // Explicit cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (landmarkerRef.current) {
+        landmarkerRef.current.close();
+        landmarkerRef.current = null;
+      }
+    };
+  }, []);
+
   // Detection loop - setInterval to avoid idle callback starvation
   useEffect(() => {
     if (!state.ready || !enabled) return;

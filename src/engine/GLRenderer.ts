@@ -310,6 +310,10 @@ export class GLRenderer {
         this.overlaySource = null;
         this.beautyMaskSource = null;
         this.beautyMask2Source = null;
+
+        // Ensure texture map references are cleared
+        this.beautyMaskTexture = null;
+        this.beautyMask2Texture = null;
     }
 
     private resize() {

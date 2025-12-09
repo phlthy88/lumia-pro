@@ -161,7 +161,9 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
 
     return () => {
       isMounted = false;
-      activeStream?.getTracks().forEach(t => t.stop());
+      if (activeStream) {
+        activeStream.getTracks().forEach(t => t.stop());
+      }
       // Clear video element to release memory
       if (videoRef.current) {
         videoRef.current.srcObject = null;

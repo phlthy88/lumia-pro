@@ -29,9 +29,9 @@ Most webcam software gives you basic filters. Lumia Pro gives you a **full color
 
 | Feature | Lumia Pro | Basic Webcam Apps |
 |---------|-----------|-------------------|
-| Professional LUTs | ✅ 70+ cinematic looks | ❌ Basic filters |
+| Professional LUTs | ✅ ~30 cinematic looks | ❌ Basic filters |
 | Real-time GPU rendering | ✅ WebGL 2.0 | ❌ CPU-based |
-| AI scene optimization | ✅ Gemini-powered | ❌ None |
+| AI scene optimization | ✅ MediaPipe & Heuristic-based | ❌ None |
 | Virtual camera output | ✅ Works with Zoom, OBS | ❌ Limited |
 | MIDI controller support | ✅ Full mapping | ❌ None |
 | Offline PWA | ✅ Install & use anywhere | ❌ Online only |
@@ -58,7 +58,7 @@ Open **http://localhost:3000** → Allow camera → Start creating.
 <td width="50%">
 
 ### Color Grading
-- **70+ Professional LUTs** — Film stocks, cinematic looks, log conversions
+- **~30 Professional LUTs** — Film stocks, cinematic looks, log conversions
 - Lift / Gamma / Gain color wheels
 - Exposure, contrast, saturation, temperature
 - Real-time GPU-accelerated processing
@@ -147,7 +147,7 @@ src/
 └── theme/         Material Design 3 theming
 
 public/
-├── luts/          70+ .cube LUT files
+├── luts/          ~30 .cube LUT files
 ├── models/        MediaPipe face model
 └── wasm/          Vision WASM binaries
 ```

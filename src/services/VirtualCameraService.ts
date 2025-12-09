@@ -122,6 +122,28 @@ export class VirtualCameraService {
   }
 
   /**
+   * Dispose all resources
+   */
+  dispose() {
+    this.stop();
+    this.closePopOutWindow();
+    this.stopWebRTCStream();
+    this.listeners.clear();
+    this.sourceCanvas = null;
+    this.virtualCanvas = null;
+    this.virtualCtx = null;
+    this.state = {
+      isActive: false,
+      isWindowOpen: false,
+      stream: null,
+      windowRef: null,
+      config: { ...DEFAULT_CONFIG },
+      isStreaming: false
+    };
+    console.log('[VirtualCamera] Disposed');
+  }
+
+  /**
    * Open a dedicated pop-out window for screen sharing in video calls
    */
   openPopOutWindow(): Window | null {
