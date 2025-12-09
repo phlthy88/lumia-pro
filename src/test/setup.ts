@@ -36,10 +36,38 @@ Object.defineProperty(global.navigator, 'mediaDevices', {
   value: mockMediaDevices
 });
 
-// 2. Mock WebGL context
+// 2. Mock Canvas contexts (2D and WebGL2)
 if (typeof HTMLCanvasElement !== 'undefined') {
   const originalGetContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function(contextId: any, ...args: any[]): any {
+    if (contextId === '2d') {
+      // Return a mock 2D context
+      return {
+        fillRect: vi.fn(),
+        clearRect: vi.fn(),
+        getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4), width: 1, height: 1 })),
+        putImageData: vi.fn(),
+        drawImage: vi.fn(),
+        save: vi.fn(),
+        restore: vi.fn(),
+        scale: vi.fn(),
+        rotate: vi.fn(),
+        translate: vi.fn(),
+        transform: vi.fn(),
+        setTransform: vi.fn(),
+        fillText: vi.fn(),
+        strokeText: vi.fn(),
+        measureText: vi.fn(() => ({ width: 0 })),
+        beginPath: vi.fn(),
+        closePath: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        arc: vi.fn(),
+        stroke: vi.fn(),
+        fill: vi.fn(),
+        canvas: this,
+      } as unknown as CanvasRenderingContext2D;
+    }
     if (contextId === 'webgl2') {
         // Return a mock WebGL2 context
       return {
