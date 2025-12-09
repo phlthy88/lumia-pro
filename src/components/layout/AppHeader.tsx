@@ -38,12 +38,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick, navOpen, onNa
                 </Box>
 
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                    <IconButton color="inherit">
+                    <IconButton color="inherit" aria-label="Help">
                         <HelpIcon />
                     </IconButton>
                     <IconButton 
                         color={navOpen ? 'primary' : 'inherit'} 
                         onClick={onNavToggle}
+                        aria-label={navOpen ? "Close settings" : "Open settings"}
                         sx={{
                             transition: 'transform 0.3s ease',
                             animation: navOpen ? `${spin} 0.3s ease forwards` : 'none',
