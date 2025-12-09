@@ -124,10 +124,6 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         const handleUnload = () => {
              // Dispose critical services
-             // Note: virtualCameraService is imported in hooks usually, but here we need to access the singleton.
-             // We can import the singleton directly from the service file.
-             // Wait, I imported 'aiService' at the top, but I did NOT import 'virtualCameraService' at the top.
-             // I need to import it.
              virtualCameraService.dispose();
              aiService.dispose();
         };
