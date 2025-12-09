@@ -16,7 +16,7 @@ const DEFAULT_MODEL = `${BASE_PATH}models/face_landmarker.task`;
 export const useVisionWorker = (
   videoRef: React.RefObject<HTMLVideoElement>,
   streamReady: boolean,
-  enabled: boolean, // Only load model when enabled (AI or Beauty active)
+  enabled: boolean,
   options: {
     minFaceDetectionConfidence: number;
     minFacePresenceConfidence: number;
@@ -24,7 +24,6 @@ export const useVisionWorker = (
   }
 ) => {
   const landmarkerRef = useRef<FaceLandmarker | null>(null);
-  const intervalRef = useRef<number>(0);
   const [state, setState] = useState<VisionState>({ result: null, ready: false });
 
   // Initialize FaceLandmarker only when enabled
@@ -78,43 +77,45 @@ export const useVisionWorker = (
     }
   }, [streamReady, enabled]);
 
-  // Detection loop - 100ms interval (~10fps) to avoid blocking rendering
+  // Detection loop - RAF-based with frame rate limiting (no requestIdleCallback)
   useEffect(() => {
     if (!state.ready || !enabled) return;
 
-    let isProcessing = false;
+    let rafId: number;
+    let lastRun = 0;
+    const TARGET_INTERVAL = 66; // ~15 FPS for face detection
 
     const detect = () => {
-      // Skip if still processing previous frame (frame dropping)
-      if (isProcessing) return;
+      const now = performance.now();
       
+      // Rate limit to save CPU
+      if (now - lastRun < TARGET_INTERVAL) {
+        rafId = requestAnimationFrame(detect);
+        return;
+      }
+
       const video = videoRef.current;
       const landmarker = landmarkerRef.current;
-      if (!video || !landmarker || video.readyState < 2) return;
-
-      // Use idle callback if available, otherwise run directly
-      const run = () => {
-        isProcessing = true;
-        try {
-          const result = landmarker.detectForVideo(video, performance.now());
-          setState(prev => ({ ...prev, result }));
-        } catch {
-          // Skip frame
-        } finally {
-          isProcessing = false;
-        }
-      };
-
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(run, { timeout: 50 });
-      } else {
-        run();
+      
+      if (!video || !landmarker || video.readyState < 2 || video.paused) {
+        rafId = requestAnimationFrame(detect);
+        return;
       }
+
+      try {
+        const result = landmarker.detectForVideo(video, now);
+        setState(prev => ({ ...prev, result }));
+        lastRun = now;
+      } catch {
+        // Skip frame on error
+      }
+
+      rafId = requestAnimationFrame(detect);
     };
 
-    intervalRef.current = window.setInterval(detect, 100);
-    return () => clearInterval(intervalRef.current);
-  }, [state.ready, videoRef]);
+    rafId = requestAnimationFrame(detect);
+    return () => cancelAnimationFrame(rafId);
+  }, [state.ready, enabled, videoRef]);
 
   const hasFace = useMemo(() => (state.result?.faceLandmarks?.length ?? 0) > 0, [state.result]);
 
