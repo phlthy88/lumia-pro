@@ -26,6 +26,7 @@ export const MuiSwitch: React.FC<MuiSwitchProps> = ({ label, checked, onChange, 
                 checked={checked} 
                 onChange={(e) => onChange(e.target.checked)} 
                 disabled={disabled}
+                inputProps={{ 'aria-label': label }}
                 sx={{
                     '& .MuiSwitch-thumb': {
                         transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease',

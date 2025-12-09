@@ -100,7 +100,7 @@ export const ParallaxHeader: React.FC<ParallaxHeaderProps> = ({
                 }}
             >
                 <Typography 
-                    component="h1"
+                    component="h2"
                     sx={{ 
                         fontSize: `${fontSize}rem`,
                         fontWeight: isCollapsed ? 500 : 600,

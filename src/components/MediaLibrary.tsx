@@ -499,7 +499,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
   return (
     <Dialog open={true} onClose={onClose} maxWidth="md" fullWidth>
       <Box sx={{ position: 'relative', bgcolor: 'background.default', height: '70vh' }}>
-        <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}>
+        <IconButton onClick={onClose} sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }} aria-label="Close dialog">
           <CloseIcon />
         </IconButton>
         {content}

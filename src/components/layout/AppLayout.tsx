@@ -135,6 +135,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                         {!isMobile && (
                             <IconButton
                                 onClick={handleNavToggle}
+                                aria-label={navOpen ? "Close navigation" : "Open navigation"}
                                 sx={{
                                     position: 'absolute',
                                     top: 24,
