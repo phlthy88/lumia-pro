@@ -57,9 +57,9 @@ export const HistogramMeter: React.FC<Props> = ({ videoRef, enabled, width = 360
       const bHist = new Array(bins).fill(0);
 
       for (let i = 0; i < data.length; i += 4) {
-        rHist[(data[i] * bins) >> 8] += 1;
-        gHist[(data[i + 1] * bins) >> 8] += 1;
-        bHist[(data[i + 2] * bins) >> 8] += 1;
+        rHist[((data[i] ?? 0) * bins) >> 8] += 1;
+        gHist[((data[i + 1] ?? 0) * bins) >> 8] += 1;
+        bHist[((data[i + 2] ?? 0) * bins) >> 8] += 1;
       }
 
       const maxCount = Math.max(

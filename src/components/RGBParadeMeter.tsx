@@ -78,9 +78,9 @@ export const RGBParadeMeter: React.FC<Props> = ({ videoRef, enabled, width = 360
       for (let y = 0; y < sampleCanvas.height; y += 2) {
         for (let x = 0; x < sampleCanvas.width; x += 2) {
           const idx = (y * sampleCanvas.width + x) * 4;
-          const r = data[idx] / 255;
-          const g = data[idx + 1] / 255;
-          const b = data[idx + 2] / 255;
+          const r = (data[idx] ?? 0) / 255;
+          const g = (data[idx + 1] ?? 0) / 255;
+          const b = (data[idx + 2] ?? 0) / 255;
 
           const values = [r, g, b];
           values.forEach((v, c) => {

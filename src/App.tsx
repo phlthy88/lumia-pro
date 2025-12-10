@@ -42,7 +42,6 @@ const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
     const { overlayConfig, setOverlayConfig, midi, virtualCamera, wipePosition, setWipePosition } = useRenderContext();
     const { mediaItems, deleteMedia, loadItemUrl } = useRecordingContext();
     const { videoRef } = useCameraContext();
-    const [performanceTier, setPerformanceTier] = useState<PerformanceTier>('auto');
     const [vectorscopeEnabled, setVectorscopeEnabled] = useState(false);
     const [histogramEnabled, setHistogramEnabled] = useState(false);
     const [paradeEnabled, setParadeEnabled] = useState(false);
