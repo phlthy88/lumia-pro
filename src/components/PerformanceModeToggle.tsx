@@ -7,22 +7,22 @@ export const PerformanceModeToggle: React.FC = () => {
   const { mode, setMode, settings } = usePerformanceMode();
 
   return (
-    <Box>
+    <Box display="flex" flexDirection="column" alignItems="center">
       <Tooltip title="Performance Mode">
         <ToggleButtonGroup
           value={mode}
           exclusive
           onChange={(_, value: PerformanceMode) => value && setMode(value)}
-          size="small"
+          size="large"
         >
           <ToggleButton value="performance">
-            <Speed fontSize="small" />
+            <Speed fontSize="large" />
           </ToggleButton>
           <ToggleButton value="balanced">
-            <Balance fontSize="small" />
+            <Balance fontSize="large" />
           </ToggleButton>
           <ToggleButton value="quality">
-            <HighQuality fontSize="small" />
+            <HighQuality fontSize="large" />
           </ToggleButton>
         </ToggleButtonGroup>
       </Tooltip>
