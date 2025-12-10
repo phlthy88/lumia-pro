@@ -38,7 +38,7 @@ describe('GPUCapabilities', () => {
 
     it('returns correct profile for low tier', () => {
         const profile = GPUCapabilities.getProfile('low');
-        expect(profile.resolutionScale).toBe(0.5);
+        expect(profile.resolutionScale).toBe(0.85);
         expect(profile.precision).toBe('lowp');
     });
 });
