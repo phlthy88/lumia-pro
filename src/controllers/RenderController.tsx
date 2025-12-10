@@ -80,6 +80,12 @@ interface RenderContextState {
   // Animation Triggers (exposed for RecordingController)
   triggerCaptureAnim: (url: string) => void;
   triggerSwooshAnim: (url: string) => void;
+  
+  // Animation state (for Viewfinder to render)
+  captureAnimUrl: string | null;
+  swooshThumbnailUrl: string | null;
+  clearCaptureAnim: () => void;
+  clearSwooshAnim: () => void;
 }
 
 const RenderContext = createContext<RenderContextState | null>(null);
@@ -470,6 +476,10 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
       midi, virtualCamera, glError, useFallbackVideo, renderHealthy,
       triggerCaptureAnim: setCaptureAnim,
       triggerSwooshAnim: setSwooshThumbnail,
+      captureAnimUrl: captureAnim,
+      swooshThumbnailUrl: swooshThumbnail,
+      clearCaptureAnim: () => setCaptureAnim(null),
+      clearSwooshAnim: () => setSwooshThumbnail(null),
       setColor: setColor as any, undo, canUndo
     }}>
       {children}
@@ -479,10 +489,11 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
 
 // Viewfinder component to be rendered inside AppLayout
 export const Viewfinder: React.FC = () => {
-  const { setCanvasRef, statsRef, gyroRef, bypass, toggleBypass, midi, glError, useFallbackVideo } = useRenderContext();
+  const { 
+    setCanvasRef, statsRef, gyroRef, bypass, toggleBypass, midi, glError, useFallbackVideo,
+    captureAnimUrl, swooshThumbnailUrl, clearCaptureAnim, clearSwooshAnim
+  } = useRenderContext();
   const { videoRef, streamReady } = useCameraContext();
-  const [captureAnim, setCaptureAnim] = React.useState<string | null>(null);
-  const [swooshThumbnail, setSwooshThumbnail] = React.useState<string | null>(null);
   const [showPerfOverlay, setShowPerfOverlay] = React.useState(false);
   const fallbackVideoRef = React.useRef<HTMLVideoElement | null>(null);
 
@@ -558,8 +569,8 @@ export const Viewfinder: React.FC = () => {
         />
       </StyledViewfinder>
 
-      <CaptureAnimation imageUrl={captureAnim} onComplete={() => setCaptureAnim(null)} />
-      <ThumbnailSwoosh thumbnailUrl={swooshThumbnail} onComplete={() => setSwooshThumbnail(null)} />
+      <CaptureAnimation imageUrl={captureAnimUrl} onComplete={clearCaptureAnim} />
+      <ThumbnailSwoosh thumbnailUrl={swooshThumbnailUrl} onComplete={clearSwooshAnim} />
       <PerformanceOverlay visible={showPerfOverlay} engineStats={statsRef.current} />
 
       {glError && <ErrorScreen mode={glError} />}

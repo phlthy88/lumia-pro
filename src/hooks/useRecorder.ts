@@ -168,7 +168,15 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
 
       if (canvas.width === 0 || canvas.height === 0) return null;
 
+      // Wait for two animation frames to ensure WebGL has rendered
       await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+
+      // For WebGL canvases, we may need to force a read to ensure buffer is populated
+      const gl = canvas.getContext('webgl2');
+      if (gl) {
+        gl.finish(); // Ensure all GL commands are complete
+      }
 
       return new Promise(resolve => {
         canvas.toBlob((blob) => {
