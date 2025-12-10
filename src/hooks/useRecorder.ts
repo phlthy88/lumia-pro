@@ -161,6 +161,29 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     }
   }, []);
 
+  const captureFrame = useCallback(
+    async (type: 'image/png' | 'image/jpeg', quality = 1.0): Promise<{ blob: Blob; url: string } | null> => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+
+      if (canvas.width === 0 || canvas.height === 0) return null;
+
+      await new Promise(requestAnimationFrame);
+
+      return new Promise(resolve => {
+        canvas.toBlob((blob) => {
+          if (!blob || blob.size === 0) {
+            resolve(null);
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          resolve({ blob, url });
+        }, type, quality);
+      });
+    },
+    [canvasRef]
+  );
+
   const startRecording = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -310,36 +333,38 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     return undefined;
   }, [isCountingDown, countdown]);
 
-  const stopRecording = useCallback((onThumbnail?: (url: string) => void) => {
-    cleanupTimer();
-    
-    // Capture thumbnail before stopping
-    if (onThumbnail && canvasRef.current) {
-      canvasRef.current.toBlob((blob) => {
-        if (blob) {
-          const thumbUrl = URL.createObjectURL(blob);
-          onThumbnail(thumbUrl);
-        }
-      }, 'image/jpeg', 0.8);
-    }
-    
-    // Stop streams immediately to prevent stacking
-    cleanupStreams();
-    
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-    setIsRecording(false);
-    setRecordingTime(0);
-  }, [cleanupTimer, cleanupStreams, canvasRef]);
+  const stopRecording = useCallback(
+    (onThumbnail?: (url: string) => void) => {
+      cleanupTimer();
 
-  const takeScreenshot = useCallback((onCapture?: (url: string) => void) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const url = URL.createObjectURL(blob);
+      const finalizeStop = () => {
+        cleanupStreams();
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        setIsRecording(false);
+        setRecordingTime(0);
+      };
+
+      const capturePromise = onThumbnail ? captureFrame('image/jpeg', 0.8) : Promise.resolve(null);
+
+      capturePromise
+        .then(result => {
+          if (result) {
+            onThumbnail?.(result.url);
+          }
+        })
+        .finally(finalizeStop);
+    },
+    [captureFrame, cleanupStreams, cleanupTimer]
+  );
+
+  const takeScreenshot = useCallback(
+    (onCapture?: (url: string) => void) => {
+      captureFrame('image/png', 1.0).then(result => {
+        if (!result) return;
+
+        const { blob, url } = result;
         const id = Date.now().toString();
         const item = { id, url, type: 'image' as const, timestamp: Date.now() };
         setMediaItems(prev => {
@@ -355,9 +380,10 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         });
         saveMedia({ id, blob, type: 'image', timestamp: item.timestamp }).catch(console.error);
         onCapture?.(url);
-      }
-    }, 'image/png', 1.0);
-  }, [canvasRef]);
+      });
+    },
+    [captureFrame]
+  );
 
   const playShutterSound = useCallback(() => {
     try {
