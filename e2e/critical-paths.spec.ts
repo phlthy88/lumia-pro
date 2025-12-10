@@ -115,7 +115,8 @@ test.describe('Critical User Paths', () => {
       !e.includes('DevTools') &&
       !e.includes('NotFoundError') && // Camera not found in CI
       !e.includes('Stream error') && // Camera stream errors in CI
-      !e.includes('Requested device not found')
+      !e.includes('Requested device not found') &&
+      !e.includes('vercel-scripts.com') // Vercel analytics CSP errors
     );
     
     expect(criticalErrors).toHaveLength(0);
