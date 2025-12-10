@@ -76,7 +76,7 @@ describe('GLRenderer disposal', () => {
 
     // Store original and override before importing
     const originalGetContext = HTMLCanvasElement.prototype.getContext;
-    const mockGetContext = vi.fn(() => mockGL) as typeof HTMLCanvasElement.prototype.getContext;
+    const mockGetContext = vi.fn(() => mockGL) as unknown as typeof HTMLCanvasElement.prototype.getContext;
     Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', { value: mockGetContext, writable: true });
 
     const { GLRenderer } = await import('../GLRenderer');
