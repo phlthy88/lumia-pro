@@ -11,6 +11,7 @@ export const ThumbnailSwoosh: React.FC<ThumbnailSwooshProps> = ({ thumbnailUrl, 
     const [targetPos, setTargetPos] = useState({ x: 0, y: 0 });
     const [startPos, setStartPos] = useState({ x: 0, y: 0 });
     const [imageLoaded, setImageLoaded] = useState(false);
+    const timerRef = React.useRef<number | null>(null);
 
     useEffect(() => {
         if (thumbnailUrl) {
@@ -34,15 +35,28 @@ export const ThumbnailSwoosh: React.FC<ThumbnailSwooshProps> = ({ thumbnailUrl, 
                 // Fallback
                 setTargetPos({ x: -startX + 60, y: -startY + window.innerHeight - 60 });
             }
-            
-            const timer = setTimeout(() => {
-                setShow(false);
-                onComplete();
-            }, 800);
-            return () => clearTimeout(timer);
+
+            return () => {
+                if (timerRef.current) {
+                    clearTimeout(timerRef.current);
+                    timerRef.current = null;
+                }
+            };
         }
         return undefined;
     }, [thumbnailUrl, onComplete]);
+
+    const handleImageLoaded = () => {
+        setImageLoaded(true);
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+        }
+        timerRef.current = window.setTimeout(() => {
+            setShow(false);
+            timerRef.current = null;
+            onComplete();
+        }, 800);
+    };
 
     if (!show || !thumbnailUrl) return null;
 
@@ -78,7 +92,7 @@ export const ThumbnailSwoosh: React.FC<ThumbnailSwooshProps> = ({ thumbnailUrl, 
             <Box
                 component="img"
                 src={thumbnailUrl}
-                onLoad={() => setImageLoaded(true)}
+                onLoad={handleImageLoaded}
                 sx={{
                     width: '100%',
                     height: '100%',
