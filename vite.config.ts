@@ -20,9 +20,9 @@ export default defineConfig(({ mode }) => {
       `connect-src ${connectSrc}`,
       "img-src 'self' blob: data:",
       "worker-src 'self' blob:",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com data:",
+      "style-src 'self' 'unsafe-inline'",
+      "style-src-elem 'self' 'unsafe-inline'",
+      "font-src 'self' data:",
     ].join('; ');
 
     return {
