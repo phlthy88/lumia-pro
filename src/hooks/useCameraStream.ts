@@ -98,36 +98,61 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
             setTargetRes(prev => ({ w: settings.width || prev.w, h: settings.height || prev.h }));
           }
           if (settings.frameRate) {
+            console.log(`[Camera] Actual frame rate: ${settings.frameRate}fps`);
             // Round to nearest common FPS value
             const fps = settings.frameRate;
             const rounded = fps > 58 ? 60 : fps > 28 ? 30 : fps > 23 ? 24 : fps;
             setTargetFps(prev => rounded);
           }
         }
-        
-        setStatus('streaming');
 
         if (!videoRef.current || !isMounted) return;
         videoRef.current.srcObject = stream;
         
         await new Promise<void>((resolve, reject) => {
-          if (!videoRef.current) return reject(new Error("Video element unmounted"));
           const video = videoRef.current;
-          if (video.readyState >= 2) return resolve();
-          
+          if (!video) return reject(new Error("Video element unmounted"));
+          if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) return resolve();
+
           let timer: ReturnType<typeof setTimeout> | undefined;
-          const onData = () => {
-            video.removeEventListener('loadeddata', onData);
+          let raf: number | undefined;
+
+          const cleanup = () => {
             if (timer) clearTimeout(timer);
+            if (raf) cancelAnimationFrame(raf);
+            video.removeEventListener('loadeddata', onReady);
+            video.removeEventListener('canplay', onReady);
+            video.removeEventListener('loadedmetadata', onReady);
+          };
+
+          const onReady = () => {
+            cleanup();
             resolve();
           };
-          
-          timer = setTimeout(() => {
-              video.removeEventListener('loadeddata', onData);
-              reject(new Error("Camera initialization timed out"));
-          }, 5000);
 
-          video.addEventListener('loadeddata', onData);
+          const pollReady = () => {
+            const trackLive = !!(video.srcObject as MediaStream | null)?.getVideoTracks().some(t => t.readyState === 'live');
+            if (trackLive && video.videoWidth > 0 && video.videoHeight > 0) {
+              onReady();
+              return;
+            }
+            raf = requestAnimationFrame(pollReady);
+          };
+
+          video.addEventListener('loadeddata', onReady);
+          video.addEventListener('canplay', onReady);
+          video.addEventListener('loadedmetadata', onReady);
+          pollReady();
+
+          timer = setTimeout(() => {
+            cleanup();
+            const trackLive = !!(video.srcObject as MediaStream | null)?.getVideoTracks().some(t => t.readyState === 'live');
+            if (trackLive || (video.videoWidth > 0 && video.videoHeight > 0)) {
+              resolve();
+            } else {
+              reject(new Error("Camera initialization timed out"));
+            }
+          }, 10000);
         });
 
         if (!videoRef.current || !isMounted) return;

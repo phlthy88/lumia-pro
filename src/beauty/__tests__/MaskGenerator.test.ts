@@ -35,7 +35,7 @@ class MockOffscreenCanvas {
   }
 }
 
-// @ts-ignore
+// @ts-expect-error - Mock for test environment
 global.OffscreenCanvas = MockOffscreenCanvas;
 
 describe('MaskGenerator', () => {

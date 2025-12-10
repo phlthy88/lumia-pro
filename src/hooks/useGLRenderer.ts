@@ -23,7 +23,7 @@ export const useGLRenderer = (
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const rendererRef = useRef<GLRenderer | null>(null);
-  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(document.createElement('canvas'));
   const lastValidSizeRef = useRef<{w: number, h: number}>({w: 1920, h: 1080});
   
   const statsRef = useRef<EngineStats>({ 
@@ -56,9 +56,11 @@ export const useGLRenderer = (
   // Helper to start renderer
   const startRenderer = useCallback(() => {
     const renderer = rendererRef.current;
-    if (!renderer || !streamReadyRef.current || !videoRef.current || !overlayCanvasRef.current) return;
+    const video = videoRef.current;
     
-    renderer.setVideoSource(videoRef.current);
+    if (!renderer || !streamReadyRef.current || !video) return;
+    
+    renderer.setVideoSource(video);
     renderer.setOverlaySource(overlayCanvasRef.current);
     renderer.start(
       () => {
@@ -130,16 +132,6 @@ export const useGLRenderer = (
       };
   }, [performanceMode, startRenderer]);
 
-  // Create overlay canvas once
-  useEffect(() => {
-    if (!overlayCanvasRef.current) {
-        overlayCanvasRef.current = document.createElement('canvas');
-    }
-    return () => {
-        overlayCanvasRef.current = null;
-    }
-  }, []);
-
   // Sync Performance Mode
   useEffect(() => {
       if (rendererRef.current) {
@@ -148,11 +140,14 @@ export const useGLRenderer = (
   }, [performanceMode]);
 
   useEffect(() => {
-    if (contextLost) return;
+    if (contextLost || !canvasMounted) return;
 
-    if (canvasRef.current && !rendererRef.current) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (!rendererRef.current) {
         // Initial Check for WebGL 2 Support
-        const gl = canvasRef.current.getContext('webgl2');
+        const gl = canvas.getContext('webgl2');
         if (!gl) {
             console.error("WebGL 2.0 not supported");
             setError(FallbackMode.GL_UNSUPPORTED);
@@ -160,15 +155,16 @@ export const useGLRenderer = (
         }
 
       try {
-        rendererRef.current = new GLRenderer(canvasRef.current);
+        rendererRef.current = new GLRenderer(canvas);
         rendererRef.current.setPerformanceMode(performanceMode);
+        console.log('[useGLRenderer] Renderer created');
       } catch (e) {
           console.error("Failed to init GLRenderer", e);
           setError(FallbackMode.GENERIC_ERROR);
       }
     }
 
-    if (streamReady) {
+    if (streamReady && rendererRef.current) {
       startRenderer();
     }
 
@@ -201,8 +197,14 @@ export const useGLRenderer = (
 
   // Callback ref to detect when canvas is mounted
   const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
+    if (node === canvasRef.current) return;
     (canvasRef as any).current = node;
-    setCanvasMounted(!!node);
+    // Force re-render after ref is set
+    setCanvasMounted(prev => {
+      // Toggle to force effect re-run even if value is same
+      if (node) return true;
+      return false;
+    });
   }, []);
 
   return { canvasRef, setCanvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error };

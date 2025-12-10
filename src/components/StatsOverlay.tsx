@@ -81,7 +81,7 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
                 opacity: 0.9,
             }}>
                 <Box sx={{ 
-                    color: displayStats.fps < 30 ? theme.palette.warning.main : theme.palette.primary.main,
+                    color: displayStats.fps < 20 ? theme.palette.warning.main : theme.palette.primary.main,
                     fontWeight: 600,
                 }}>
                     FPS: {displayStats.fps}

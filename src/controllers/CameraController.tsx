@@ -7,7 +7,7 @@ import { ControlCard } from '../components/controls/ControlCard';
 import { MuiSelect } from '../components/controls/MuiSelect';
 import { MuiToggleGroup, MuiSwitch } from '../components/controls/MuiToggle';
 import { MuiSlider } from '../components/controls/MuiSlider';
-import { FallbackMode, CameraCapabilities, HardwareState } from '../types';
+import { CameraCapabilities, HardwareState } from '../types';
 
 interface CameraContextState {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -48,96 +48,13 @@ export const CameraController: React.FC<CameraControllerProps> = ({ children }) 
   const [streamCapabilities, setStreamCapabilities] = useState<{maxFrameRate?: number, maxWidth?: number, maxHeight?: number}>({});
 
   const {
+    videoRef,
     deviceList, activeDeviceId, setActiveDeviceId,
     targetRes, targetFps, applyFormat, streamReady, error,
     availableResolutions, availableFps
   } = useCameraStream(streamCapabilities.maxFrameRate, streamCapabilities.maxWidth, streamCapabilities.maxHeight);
 
-  // Sync ref
-  useEffect(() => {
-    // videoRef is managed by useCameraStream internally via its own ref,
-    // but useCameraStream actually creates its own ref.
-    // We need to pass the external videoRef to useCameraStream?
-    // Looking at useCameraStream.ts: `const videoRef = useRef<HTMLVideoElement>(null);`
-    // It returns its OWN ref.
-    // The previous App.tsx used the ref returned by useCameraStream.
-    // But RenderController needs access to the video element.
-    // So we need to expose the video element.
-    // Wait, useCameraStream creates the ref. We should lift that ref or pass one in.
-    // Let's modify useCameraStream to accept a ref if possible, or just use the one it returns and expose it.
-    // Actually, App.tsx creates `videoRef` and passes it to `useGLRenderer`.
-    // BUT `useCameraStream` ALSO attaches the stream to `videoRef.current`.
-    // In `App.tsx`: `const { videoRef, ... } = useCameraStream(...)`.
-    // AND `<video ref={videoRef} ... />`.
-    // So `useCameraStream` provides the ref.
-    // BUT RenderController needs it.
-    // So CameraController should expose `videoRef` from `useCameraStream`.
-    // However, the props say `videoRef` is passed IN to CameraController.
-    // If I pass a ref IN, `useCameraStream` needs to use THAT ref instead of creating one.
-    // I should probably check `useCameraStream`.
-  }, []);
-
-  // Wait, I can't modify `useCameraStream` easily without potentially breaking things if I'm not careful.
-  // Let's check `useCameraStream.ts`.
-  // It defines `const videoRef = useRef<HTMLVideoElement>(null);` internally.
-  // It does NOT accept a ref.
-  // This means I cannot pass an external ref to it.
-  // So `CameraController` must use the ref returned by `useCameraStream`, and we must rely on
-  // `RenderController` getting access to the DOM element some other way?
-  // Or `CameraController` exposes the ref via Context, and `RenderController` consumes it?
-  // But `RenderController` takes `videoRef` as a PROP in the plan.
-  // "Props in: videoRef from CameraController".
-  // Ah, the plan says:
-  // ```
-  // <CameraController videoRef={videoRef} />
-  // ```
-  // This implies `videoRef` is created in App.tsx.
-  // BUT `useCameraStream` creates its own ref.
-  // This is a conflict.
-  // Resolution: I will modify `useCameraStream` to accept an optional `externalRef`.
-  // OR, I will use `useImperativeHandle` or similar.
-  // Actually, simplest is to just modify `useCameraStream` to take a ref.
-  // BUT "Do NOT change hook implementations" is a constraint. "only move where they're called".
-  // If `App.tsx` creates the ref, `useCameraStream` creates a DIFFERENT ref.
-  // `RenderController` needs the one with the video stream.
-  // So `App.tsx` should probably NOT create the ref if `useCameraStream` creates it.
-  // Instead `CameraController` should return the ref, and we pass it to `RenderController`.
-  // BUT `App.tsx` needs to coordinate them.
-  // So: `CameraController` creates the ref (via hook), exposes it via Context.
-  // `RenderController` consumes `CameraContext` to get `videoRef`.
-  // This aligns with "UI components read state via context".
-  // The plan said "Props in: videoRef from CameraController" -> meaning `App.tsx` might pass it.
-  // If `App.tsx` passes it, `useCameraStream` is the problem.
-
-  // Let's look at `useCameraStream` again.
-  // It returns `videoRef`.
-  // If I can't change the hook, I have to use the ref it gives me.
-  // So `CameraController` gets `videoRef` from `useCameraStream`.
-  // `CameraController` needs to share this ref with `RenderController`.
-  // I can hoist the ref via callback?
-  // Or just expose it in Context.
-  // I will go with exposing it in Context.
-  // The `videoRef` prop passed to `CameraController` in the plan description might be a mistake or requires modification of the hook.
-  // I will choose to IGNORE the "videoRef prop" part of the plan for `CameraController` and instead have `CameraController` *provide* the ref via Context, since `useCameraStream` owns it.
-  // Wait, `RenderController` needs it.
-  // If `RenderController` is a sibling, it can consume `CameraContext`.
-
-  // Refined plan for refs:
-  // `CameraController` uses `useCameraStream`. It gets `videoRef`.
-  // It puts `videoRef` in `CameraContext`.
-  // `RenderController` consumes `CameraContext` to get `videoRef`.
-  // `App.tsx` does NOT create `videoRef`.
-
-  // However, `RecordingController` might also need it?
-  // `RenderController` needs it for `GLRenderer`.
-
-  // Let's implement this.
-
-  const { videoRef: hookVideoRef, ...streamData } = useCameraStream(streamCapabilities.maxFrameRate, streamCapabilities.maxWidth, streamCapabilities.maxHeight);
-
-  // If the user passed a ref (which I am deciding NOT to support to avoid hook changes), we would sync them.
-  // But `useCameraStream` attaches the stream to `videoRef.current`.
-  // So we must use `hookVideoRef`.
+  // Single camera hook instance; its ref is shared via context so render/AI layers read the same stream.
 
   // Hardware controls
   const {
@@ -173,7 +90,7 @@ export const CameraController: React.FC<CameraControllerProps> = ({ children }) 
 
   return (
     <CameraContext.Provider value={{
-      videoRef: hookVideoRef,
+      videoRef,
       deviceList, activeDeviceId, setActiveDeviceId,
       targetRes, targetFps, applyFormat, streamReady, error,
       availableResolutions, availableFps,
@@ -183,7 +100,7 @@ export const CameraController: React.FC<CameraControllerProps> = ({ children }) 
     }}>
       {/* Hidden Video Element - needs real dimensions for stream to work */}
       <video
-        ref={hookVideoRef}
+        ref={videoRef}
         style={{ position: 'fixed', top: -9999, left: -9999, width: 640, height: 480, pointerEvents: 'none' }}
         playsInline
         muted

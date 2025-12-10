@@ -74,6 +74,8 @@ export class VirtualCameraService {
   private listeners: Set<(state: VirtualCameraState) => void> = new Set();
   private broadcastChannel: BroadcastChannel | null = null;
   private lastBroadcastTime = 0;
+  private isEncodingFrame = false;
+  private broadcastEnabled = true;
 
   /**
    * Initialize the virtual camera with a source canvas
@@ -314,28 +316,38 @@ export class VirtualCameraService {
       return '';
     }
 
+    this.broadcastEnabled = true;
+
     // Initialize BroadcastChannel for frame sharing
     if (!this.broadcastChannel) {
       this.broadcastChannel = new BroadcastChannel('lumia-virtual-camera');
       this.broadcastChannel.onmessage = (event) => {
         if (event.data.type === 'request-frame' && this.sourceCanvas) {
-          // Throttle to ~30fps
+          if (!this.broadcastEnabled) return;
+          // Throttle to ~5fps and avoid overlapping encodes to reduce jank
           const now = Date.now();
-          if (now - this.lastBroadcastTime > 33) {
-            this.sourceCanvas.toBlob((blob) => {
-              if (blob) {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                  this.broadcastChannel?.postMessage({
-                    type: 'frame',
-                    dataUrl: reader.result
-                  });
-                };
-                reader.readAsDataURL(blob);
-              }
-            }, 'image/jpeg', 0.9);
-            this.lastBroadcastTime = now;
-          }
+          if (this.isEncodingFrame || now - this.lastBroadcastTime < 180) return;
+
+          this.isEncodingFrame = true;
+          this.sourceCanvas.toBlob((blob) => {
+            if (blob) {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                this.broadcastChannel?.postMessage({
+                  type: 'frame',
+                  dataUrl: reader.result
+                });
+                this.isEncodingFrame = false;
+              };
+              reader.onerror = () => {
+                this.isEncodingFrame = false;
+              };
+              reader.readAsDataURL(blob);
+            } else {
+              this.isEncodingFrame = false;
+            }
+          }, 'image/jpeg', 0.85);
+          this.lastBroadcastTime = now;
         }
       };
     }
@@ -355,6 +367,7 @@ export class VirtualCameraService {
    * Stop WebRTC streaming
    */
   stopWebRTCStream() {
+    this.broadcastEnabled = false;
     if (this.broadcastChannel) {
       this.broadcastChannel.close();
       this.broadcastChannel = null;
@@ -377,6 +390,9 @@ export class VirtualCameraService {
    */
   updateConfig(config: Partial<VirtualCameraConfig>) {
     this.state.config = { ...this.state.config, ...config };
+    if (config.showOverlay === false) {
+      this.broadcastEnabled = false;
+    }
     
     if (this.virtualCanvas) {
       this.virtualCanvas.width = this.state.config.width;

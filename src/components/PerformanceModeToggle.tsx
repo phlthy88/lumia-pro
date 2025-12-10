@@ -1,47 +1,35 @@
 import React from 'react';
-import { Typography } from '@mui/material';
-import { MuiToggleGroup } from './controls/MuiToggle';
-import type { QualityState } from '../engine/AdaptiveQuality';
+import { ToggleButton, ToggleButtonGroup, Tooltip, Typography, Box } from '@mui/material';
+import { Speed, HighQuality, Balance } from '@mui/icons-material';
+import { usePerformanceMode, type PerformanceMode } from '../hooks/usePerformanceMode';
 
-export type PerformanceTier = 'auto' | 'high' | 'medium' | 'low';
+export const PerformanceModeToggle: React.FC = () => {
+  const { mode, setMode, settings } = usePerformanceMode();
 
-interface Props {
-  currentTier: PerformanceTier;
-  onTierChange: (tier: PerformanceTier) => void;
-  recommendation?: QualityState;
-  fps?: number;
-}
-
-export const PerformanceModeToggle: React.FC<Props> = ({ 
-  currentTier, 
-  onTierChange, 
-  recommendation,
-  fps 
-}) => {
   return (
-    <>
-      <MuiToggleGroup
-        value={currentTier}
-        options={[
-          { value: 'auto', label: 'Auto' },
-          { value: 'high', label: 'High' },
-          { value: 'medium', label: 'Med' },
-          { value: 'low', label: 'Low' },
-        ]}
-        onChange={(v) => onTierChange(v as PerformanceTier)}
-      />
-
-      {currentTier === 'auto' && recommendation && (
-        <Typography variant="caption" color="text.secondary">
-          Current: {recommendation.tier} {recommendation.reason && `(${recommendation.reason})`}
-        </Typography>
-      )}
-
-      {fps !== undefined && fps > 0 && (
-        <Typography variant="caption" color="text.secondary">
-          {fps.toFixed(0)} FPS
-        </Typography>
-      )}
-    </>
+    <Box>
+      <Tooltip title="Performance Mode">
+        <ToggleButtonGroup
+          value={mode}
+          exclusive
+          onChange={(_, value: PerformanceMode) => value && setMode(value)}
+          size="small"
+        >
+          <ToggleButton value="performance">
+            <Speed fontSize="small" />
+          </ToggleButton>
+          <ToggleButton value="balanced">
+            <Balance fontSize="small" />
+          </ToggleButton>
+          <ToggleButton value="quality">
+            <HighQuality fontSize="small" />
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Tooltip>
+      
+      <Typography variant="caption" color="text.secondary" display="block">
+        {mode} • AI: {settings.aiEnabled ? 'On' : 'Off'} • Scale: {settings.resolutionScale}
+      </Typography>
+    </Box>
   );
 };

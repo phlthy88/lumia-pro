@@ -598,8 +598,6 @@ export const RenderSettings: React.FC = () => {
                     { value: RenderMode.Zebras, label: 'ZEBRA' },
                     { value: RenderMode.Level, label: 'LEVEL' },
                     { value: RenderMode.Heatmap, label: 'IRE' },
-                    { value: RenderMode.RGBAParade, label: 'PARADE' },
-                    { value: RenderMode.Histogram, label: 'HIST' },
                 ]}
                 onChange={(v) => setMode(v as RenderMode)}
             />

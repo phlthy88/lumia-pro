@@ -51,12 +51,13 @@ export class AdaptiveQuality {
 
   shouldDownscale(): boolean {
     const rec = this.getRecommendation();
-    if (rec.tier === 'low' || rec.tier === 'medium') {
+    if (rec.tier === 'low') {
       this.consecutiveBadSamples++;
     } else {
       this.consecutiveBadSamples = 0;
     }
-    return this.consecutiveBadSamples >= 3;
+    // Require 5 consecutive bad samples before downscaling
+    return this.consecutiveBadSamples >= 5;
   }
 
   getAverageFrameTime(): number {

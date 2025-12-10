@@ -16,8 +16,6 @@ type IncomingMessage = InitMessage | FrameMessage | DisposeMessage;
 interface SerializableLandmark { x: number; y: number; z: number; }
 interface SerializableResult {
   faceLandmarks: SerializableLandmark[][];
-  faceBlendshapes?: FaceLandmarkerResult['faceBlendshapes'];
-  facialTransformationMatrixes?: FaceLandmarkerResult['facialTransformationMatrixes'];
 }
 
 type LandmarkEvent = { type: 'landmarks'; payload: { result: SerializableResult; timestamp: number } };
@@ -62,7 +60,6 @@ async function ensureLandmarker(
         minFacePresenceConfidence,
         minTrackingConfidence
       });
-      console.log('[VisionWorker] FaceLandmarker initialized with GPU delegate');
     } catch (gpuError) {
       console.warn('[VisionWorker] GPU delegate unavailable, falling back to CPU:', gpuError);
       
@@ -78,7 +75,6 @@ async function ensureLandmarker(
         minFacePresenceConfidence,
         minTrackingConfidence
       });
-      console.log('[VisionWorker] FaceLandmarker initialized with CPU delegate');
     }
     
     consecutiveErrors = 0;
@@ -142,7 +138,7 @@ async function handleFrame(image: ImageBitmap, timestamp: number) {
   isProcessing = true;
   try {
     // Use detectForVideo for VIDEO mode (requires timestamp for temporal tracking)
-    const result = landmarker.detectForVideo(image as unknown as HTMLImageElement, timestamp);
+      const result = landmarker.detectForVideo(image as unknown as HTMLImageElement, timestamp);
     
     if (result.faceLandmarks && result.faceLandmarks.length > 0) {
       consecutiveErrors = 0;
@@ -151,15 +147,12 @@ async function handleFrame(image: ImageBitmap, timestamp: number) {
       const filteredLandmarks = filterLandmarksByConfidence(result.faceLandmarks, 0.5);
       
       // Convert result to a plain serializable object
-      const serializableResult: SerializableResult = {
-        faceLandmarks: filteredLandmarks.map((face) =>
-          face.map((pt) => ({ x: pt.x, y: pt.y, z: pt.z }))
-        ),
-        faceBlendshapes: result.faceBlendshapes,
-        facialTransformationMatrixes: result.facialTransformationMatrixes
-      };
+        const serializableResult: SerializableResult = {
+          faceLandmarks: filteredLandmarks.map((face) =>
+            face.map((pt) => ({ x: pt.x, y: pt.y, z: pt.z }))
+          )
+        };
       
-      console.log(`[VisionWorker] Detected ${result.faceLandmarks.length} face(s) at timestamp ${timestamp}`);
       postMessage({
         type: 'landmarks',
         payload: { result: serializableResult, timestamp: performance.now() }

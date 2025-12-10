@@ -7,10 +7,17 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
 
     // CSP Header Construction
+    const connectSrc = [
+      "'self'",
+      'ws://localhost:*',
+      'https://generativelanguage.googleapis.com',
+      'https://openrouter.ai'
+    ].join(' ');
+
     const csp = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval'",
-      "connect-src 'self' ws://localhost:* https://generativelanguage.googleapis.com",
+      `connect-src ${connectSrc}`,
       "img-src 'self' blob: data:",
       "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",

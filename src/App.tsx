@@ -4,6 +4,7 @@ import { PhotoLibrary } from '@mui/icons-material';
 import { ThemeProvider } from './theme/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { useDeferredInit } from './hooks/useDeferredInit';
 
 // Providers & Controllers
 import { UIStateProvider, useUIState } from './providers/UIStateProvider';
@@ -19,6 +20,8 @@ import { useMemoryMonitor } from './hooks/useMemoryMonitor';
 import { useRenderContext } from './controllers/RenderController';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { RenderMode } from './types';
+import { HistogramMeter } from './components/HistogramMeter';
+import { RGBParadeMeter } from './components/RGBParadeMeter';
 
 // Components (Lazy)
 const MediaLibrary = React.lazy(() => import('./components/MediaLibrary').then(m => ({ default: m.MediaLibrary })));
@@ -41,6 +44,8 @@ const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
     const { videoRef } = useCameraContext();
     const [performanceTier, setPerformanceTier] = useState<PerformanceTier>('auto');
     const [vectorscopeEnabled, setVectorscopeEnabled] = useState(false);
+    const [histogramEnabled, setHistogramEnabled] = useState(false);
+    const [paradeEnabled, setParadeEnabled] = useState(false);
 
     switch (activeTab) {
         case 'ADJUST':
@@ -81,6 +86,22 @@ const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
                             <Suspense fallback={<CircularProgress size={20} />}>
                                 <Vectorscope videoRef={videoRef} enabled={vectorscopeEnabled} size={140} />
                             </Suspense>
+                        )}
+                        <MuiSwitch label="Histogram" checked={histogramEnabled} onChange={setHistogramEnabled} />
+                        <MuiSwitch label="RGB Parade" checked={paradeEnabled} onChange={setParadeEnabled} />
+                        {(histogramEnabled || paradeEnabled) && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
+                                {histogramEnabled && (
+                                    <Suspense fallback={<CircularProgress size={20} />}>
+                                        <HistogramMeter videoRef={videoRef} enabled={histogramEnabled} />
+                                    </Suspense>
+                                )}
+                                {paradeEnabled && (
+                                    <Suspense fallback={<CircularProgress size={20} />}>
+                                        <RGBParadeMeter videoRef={videoRef} enabled={paradeEnabled} />
+                                    </Suspense>
+                                )}
+                            </Box>
                         )}
                     </ControlCard>
                 </>
@@ -194,7 +215,15 @@ const ShortcutsListener = () => {
 }
 
 export default function App() {
-  // videoRef is managed by CameraController (hookVideoRef).
+  const ready = useDeferredInit(50); // Defer heavy initialization by 50ms
+  
+  if (!ready) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+        <CircularProgress size={24} />
+      </Box>
+    );
+  }
 
   return (
     <ErrorBoundary>

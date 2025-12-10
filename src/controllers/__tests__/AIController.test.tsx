@@ -7,7 +7,16 @@ vi.mock('../CameraController', () => ({
 }));
 
 vi.mock('../RenderController', () => ({
-  useRenderContext: () => ({ canvasRef: { current: null }, setParams: vi.fn() }),
+  useRenderContext: () => ({ 
+    canvasRef: { current: null }, 
+    setColor: vi.fn(), 
+    undo: vi.fn(), 
+    canUndo: false 
+  }),
+}));
+
+vi.mock('../../providers/UIStateProvider', () => ({
+  useUIState: () => ({ activeTab: 'AI', showToast: vi.fn() }),
 }));
 
 vi.mock('../../services/AIAnalysisService', () => ({
@@ -15,14 +24,18 @@ vi.mock('../../services/AIAnalysisService', () => ({
 }));
 
 vi.mock('../../hooks/useVisionWorker', () => ({
-  useVisionWorker: () => ({ faceResult: null, isLoading: false, error: null }),
+  useVisionWorker: () => ({ landmarks: null, hasFace: false, ready: false }),
 }));
 
-// Mock MaskGenerator as a proper class
+vi.mock('../../hooks/useAIAnalysis', () => ({
+  useAIAnalysis: () => ({ result: null, isAnalyzing: false, runAnalysis: vi.fn(), autoParams: null }),
+}));
+
 vi.mock('../../beauty/MaskGenerator', () => ({
   MaskGenerator: class MockMaskGenerator {
-    generateMasks = vi.fn().mockResolvedValue({});
-    dispose = vi.fn();
+    update = vi.fn();
+    getCanvas = vi.fn().mockReturnValue(null);
+    getCanvas2 = vi.fn().mockReturnValue(null);
   },
 }));
 
@@ -30,7 +43,6 @@ vi.mock('../../providers/EventBus', () => ({
   eventBus: { emit: vi.fn(), on: () => () => {} },
 }));
 
-// Import after mocks
 import { AIController, useAIContext } from '../AIController';
 
 const TestChild = () => {

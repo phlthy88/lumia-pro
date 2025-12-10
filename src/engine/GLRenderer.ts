@@ -225,8 +225,27 @@ export class GLRenderer {
         this.isRunning = true;
         this.startTime = performance.now();
 
+        const targetFPS = 30;
+        const frameInterval = 1000 / targetFPS;
+        let lastRenderTime = 0;
+        let frameSkipCount = 0;
+
         const loop = (now: number) => {
             if (!this.isRunning) return;
+
+            // Frame rate limiting
+            if (now - lastRenderTime < frameInterval) {
+                this.frameId = requestAnimationFrame(loop);
+                return;
+            }
+
+            // Skip frames if performance is poor
+            if (this.fps < 20 && frameSkipCount++ % 2 === 0) {
+                this.frameId = requestAnimationFrame(loop);
+                return;
+            }
+
+            lastRenderTime = now;
 
             // Stats
             this.frameCount++;
@@ -235,10 +254,10 @@ export class GLRenderer {
 
                 // Adaptive Logic: Check frame time and adjust
                 if (this.adaptiveQuality.shouldDownscale()) {
-                    // Reduce resolution scale if struggling
-                    if (this.qualityProfile.resolutionScale > 0.5) {
-                        this.qualityProfile.resolutionScale -= 0.1;
-                        console.warn('Downscaling resolution due to performance', this.qualityProfile.resolutionScale);
+                    // Reduce resolution scale if struggling (minimum 0.5)
+                    if (this.qualityProfile.resolutionScale > 0.55) {
+                        this.qualityProfile.resolutionScale = Math.max(0.5, this.qualityProfile.resolutionScale - 0.1);
+                        console.warn('Downscaling resolution due to performance', this.qualityProfile.resolutionScale.toFixed(2));
                         this.adaptiveQuality.reset();
                     }
                 }
@@ -908,6 +927,7 @@ export class GLRenderer {
     private videoTextureInitialized = false;
     private lastVideoWidth = 0;
     private lastVideoHeight = 0;
+    private lastVideoTime = -1;
 
     private updateVideoTexture() {
         if (!this.videoSource) return;

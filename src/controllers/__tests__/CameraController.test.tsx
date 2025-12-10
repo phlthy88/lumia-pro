@@ -20,10 +20,13 @@ vi.mock('../../hooks/useCameraStream', () => ({
   CameraError: class extends Error {},
 }));
 
+const mockCapabilities = {};
+const mockHardware = {};
+
 vi.mock('../../hooks/useHardwareControls', () => ({
   useHardwareControls: () => ({
-    capabilities: {},
-    hardware: {},
+    capabilities: mockCapabilities,
+    hardware: mockHardware,
     toggleFocusMode: vi.fn(),
     setFocusDistance: vi.fn(),
     toggleExposureMode: vi.fn(),

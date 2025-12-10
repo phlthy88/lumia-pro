@@ -10,8 +10,6 @@ type VisionState = {
 const BASE_PATH = (import.meta.env.BASE_URL || '/').endsWith('/')
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
-const DEFAULT_WASM = `${BASE_PATH}wasm`;
-const DEFAULT_MODEL = `${BASE_PATH}models/face_landmarker.task`;
 
 export const useVisionWorker = (
   videoRef: React.RefObject<HTMLVideoElement>,
@@ -26,7 +24,7 @@ export const useVisionWorker = (
   const landmarkerRef = useRef<FaceLandmarker | null>(null);
   const [state, setState] = useState<VisionState>({ result: null, ready: false });
 
-  // Initialize FaceLandmarker only when enabled
+  // Initialize FaceLandmarker
   useEffect(() => {
     if (!streamReady || !enabled || landmarkerRef.current) return;
 
@@ -34,13 +32,13 @@ export const useVisionWorker = (
 
     (async () => {
       try {
-        const vision = await FilesetResolver.forVisionTasks(DEFAULT_WASM);
+        const vision = await FilesetResolver.forVisionTasks(`${BASE_PATH}wasm`);
         if (cancelled) return;
 
         const landmarker = await FaceLandmarker.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: DEFAULT_MODEL, delegate: 'GPU' },
+          baseOptions: { modelAssetPath: `${BASE_PATH}models/face_landmarker.task`, delegate: 'GPU' },
           runningMode: 'VIDEO',
-          numFaces: 2,
+          numFaces: 1, // Reduce to 1 face for performance
           minFaceDetectionConfidence: options.minFaceDetectionConfidence,
           minFacePresenceConfidence: options.minFacePresenceConfidence,
           minTrackingConfidence: options.minTrackingConfidence
@@ -52,10 +50,8 @@ export const useVisionWorker = (
         }
 
         landmarkerRef.current = landmarker;
-        console.log('[useVisionWorker] FaceLandmarker ready');
         setState(prev => ({ ...prev, ready: true }));
       } catch (err) {
-        console.error('[useVisionWorker] Init failed:', err);
         setState(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Init failed' }));
       }
     })();
@@ -68,58 +64,53 @@ export const useVisionWorker = (
     };
   }, [streamReady, enabled, options.minFaceDetectionConfidence, options.minFacePresenceConfidence, options.minTrackingConfidence]);
 
-  // Cleanup when disabled or stream unavailable
-  useEffect(() => {
-    if ((!streamReady || !enabled) && landmarkerRef.current) {
-      landmarkerRef.current.close();
-      landmarkerRef.current = null;
-      setState(prev => ({ ...prev, ready: false, result: null }));
-    }
-  }, [streamReady, enabled]);
-
-  // Explicit cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (landmarkerRef.current) {
-        landmarkerRef.current.close();
-        landmarkerRef.current = null;
-      }
-    };
-  }, []);
-
-  // Detection loop - setInterval to avoid idle callback starvation
+  // Detection using requestIdleCallback for better performance
   useEffect(() => {
     if (!state.ready || !enabled) return;
 
-    let timerId: number;
     let isProcessing = false;
+    let timeoutId: number;
 
     const detect = () => {
-      const video = videoRef.current;
-      const landmarker = landmarkerRef.current;
-      
-      if (!video || !landmarker || video.readyState < 2 || video.paused) {
+      if (isProcessing) {
+        timeoutId = window.setTimeout(detect, 300);
         return;
       }
 
-      if (isProcessing) return;
-
-      isProcessing = true;
+      const video = videoRef.current;
+      const landmarker = landmarkerRef.current;
       
-      try {
-        const now = performance.now();
-        const result = landmarker.detectForVideo(video, now);
-        setState(prev => ({ ...prev, result }));
-      } catch (e) {
-        console.warn('AI Detection dropped frame', e);
-      } finally {
-        isProcessing = false;
+      if (!video || !landmarker || video.readyState < 2) {
+        timeoutId = window.setTimeout(detect, 300);
+        return;
+      }
+
+      // Use requestIdleCallback if available, otherwise setTimeout
+      const processFrame = () => {
+        if (isProcessing) return;
+        
+        isProcessing = true;
+        try {
+          const result = landmarker.detectForVideo(video, performance.now());
+          setState(prev => ({ ...prev, result }));
+        } catch (e) {
+          // Silently drop frames on error
+        } finally {
+          isProcessing = false;
+          timeoutId = window.setTimeout(detect, 500); // ~2fps to lower message load
+        }
+      };
+
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(processFrame, { timeout: 100 });
+      } else {
+        setTimeout(processFrame, 0);
       }
     };
 
-    timerId = window.setInterval(detect, 33);
+    detect();
 
-    return () => clearInterval(timerId);
+    return () => clearTimeout(timeoutId);
   }, [state.ready, enabled, videoRef]);
 
   const hasFace = useMemo(() => (state.result?.faceLandmarks?.length ?? 0) > 0, [state.result]);

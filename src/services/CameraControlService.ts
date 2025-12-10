@@ -61,12 +61,13 @@ export class CameraControlService {
                 const constraints: MediaStreamConstraints = {
                     audio: false,
                     video: validDeviceId 
-                        ? { deviceId: { exact: validDeviceId }, width: { ideal: res.width }, height: { ideal: res.height } }
-                        : { width: { ideal: res.width }, height: { ideal: res.height } }
+                        ? { deviceId: { exact: validDeviceId }, width: { ideal: res.width }, height: { ideal: res.height }, frameRate: { ideal: 60 } }
+                        : { width: { ideal: res.width }, height: { ideal: res.height }, frameRate: { ideal: 60 } }
                 };
                 this.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 this.track = this.stream.getVideoTracks()[0] || null;
-                console.log(`[Camera] Initialized at ${res.width}x${res.height}`);
+                const settings = this.track?.getSettings();
+                console.log(`[Camera] Initialized at ${res.width}x${res.height} @ ${settings?.frameRate ?? '?'}fps`);
                 return this.stream;
             } catch (e) {
                 console.warn(`[Camera] Failed at ${res.width}x${res.height}, trying lower resolution`);
