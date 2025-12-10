@@ -40,10 +40,28 @@ export const usePerformanceMonitor = (
   const droppedFramesRef = useRef(0);
   const longTasksRef = useRef(0);
   const rafRef = useRef<number>(0);
+  const [isVisible, setIsVisible] = useState(() =>
+    typeof document === 'undefined' ? true : document.visibilityState === 'visible'
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const handleVisibility = () => {
+      setIsVisible(document.visibilityState === 'visible');
+      // Reset frame baseline when returning to the page to avoid a giant delta
+      if (document.visibilityState === 'visible') {
+        lastFrameRef.current = performance.now();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
 
   // Long task observer
   useEffect(() => {
-    if (!enabled || typeof PerformanceObserver === 'undefined') return;
+    if (!enabled || !isVisible || typeof PerformanceObserver === 'undefined') return;
 
     try {
       const observer = new PerformanceObserver((list) => {
@@ -60,12 +78,13 @@ export const usePerformanceMonitor = (
       // Long task observer not supported
       return;
     }
-  }, [enabled]);
+  }, [enabled, isVisible]);
 
   // Frame timing loop
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !isVisible) return;
 
+    lastFrameRef.current = performance.now();
     const measureFrame = () => {
       const now = performance.now();
       const frameTime = now - lastFrameRef.current;
@@ -87,11 +106,11 @@ export const usePerformanceMonitor = (
 
     rafRef.current = requestAnimationFrame(measureFrame);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [enabled]);
+  }, [enabled, isVisible]);
 
   // Periodic metrics update
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !isVisible) return;
 
     const updateMetrics = () => {
       const frameTimes = frameTimesRef.current;
@@ -136,7 +155,7 @@ export const usePerformanceMonitor = (
 
     const interval = setInterval(updateMetrics, 1000);
     return () => clearInterval(interval);
-  }, [enabled, thresholds]);
+  }, [enabled, thresholds, isVisible]);
 
   const resetCounters = useCallback(() => {
     droppedFramesRef.current = 0;
