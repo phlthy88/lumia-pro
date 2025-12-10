@@ -8,8 +8,9 @@ export interface QualityState {
 
 export class AdaptiveQuality {
   private frameTimesMs: number[] = [];
-  private readonly windowSize = 60; // 1 second at 60fps
+  private readonly windowSize = 150; // ~5 seconds at 30fps for smoother averages
   private consecutiveBadSamples = 0;
+  private lastDownscaleTime = 0;
 
   addFrameTime(ms: number): void {
     this.frameTimesMs.push(ms);
@@ -26,20 +27,20 @@ export class AdaptiveQuality {
     const avgMs = this.frameTimesMs.reduce((a, b) => a + b, 0) / this.frameTimesMs.length;
     const avgFps = 1000 / avgMs;
 
-    if (avgFps < 20) {
+    if (avgFps < 17) {
       return {
         tier: 'low',
-        resolutionScale: 0.5,
+        resolutionScale: 0.65,
         targetFps: 30,
         beautyEnabled: false,
         reason: `Low FPS: ${avgFps.toFixed(1)}`
       };
     }
 
-    if (avgFps < 30) {
+    if (avgFps < 24) {
       return {
         tier: 'medium',
-        resolutionScale: 0.75,
+        resolutionScale: 0.85,
         targetFps: 30,
         beautyEnabled: true,
         reason: `Medium FPS: ${avgFps.toFixed(1)}`
@@ -51,13 +52,21 @@ export class AdaptiveQuality {
 
   shouldDownscale(): boolean {
     const rec = this.getRecommendation();
+    const now = performance.now();
+
     if (rec.tier === 'low') {
       this.consecutiveBadSamples++;
     } else {
       this.consecutiveBadSamples = 0;
     }
-    // Require 15 consecutive bad samples before downscaling (very conservative)
-    return this.consecutiveBadSamples >= 15;
+
+    // Require a longer run of bad samples and a 6s cooldown between adjustments
+    const shouldAdjust = this.consecutiveBadSamples >= 45 && now - this.lastDownscaleTime > 6000;
+    if (shouldAdjust) {
+      this.lastDownscaleTime = now;
+    }
+
+    return shouldAdjust;
   }
 
   getAverageFrameTime(): number {
@@ -73,5 +82,6 @@ export class AdaptiveQuality {
   reset(): void {
     this.frameTimesMs = [];
     this.consecutiveBadSamples = 0;
+    this.lastDownscaleTime = 0;
   }
 }
