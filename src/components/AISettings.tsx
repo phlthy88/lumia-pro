@@ -26,6 +26,8 @@ interface AISettingsProps {
     hasFace: boolean;
     onResetBeauty?: () => void;
     onAPIKeysChange: (keys: { openrouter?: string; openrouterModel?: string }) => void;
+    visionEnabled: boolean;
+    onToggleVision: (enabled: boolean) => void;
 }
 
 export const AISettings: React.FC<AISettingsProps> = ({
@@ -44,6 +46,8 @@ export const AISettings: React.FC<AISettingsProps> = ({
     hasFace,
     onResetBeauty,
     onAPIKeysChange,
+    visionEnabled,
+    onToggleVision,
 }) => {
     const MODEL_OPTIONS = [
         { value: 'google/gemini-flash-1.5-8b', label: 'Gemini Flash 1.5 8B (free, vision)' },
@@ -84,6 +88,11 @@ export const AISettings: React.FC<AISettingsProps> = ({
             />
 
             <ControlCard title="AI Providers">
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Vision Worker</Typography>
+                    <MuiSwitch label="Enable" checked={visionEnabled} onChange={onToggleVision} />
+                </Box>
+
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Key fontSize="small" />

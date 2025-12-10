@@ -19,6 +19,8 @@ interface AIContextState {
   sceneAnalysis: SceneAnalysis | null;
   isAnalyzing: boolean;
   isSceneAnalyzing: boolean;
+  visionEnabled: boolean;
+  setVisionEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   runAnalysis: () => Promise<void>;
   runSceneAnalysis: () => Promise<void>;
   applySceneAnalysis: () => void;
@@ -64,11 +66,12 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
   const [sceneAnalysis, setSceneAnalysis] = useState<SceneAnalysis | null>(null);
   const [isSceneAnalyzing, setIsSceneAnalyzing] = useState(false);
   const [hasExternalAI, setHasExternalAI] = useState(false);
+  const [visionManuallyEnabled, setVisionManuallyEnabled] = useState(true);
 
   const { settings } = usePerformanceMode();
   
-  // Enable vision when beauty is on OR when user is on AI tab (for Smart Assist) AND performance allows
-  const visionEnabled = settings.aiEnabled && (beauty.enabled || activeTab === 'AI');
+  // Enable vision when performance allows, and user toggles it on
+  const visionEnabled = settings.aiEnabled && visionManuallyEnabled && (beauty.enabled || activeTab === 'AI');
 
   const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady, visionEnabled, {
     minFaceDetectionConfidence: 0.3,
@@ -179,6 +182,8 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
       sceneAnalysis,
       isAnalyzing: ai.isAnalyzing,
       isSceneAnalyzing,
+      visionEnabled: visionManuallyEnabled,
+      setVisionEnabled: setVisionManuallyEnabled,
       runAnalysis: ai.runAnalysis,
       runSceneAnalysis,
       applySceneAnalysis,
@@ -202,7 +207,8 @@ export const AISettingsPanel: React.FC = () => {
     result, sceneAnalysis, isAnalyzing, isSceneAnalyzing,
     runAnalysis, runSceneAnalysis, applySceneAnalysis,
     beauty, setBeauty, hasFace, handleAutoFix,
-    undo, canUndo, resetBeauty, configureAPIKeys
+    undo, canUndo, resetBeauty, configureAPIKeys,
+    visionEnabled, setVisionEnabled
   } = useAIContext();
 
   return (
@@ -230,6 +236,8 @@ export const AISettingsPanel: React.FC = () => {
         hasFace={hasFace}
         onResetBeauty={resetBeauty}
         onAPIKeysChange={configureAPIKeys}
+        visionEnabled={visionEnabled}
+        onToggleVision={setVisionEnabled}
       />
     </FeatureGate>
   );
