@@ -60,6 +60,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', '*.config.js', '*.config.ts'],
+    ignores: ['dist/**', 'node_modules/**', '*.config.js', '*.config.ts', 'public/wasm/**', 'test/**', 'lighthouserc.js', 'public/sw.js', 'e2e/**'],
   },
 ];

@@ -74,9 +74,10 @@ describe('GLRenderer disposal', () => {
       TRIANGLES: 4,
     };
 
-    // Override getContext before importing
+    // Store original and override before importing
     const originalGetContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = vi.fn(() => mockGL) as any;
+    const mockGetContext = vi.fn(() => mockGL) as typeof HTMLCanvasElement.prototype.getContext;
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', { value: mockGetContext, writable: true });
 
     const { GLRenderer } = await import('../GLRenderer');
     const canvas = document.createElement('canvas');
@@ -90,6 +91,6 @@ describe('GLRenderer disposal', () => {
     }).not.toThrow();
 
     // Restore
-    HTMLCanvasElement.prototype.getContext = originalGetContext;
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', { value: originalGetContext, writable: true });
   });
 });

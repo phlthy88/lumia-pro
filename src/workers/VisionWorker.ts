@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { FilesetResolver, FaceLandmarker, FaceLandmarkerResult, NormalizedLandmark } from '@mediapipe/tasks-vision';
+import { FilesetResolver, FaceLandmarker, NormalizedLandmark } from '@mediapipe/tasks-vision';
 
 type InitMessage = {
   type: 'init';
@@ -21,9 +21,10 @@ interface SerializableResult {
 type LandmarkEvent = { type: 'landmarks'; payload: { result: SerializableResult; timestamp: number } };
 type ReadyEvent = { type: 'ready' };
 type ErrorEvent = { type: 'error'; message: string };
-type OutgoingMessage = LandmarkEvent | ReadyEvent | ErrorEvent;
+type _OutgoingMessage = LandmarkEvent | ReadyEvent | ErrorEvent;
 
 let landmarker: FaceLandmarker | null = null;
+let isInitializing = false;
 let isProcessing = false;
 let consecutiveErrors = 0;
 const MAX_CONSECUTIVE_ERRORS = 5;
@@ -42,14 +43,16 @@ async function ensureLandmarker(
   minFacePresenceConfidence: number,
   minTrackingConfidence: number
 ) {
-  if (landmarker) return;
+  if (landmarker || isInitializing) return;
+  isInitializing = true;
   
   try {
     const vision = await FilesetResolver.forVisionTasks(wasmPath);
     
     // Try GPU first, fallback to CPU if unavailable
+    let newLandmarker: FaceLandmarker;
     try {
-      landmarker = await FaceLandmarker.createFromOptions(vision, {
+      newLandmarker = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath,
           delegate: 'GPU'
@@ -64,7 +67,7 @@ async function ensureLandmarker(
       console.warn('[VisionWorker] GPU delegate unavailable, falling back to CPU:', gpuError);
       
       // CPU fallback
-      landmarker = await FaceLandmarker.createFromOptions(vision, {
+      newLandmarker = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath,
           delegate: 'CPU'
@@ -77,11 +80,16 @@ async function ensureLandmarker(
       });
     }
     
+    // eslint-disable-next-line require-atomic-updates -- Single-threaded worker with guard at function start
+    landmarker = newLandmarker;
     consecutiveErrors = 0;
     postMessage({ type: 'ready' } satisfies ReadyEvent);
   } catch (err) {
     console.error('[VisionWorker] FaceLandmarker initialization failed:', err);
     postMessage({ type: 'error', message: `Init failed: ${err instanceof Error ? err.message : 'Unknown error'}` } satisfies ErrorEvent);
+  } finally {
+    // eslint-disable-next-line require-atomic-updates -- Single-threaded worker with guard at function start
+    isInitializing = false;
   }
 }
 
