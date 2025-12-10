@@ -131,6 +131,11 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
     setBeauty({ enabled: false, smooth: 0.35, eyeBrighten: 0, faceThin: 0, skinTone: 0, cheekbones: 0, lipsFuller: 0, noseSlim: 0 });
   }, []);
 
+  // Broadcast beauty slider changes so the renderer can apply them
+  useEffect(() => {
+    eventBus.emit('ai:beauty', { beauty });
+  }, [beauty]);
+
   // Mask Generation
   const maskGeneratorRef = useRef<MaskGenerator | null>(null);
 

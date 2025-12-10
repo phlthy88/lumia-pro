@@ -225,11 +225,11 @@ export class GLRenderer {
         if (this.isRunning) return;
         this.isRunning = true;
         this.startTime = performance.now();
+        this.lastFrameTime = this.startTime;
 
         const targetFPS = 30;
         const frameInterval = 1000 / targetFPS;
         let lastRenderTime = 0;
-        let frameSkipCount = 0;
 
         const loop = (now: number) => {
             if (!this.isRunning) return;
@@ -240,25 +240,22 @@ export class GLRenderer {
                 return;
             }
 
-            // Skip frames if performance is poor
-            if (this.fps < 20 && frameSkipCount++ % 2 === 0) {
-                this.frameId = requestAnimationFrame(loop);
-                return;
-            }
-
             lastRenderTime = now;
 
             // Stats
             this.frameCount++;
             if (now - this.lastFpsUpdate >= 1000) {
-                onStats(Math.round((this.frameCount * 1000) / (now - this.lastFpsUpdate)));
+                const measuredFps = Math.round((this.frameCount * 1000) / (now - this.lastFpsUpdate));
+                this.fps = measuredFps;
+                onStats(measuredFps);
 
                 // Adaptive Logic: Check frame time and adjust
                 if (this.adaptiveQuality.shouldDownscale()) {
-                    // Reduce resolution scale if struggling (minimum 0.7, less aggressive)
-                    if (this.qualityProfile.resolutionScale > 0.75) {
-                        this.qualityProfile.resolutionScale = Math.max(0.7, this.qualityProfile.resolutionScale - 0.05);
-                        console.warn('Downscaling resolution due to performance', this.qualityProfile.resolutionScale.toFixed(2));
+                    const minScale = this.gpuTier === 'low' ? 0.8 : 0.9;
+                    if (this.qualityProfile.resolutionScale > minScale) {
+                        const nextScale = Math.max(minScale, this.qualityProfile.resolutionScale - 0.03);
+                        this.qualityProfile.resolutionScale = nextScale;
+                        console.warn('Downscaling resolution due to performance', nextScale.toFixed(2));
                         this.adaptiveQuality.reset();
                     }
                 }

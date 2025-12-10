@@ -399,39 +399,32 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
       if (activeLutData) setLut(activeLutData);
   }, [activeLutData, setLut]);
 
-  // Sync Beauty Masks (Listens to AIController output via EventBus?)
-  // `useGLRenderer` expects `setBeautyMask`.
-  // `App.tsx` had `maskGenerator` updating masks based on landmarks.
-  // `AIController` owns `MaskGenerator`.
-  // `AIController` needs to call `setBeautyMask`.
-  // But `setBeautyMask` comes from `useGLRenderer`, which is in `RenderController`.
-  // So `RenderController` needs to expose `setBeautyMask`?
-  // OR `AIController` generates the canvas and emits it?
-  // "AIController owns MaskGenerator".
-  // So `AIController` produces a canvas.
-  // It can emit 'ai:masks' event with the canvas?
-  // This seems heavy for EventBus (passing canvas objects).
-  // Better: `RenderController` exposes `setBeautyMask` via Context?
-  // But siblings can't see context.
-  // This implies `RenderController` should perhaps be a PARENT of `AIController`?
-  // The plan said: "Props in: canvasRef from RenderController".
-  // This implies RenderController creates the canvas ref?
-  // No, `App.tsx` creates it.
-  // If `App.tsx` holds `canvasRef`, `RenderController` draws to it.
-  // `AIController` reads from it.
-  // How does `setBeautyMask` get called?
-  // Maybe `RenderController` exposes a method on `eventBus`? "render:update-mask"?
-  // Yes.
-
+  // Sync Beauty Masks and slider params from AIController
   useEffect(() => {
-      const handleMaskUpdate = (e: CustomEvent) => {
-          const { mask1, mask2 } = e.detail;
+      const removeMaskListener = eventBus.on('ai:masks', ({ mask1, mask2 }) => {
           setBeautyMask(mask1);
           setBeautyMask2(mask2);
+      });
+
+      const removeBeautyListener = eventBus.on('ai:beauty', ({ beauty }) => {
+          setBeautyParams((prev: any) => ({
+              ...prev,
+              beauty: {
+                  smoothStrength: beauty.enabled ? beauty.smooth : 0,
+                  eyeBrighten: beauty.enabled ? beauty.eyeBrighten : 0,
+                  faceThin: beauty.enabled ? beauty.faceThin : 0,
+                  skinTone: beauty.enabled ? beauty.skinTone : 0,
+                  cheekbones: beauty.enabled ? beauty.cheekbones : 0,
+                  lipsFuller: beauty.enabled ? beauty.lipsFuller : 0,
+                  noseSlim: beauty.enabled ? beauty.noseSlim : 0,
+              }
+          }));
+      });
+
+      return () => {
+          removeMaskListener();
+          removeBeautyListener();
       };
-      // We need to extend EventBus or just use raw event listener for this specific heavy object passing
-      window.addEventListener('ai:masks', handleMaskUpdate as EventListener);
-      return () => window.removeEventListener('ai:masks', handleMaskUpdate as EventListener);
   }, [setBeautyMask, setBeautyMask2]);
 
   // Context Lost handling

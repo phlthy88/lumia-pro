@@ -1,4 +1,4 @@
-import { ColorGradeParams } from '../types';
+import { BeautyConfig, ColorGradeParams } from '../types';
 
 type EventMap = {
   'camera:ready': { deviceId: string };
@@ -8,6 +8,7 @@ type EventMap = {
   'ai:result': { params: Partial<ColorGradeParams> };
   'ai:masks': { mask1: OffscreenCanvas | HTMLCanvasElement | null; mask2: OffscreenCanvas | HTMLCanvasElement | null };
   'ai:landmarks': { faceCenter: { x: number; y: number }; mouthCenter: { x: number; y: number } };
+  'ai:beauty': { beauty: BeautyConfig };
   'virtualcam:status': { active: boolean };
   'recording:start': void;
   'recording:stop': { blob: Blob };

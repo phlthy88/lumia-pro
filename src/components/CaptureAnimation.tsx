@@ -29,6 +29,7 @@ export const CaptureAnimation: React.FC<CaptureAnimationProps> = ({ imageUrl, on
   const [targetPos, setTargetPos] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
+  const completeTimerRef = React.useRef<number | null>(null);
 
   useEffect(() => {
     if (!imageUrl) {
@@ -54,12 +55,26 @@ export const CaptureAnimation: React.FC<CaptureAnimationProps> = ({ imageUrl, on
       setTargetPos({ x: -window.innerWidth / 2 + 60, y: window.innerHeight / 2 - 60 });
     }
 
-    const completeTimer = setTimeout(onComplete, 1000);
     return () => {
       clearTimeout(flashTimer);
-      clearTimeout(completeTimer);
+      if (completeTimerRef.current) {
+        clearTimeout(completeTimerRef.current);
+        completeTimerRef.current = null;
+      }
+      setImageLoaded(false);
     };
-  }, [imageUrl, onComplete]);
+  }, [imageUrl]);
+
+  const handleImageLoaded = () => {
+    setImageLoaded(true);
+    if (completeTimerRef.current) {
+      clearTimeout(completeTimerRef.current);
+    }
+    completeTimerRef.current = window.setTimeout(() => {
+      completeTimerRef.current = null;
+      onComplete();
+    }, 1000);
+  };
 
   if (!imageUrl) return null;
 
@@ -104,11 +119,11 @@ export const CaptureAnimation: React.FC<CaptureAnimationProps> = ({ imageUrl, on
           border: '3px solid white',
         } as any}
       >
-        <img 
-          src={imageUrl} 
-          alt="Captured" 
-          onLoad={() => setImageLoaded(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+        <img
+          src={imageUrl}
+          alt="Captured"
+          onLoad={handleImageLoaded}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       </Box>
     </>
