@@ -56,8 +56,8 @@ export class AdaptiveQuality {
     } else {
       this.consecutiveBadSamples = 0;
     }
-    // Require 10 consecutive bad samples before downscaling (more conservative)
-    return this.consecutiveBadSamples >= 10;
+    // Require 15 consecutive bad samples before downscaling (very conservative)
+    return this.consecutiveBadSamples >= 15;
   }
 
   getAverageFrameTime(): number {

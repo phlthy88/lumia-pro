@@ -228,8 +228,36 @@ class SceneDirectorService {
         confidence: this.clamp(parsed.confidence ?? 0.5, 0, 1),
       };
     } catch (e) {
-      console.error('[SceneDirector] Failed to parse AI response:', text);
-      throw new Error('Failed to parse AI response');
+      // Fallback: try to extract values from text format
+      console.warn('[SceneDirector] JSON parse failed, attempting text extraction');
+      
+      const extractValue = (key: string, defaultValue: any) => {
+        const regex = new RegExp(`${key}:\\s*([^\\n]+)`, 'i');
+        const match = cleaned.match(regex);
+        return match ? match[1].trim() : defaultValue;
+      };
+
+      const extractNumber = (key: string, defaultValue: number) => {
+        const value = extractValue(key, defaultValue);
+        const num = parseFloat(value);
+        return isNaN(num) ? defaultValue : num;
+      };
+
+      return {
+        lighting: extractValue('lighting', 'balanced'),
+        colorTemperature: extractValue('color temperature', 'neutral'),
+        mood: extractValue('mood', 'Unknown'),
+        suggestedAdjustments: {
+          exposure: this.clamp(extractNumber('exposure', 0), -1, 1),
+          temperature: this.clamp(extractNumber('temperature', 0), -1, 1),
+          tint: this.clamp(extractNumber('tint', 0), -1, 1),
+          contrast: this.clamp(extractNumber('contrast', 0), -0.5, 0.5),
+          saturation: this.clamp(extractNumber('saturation', 0), -0.5, 0.5),
+        },
+        suggestedLut: extractValue('suggested lut', null),
+        compositionFeedback: extractValue('composition feedback', ''),
+        confidence: this.clamp(extractNumber('confidence', 0.5), 0, 1),
+      };
     }
   }
 

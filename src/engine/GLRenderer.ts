@@ -255,9 +255,9 @@ export class GLRenderer {
 
                 // Adaptive Logic: Check frame time and adjust
                 if (this.adaptiveQuality.shouldDownscale()) {
-                    // Reduce resolution scale if struggling (minimum 0.5)
-                    if (this.qualityProfile.resolutionScale > 0.55) {
-                        this.qualityProfile.resolutionScale = Math.max(0.5, this.qualityProfile.resolutionScale - 0.1);
+                    // Reduce resolution scale if struggling (minimum 0.7, less aggressive)
+                    if (this.qualityProfile.resolutionScale > 0.75) {
+                        this.qualityProfile.resolutionScale = Math.max(0.7, this.qualityProfile.resolutionScale - 0.05);
                         console.warn('Downscaling resolution due to performance', this.qualityProfile.resolutionScale.toFixed(2));
                         this.adaptiveQuality.reset();
                     }
