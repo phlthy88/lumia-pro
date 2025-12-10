@@ -17,8 +17,6 @@
 
 <br />
 
-
-
 </div>
 
 <br />
@@ -31,9 +29,9 @@ Most webcam software gives you basic filters. Lumia Pro gives you a **full color
 |---------|-----------|-------------------|
 | Professional LUTs | ✅ ~30 cinematic looks | ❌ Basic filters |
 | Real-time GPU rendering | ✅ WebGL 2.0 | ❌ CPU-based |
-| AI scene optimization | ✅ MediaPipe & Heuristic-based | ❌ None |
-| Virtual camera output | ✅ Window sharing for Zoom, OBS* | ❌ Limited |
-| MIDI controller support | ✅ Full mapping | ❌ None |
+| AI scene optimization | ✅ MediaPipe & AI-powered | ❌ None |
+| Virtual camera output | ✅ Window sharing for Zoom, OBS | ❌ Limited |
+| Performance modes | ✅ Quality/Balanced/Performance | ❌ None |
 | Offline PWA | ✅ Install & use anywhere | ❌ Online only |
 
 <br />
@@ -86,11 +84,11 @@ Open **http://localhost:3000** → Allow camera → Start creating.
 </td>
 <td width="50%">
 
-### Connectivity
-- Virtual camera via window sharing (Zoom, Meet, OBS)
-- MIDI controller mapping
-- Keyboard shortcuts
-- Mobile gyroscope support
+### Performance
+- 3 performance modes (Quality/Balanced/Performance)
+- Adaptive quality scaling
+- 30fps frame rate limiting
+- Web Worker AI processing
 
 </td>
 </tr>
@@ -132,6 +130,7 @@ WebGL 2.0       →  GPU Rendering
 MediaPipe       →  Face Detection
 Material UI 3   →  Design System
 Vite            →  Build Tool
+Web Workers     →  Background Processing
 ```
 
 <br />
@@ -144,6 +143,7 @@ src/
 ├── engine/        WebGL renderer & shaders
 ├── hooks/         Camera, recording, AI hooks
 ├── services/      LUT loading, AI analysis
+├── workers/       Background processing
 └── theme/         Material Design 3 theming
 
 public/
@@ -154,9 +154,21 @@ public/
 
 <br />
 
+## 🚀 Performance
+
+Lumia Pro is optimized for smooth performance:
+
+- **Performance Modes**: Choose Quality, Balanced, or Performance based on your hardware
+- **Adaptive Quality**: Automatically adjusts resolution and effects based on performance
+- **Web Workers**: AI processing runs in background threads
+- **Frame Rate Limiting**: Prevents excessive GPU usage
+
+<br />
+
 ## 🤝 Contributing
 
-Contributions welcome! Feel free to:
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 - 🐛 Report bugs
 - 💡 Suggest features  
 - 🎨 Submit custom LUTs

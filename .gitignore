@@ -5,3 +5,4 @@ dist
 k6
 k6.tar.gz
 k6-v0.49.0-linux-amd64/
+.dev-docs
