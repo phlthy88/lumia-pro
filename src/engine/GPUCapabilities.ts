@@ -57,7 +57,7 @@ export class GPUCapabilities {
             case 'low':
             default:
                 return {
-                    resolutionScale: 0.5,
+                    resolutionScale: 0.85, // Less aggressive baseline to avoid unnecessary blur
                     lutSize: 16,
                     precision: 'lowp',
                     maxLights: 0,
