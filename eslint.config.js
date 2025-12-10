@@ -42,6 +42,21 @@ export default [
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-undef': 'off', // TypeScript handles this
+      // Enforce module boundaries
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../../../*'],
+              message: 'Avoid deep relative imports. Use barrel exports instead.',
+            },
+          ],
+        },
+      ],
+      // Prevent race conditions
+      'no-async-promise-executor': 'error',
+      'require-atomic-updates': 'error',
     },
   },
   {
