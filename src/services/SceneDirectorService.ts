@@ -234,7 +234,7 @@ class SceneDirectorService {
       const extractValue = (key: string, defaultValue: any) => {
         const regex = new RegExp(`${key}:\\s*([^\\n]+)`, 'i');
         const match = cleaned.match(regex);
-        return match ? match[1].trim() : defaultValue;
+        return match?.[1]?.trim() || defaultValue;
       };
 
       const extractNumber = (key: string, defaultValue: number) => {

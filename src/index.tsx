@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { injectSpeedInsights } from '@vercel/speed-insights';
+// import { injectSpeedInsights } from '@vercel/speed-insights';
 import App from './App';
 import { migrateSettings } from './services/SettingsMigration';
 import '@fontsource/roboto/300.css';
@@ -9,7 +9,7 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
 // Initialize Vercel Speed Insights
-injectSpeedInsights();
+// injectSpeedInsights();
 
 // Run migrations before render
 migrateSettings();
