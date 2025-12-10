@@ -17,7 +17,7 @@ self.onmessage = async (e) => {
         });
         self.postMessage({ type: 'ready' });
       } catch (error) {
-        self.postMessage({ type: 'error', error: error.message });
+        self.postMessage({ type: 'error', error: error instanceof Error ? error.message : 'Init failed' });
       }
       break;
 
@@ -27,7 +27,7 @@ self.onmessage = async (e) => {
           const result = landmarker.detectForVideo(data.imageData, data.timestamp);
           self.postMessage({ type: 'result', result });
         } catch (error) {
-          self.postMessage({ type: 'error', error: error.message });
+          self.postMessage({ type: 'error', error: error instanceof Error ? error.message : 'Detection failed' });
         }
       }
       break;

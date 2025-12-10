@@ -31,7 +31,7 @@ const VirtualCameraSettings = React.lazy(() => import('./components/VirtualCamer
 const PlatformBoostsPanel = React.lazy(() => import('./components/PlatformBoostsPanel').then(m => ({ default: m.PlatformBoostsPanel })));
 const Vectorscope = React.lazy(() => import('./components/Vectorscope').then(m => ({ default: m.Vectorscope })));
 import { ParallaxHeader } from './components/ParallaxHeader';
-import { PerformanceModeToggle, PerformanceTier } from './components/PerformanceModeToggle';
+import { PerformanceModeToggle } from './components/PerformanceModeToggle';
 import { ControlCard } from './components/controls/ControlCard';
 import { MuiSwitch } from './components/controls/MuiToggle';
 import { MuiSlider } from './components/controls/MuiSlider';
@@ -111,7 +111,7 @@ const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
                 <>
                     <ParallaxHeader title="Platform Boosts" subtitle="Performance optimization" scrollY={scrollY} />
                     <ControlCard title="Quality Mode">
-                        <PerformanceModeToggle currentTier={performanceTier} onTierChange={setPerformanceTier} />
+                        <PerformanceModeToggle />
                     </ControlCard>
                     <Suspense fallback={<CircularProgress />}><PlatformBoostsPanel /></Suspense>
                 </>

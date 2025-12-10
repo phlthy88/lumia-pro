@@ -46,7 +46,10 @@ export const RGBParadeMeter: React.FC<Props> = ({ videoRef, enabled, width = 360
       lastRender = now;
 
       sampleCtx.drawImage(video, 0, 0, sampleCanvas.width, sampleCanvas.height);
-      const data = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
+      const imageData = sampleCtx?.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height);
+      if (!imageData) return;
+      
+      const data = imageData.data;
 
       ctx.fillStyle = '#0b0b0f';
       ctx.fillRect(0, 0, width, height);
@@ -83,8 +86,11 @@ export const RGBParadeMeter: React.FC<Props> = ({ videoRef, enabled, width = 360
           values.forEach((v, c) => {
             const px = x / sampleCanvas.width * sectionWidth + c * sectionWidth;
             const py = height - v * height;
-            ctx.fillStyle = channelColors[c];
-            ctx.fillRect(px, py, 1.5, 1.5);
+            const color = channelColors[c];
+            if (color) {
+              ctx.fillStyle = color;
+              ctx.fillRect(px, py, 1.5, 1.5);
+            }
           });
         }
       }

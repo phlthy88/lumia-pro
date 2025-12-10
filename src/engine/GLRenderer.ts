@@ -23,6 +23,7 @@ export class GLRenderer {
     private lastFrameTime = 0;
     private frameCount = 0;
     private lastFpsUpdate = 0;
+    private fps = 0;
     private performanceMode = false;
     private supportsFloatLinear = false;
     private lastResizeTime = 0;

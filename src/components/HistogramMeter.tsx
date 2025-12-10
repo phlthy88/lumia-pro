@@ -47,7 +47,10 @@ export const HistogramMeter: React.FC<Props> = ({ videoRef, enabled, width = 360
       lastRender = now;
 
       sampleCtx.drawImage(video, 0, 0, sampleCanvas.width, sampleCanvas.height);
-      const data = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
+      const imageData = sampleCtx?.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height);
+      if (!imageData) return;
+      
+      const data = imageData.data;
 
       const rHist = new Array(bins).fill(0);
       const gHist = new Array(bins).fill(0);
