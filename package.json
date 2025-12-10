@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "clean": "rm -rf node_modules package-lock.json .vite dist && npm install",
+    "clean": "rm -rf node_modules package-lock.json .vite dist",
     "typecheck": "tsc --noEmit",
     "size-check": "du -sh dist && test $(du -sb dist | cut -f1) -lt 10485760",
     "analyze": "vite build && npx vite-bundle-visualizer",
