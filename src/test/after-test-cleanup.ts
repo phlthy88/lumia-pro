@@ -19,44 +19,54 @@ afterEach(() => {
           try {
             const loseContext = context.getExtension('WEBGL_lose_context')
             if (loseContext) loseContext.loseContext()
-          } catch (e) {}
+          } catch {
+            // WebGL context cleanup may fail in test environment
+          }
         }
       }
       
       // Remove canvas from DOM
       canvas.remove()
-    } catch (e) {}
+    } catch {
+      // Canvas cleanup errors are non-critical in tests
+    }
   })
 
   // Clean up media streams
   try {
     // Stop any active tracks from stored streams
-    if ((window as any).__test_streams__) {
-      (window as any).__test_streams__.forEach((stream: MediaStream) => {
+    if ((window as unknown as Record<string, unknown>).__test_streams__) {
+      ((window as unknown as Record<string, unknown>).__test_streams__ as MediaStream[]).forEach((stream: MediaStream) => {
         if (stream && stream.getTracks) {
           stream.getTracks().forEach((track: MediaStreamTrack) => track.stop())
         }
       })
-      ;(window as any).__test_streams__ = []
+      ;(window as unknown as Record<string, unknown>).__test_streams__ = []
     }
-  } catch (e) {}
+  } catch {
+    // Media stream cleanup errors are non-critical
+  }
 
   // Clear blob URLs
   try {
     const keys = Object.keys(localStorage)
     keys.forEach(key => {
       if (key.startsWith('blob:')) {
-        try { URL.revokeObjectURL(key) } catch (e) {}
-        try { localStorage.removeItem(key) } catch (e) {}
+        try { URL.revokeObjectURL(key) } catch { /* ignore */ }
+        try { localStorage.removeItem(key) } catch { /* ignore */ }
       }
     })
-  } catch (e) {}
+  } catch {
+    // localStorage access may fail in some test environments
+  }
 
   // Clean up global variables that might hold references
   try {
-    ;(window as any).__test_streams__ = undefined
-    ;(window as any).__test_canvas__ = undefined
-  } catch (e) {}
+    ;(window as unknown as Record<string, unknown>).__test_streams__ = undefined
+    ;(window as unknown as Record<string, unknown>).__test_canvas__ = undefined
+  } catch {
+    // Global cleanup errors are non-critical
+  }
 
   // Clear localStorage for test keys
   try {
@@ -65,7 +75,9 @@ afterEach(() => {
         localStorage.removeItem(key)
       }
     })
-  } catch (e) {}
+  } catch {
+    // localStorage cleanup errors are non-critical
+  }
 
   // Force garbage collection if available
   if (global.gc) {
@@ -78,7 +90,9 @@ afterAll(() => {
   // Clean up any remaining resources
   try {
     document.body.innerHTML = ''
-  } catch (e) {}
+  } catch {
+    // DOM cleanup errors are non-critical
+  }
   
   // Clear all mocks
   vi.restoreAllMocks()
