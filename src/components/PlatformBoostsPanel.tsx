@@ -436,7 +436,7 @@ export const PlatformBoostsPanel: React.FC = () => {
               2. Choose the Lumina Pro browser window<br/>
               3. Your processed video will be shared with effects applied
             </Typography>
-            <Alert severity="warning" size="small">
+            <Alert severity="warning" sx={{ mt: 2 }}>
               Note: Pop-out window feature has been removed. Use window sharing instead.
             </Alert>
           </CardContent>
