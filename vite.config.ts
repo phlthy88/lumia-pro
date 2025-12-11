@@ -129,7 +129,7 @@ export default defineConfig(({ mode }) => {
       build: {
         sourcemap: true,
         target: 'es2022',
-        chunkSizeWarningLimit: 350,
+        chunkSizeWarningLimit: 400,
         minify: 'esbuild',
         esbuildOptions: {
           drop: ['console', 'debugger'],
