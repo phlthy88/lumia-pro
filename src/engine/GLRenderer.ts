@@ -36,6 +36,8 @@ export class GLRenderer {
 
     // Uniform locations cache
     private uniforms: Map<string, WebGLUniformLocation> = new Map();
+    private uint8Cache: Uint8Array | null = null; // Cache for LUT uint8 conversion
+    private static readonly EMPTY_TEXTURE = new Uint8Array([0, 0, 0, 0]); // Cached for empty beauty masks
     private contextLostHandler: ((e: Event) => void) | null = null;
     private recoveryTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -133,8 +135,8 @@ export class GLRenderer {
             this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, false);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
         } else {
-            const empty = new Uint8Array([0, 0, 0, 0]);
-            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, empty);
+            // Use cached empty texture to avoid repeated allocations
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, GLRenderer.EMPTY_TEXTURE);
             this.beautyMaskTexture = texture;
         }
     }
@@ -155,8 +157,8 @@ export class GLRenderer {
             this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, false);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
         } else {
-            const empty = new Uint8Array([0, 0, 0, 0]);
-            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, empty);
+            // Use cached empty texture to avoid repeated allocations
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, GLRenderer.EMPTY_TEXTURE);
             this.beautyMask2Texture = texture;
         }
     }
@@ -179,11 +181,16 @@ export class GLRenderer {
             let dataToUpload: Float32Array | Uint8Array = lut.data;
 
             if (!useFloat) {
-                const uintData = new Uint8Array(lut.data.length);
-                for(let i=0; i<lut.data.length; i++) {
-                    uintData[i] = Math.floor(Math.max(0, Math.min(1, lut.data[i]!)) * 255);
+                // Cache Uint8Array conversion to prevent repeated allocations
+                if (!this.uint8Cache || this.uint8Cache.length !== lut.data.length) {
+                    this.uint8Cache = new Uint8Array(lut.data.length);
                 }
-                dataToUpload = uintData;
+                
+                // Convert float32 to uint8
+                for (let i = 0; i < lut.data.length; i++) {
+                    this.uint8Cache[i] = Math.floor(Math.max(0, Math.min(1, lut.data[i]!)) * 255);
+                }
+                dataToUpload = this.uint8Cache;
             }
 
             this.gl.texImage3D(
