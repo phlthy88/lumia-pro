@@ -28,12 +28,47 @@ export interface AnalysisResult {
 export class AIAnalysisService {
   private canvas: OffscreenCanvas;
   private ctx: OffscreenCanvasRenderingContext2D;
+  private lastAnalysisTime = 0;
+  private analysisTimeout: number | null = null;
+  private readonly ANALYSIS_DEBOUNCE = 500; // 500ms debounce
+  private readonly ANALYSIS_THROTTLE = 2000; // Max once per 2 seconds
   private isAnalyzing = false; // Mutex to prevent concurrent analysis
 
   constructor() {
     // Small canvas for analysis (performance optimization)
     this.canvas = new OffscreenCanvas(256, 144); 
     this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })!;
+  }
+
+  /**
+   * Analyzes a video frame with rate limiting (debounce + throttle)
+   */
+  async analyzeWithRateLimit(video: HTMLVideoElement, faceResult?: FaceLandmarkerResult | null): Promise<AnalysisResult | null> {
+    const now = Date.now();
+    
+    // Throttle: Don't analyze more than once per ANALYSIS_THROTTLE period
+    if (now - this.lastAnalysisTime < this.ANALYSIS_THROTTLE) {
+      return null;
+    }
+
+    // Clear existing debounce timeout
+    if (this.analysisTimeout) {
+      clearTimeout(this.analysisTimeout);
+    }
+
+    // Debounce: Wait for ANALYSIS_DEBOUNCE period of inactivity
+    return new Promise((resolve) => {
+      this.analysisTimeout = window.setTimeout(async () => {
+        this.lastAnalysisTime = Date.now();
+        try {
+          const result = await this.analyze(video, faceResult);
+          resolve(result);
+        } catch (error) {
+          console.warn('AI analysis failed:', error);
+          resolve(null);
+        }
+      }, this.ANALYSIS_DEBOUNCE);
+    });
   }
 
   /**
@@ -188,6 +223,12 @@ export class AIAnalysisService {
   }
 
   dispose() {
+    // Clear rate limiting timeout
+    if (this.analysisTimeout) {
+      clearTimeout(this.analysisTimeout);
+      this.analysisTimeout = null;
+    }
+    
     // Clear canvas to release memory
     if (this.ctx) {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);

@@ -114,13 +114,33 @@ export default defineConfig(({ mode }) => {
       ],
       build: {
         target: 'es2022',
-        chunkSizeWarningLimit: 600,
+        chunkSizeWarningLimit: 350,
         rollupOptions: {
           output: {
             manualChunks: {
+              // Core vendors (always loaded)
               'react-vendor': ['react', 'react-dom'],
+              
+              // Heavy libraries (lazy loaded)
               'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
               'mediapipe': ['@mediapipe/tasks-vision'],
+              'jszip': ['jszip'],
+              
+              // Feature chunks (lazy loaded)
+              'ai-features': [
+                'src/services/AIAnalysisService.ts',
+                'src/controllers/AIController.tsx',
+                'src/hooks/useVisionWorker.ts'
+              ],
+              'recording-features': [
+                'src/hooks/useRecorder.ts', 
+                'src/controllers/RecordingController.tsx',
+                'src/services/MediaStorageService.ts'
+              ],
+              'platform-features': [
+                'src/components/PlatformBoostsPanel.tsx',
+                'src/services/PlatformBoostsService.ts'
+              ]
             }
           }
         }

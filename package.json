@@ -14,13 +14,17 @@
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "size-check": "du -sh dist && test $(du -sb dist | cut -f1) -lt 10485760",
+    "size-check-phase2": "PHASE=2 node scripts/check-bundle-size.js",
     "analyze": "vite build && npx vite-bundle-visualizer",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:load": "k6 run test/load/stress-test.js",
     "security:scan": "npm audit",
-    "deps:check": "npx depcheck --skip-missing"
+    "deps:check": "npx depcheck --skip-missing",
+    "e2e": "cypress open",
+    "e2e:run": "cypress run",
+    "lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -37,6 +41,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
+    "@cypress/vite-dev-server": "^7.0.1",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.1.5",
@@ -48,6 +53,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "@vitest/coverage-v8": "^4.0.15",
     "@vitest/ui": "^4.0.15",
+    "cypress": "^15.7.1",
     "eslint": "^9.17.0",
     "globals": "^16.5.0",
     "jsdom": "^23.0.1",

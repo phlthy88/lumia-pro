@@ -1,6 +1,39 @@
 const CACHE_NAME = 'lumina-studio-v3';
 const CACHE_PREFIX = 'lumina-studio-';
 
+// Rate limiting for SW operations
+const RATE_LIMIT = {
+  maxRequests: 100,
+  windowMs: 60000, // 1 minute
+  requests: new Map()
+};
+
+// Rate limiting helper
+function isRateLimited(url) {
+  const now = Date.now();
+  const key = new URL(url).origin;
+  
+  if (!RATE_LIMIT.requests.has(key)) {
+    RATE_LIMIT.requests.set(key, []);
+  }
+  
+  const requests = RATE_LIMIT.requests.get(key);
+  
+  // Clean old requests
+  const cutoff = now - RATE_LIMIT.windowMs;
+  const recentRequests = requests.filter(time => time > cutoff);
+  RATE_LIMIT.requests.set(key, recentRequests);
+  
+  // Check limit
+  if (recentRequests.length >= RATE_LIMIT.maxRequests) {
+    return true;
+  }
+  
+  // Add current request
+  recentRequests.push(now);
+  return false;
+}
+
 // Only precache production assets (not /src/ files)
 const PRECACHE_ASSETS = [
   '/',
@@ -53,6 +86,12 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  
+  // Apply rate limiting
+  if (isRateLimited(event.request.url)) {
+    event.respondWith(new Response('Rate limited', { status: 429 }));
+    return;
+  }
   
   // Skip non-GET requests and API calls with auth
   if (event.request.method !== 'GET') return;
