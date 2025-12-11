@@ -29,19 +29,17 @@ afterEach(() => {
   })
 
   // Clean up media streams
-  if (navigator.mediaDevices) {
-    try {
-      // Stop any active tracks
-      const streams = []
-      if (navigator.mediaDevices.activeStreams) {
-        navigator.mediaDevices.activeStreams.forEach(stream => {
-          if (stream.getTracks) {
-            stream.getTracks().forEach(track => track.stop())
-          }
-        })
-      }
-    } catch (e) {}
-  }
+  try {
+    // Stop any active tracks from stored streams
+    if ((window as any).__test_streams__) {
+      (window as any).__test_streams__.forEach((stream: MediaStream) => {
+        if (stream && stream.getTracks) {
+          stream.getTracks().forEach((track: MediaStreamTrack) => track.stop())
+        }
+      })
+      ;(window as any).__test_streams__ = []
+    }
+  } catch (e) {}
 
   // Clear blob URLs
   try {
@@ -56,12 +54,8 @@ afterEach(() => {
 
   // Clean up global variables that might hold references
   try {
-    // Clear any global test state
-    Object.keys(window).forEach(key => {
-      if (key.includes('test') || key.includes('mock')) {
-        try { delete window[key] } catch (e) {}
-      }
-    })
+    ;(window as any).__test_streams__ = undefined
+    ;(window as any).__test_canvas__ = undefined
   } catch (e) {}
 
   // Clear localStorage for test keys
@@ -82,7 +76,9 @@ afterEach(() => {
 // Cleanup after all tests
 afterAll(() => {
   // Clean up any remaining resources
-  document.body.innerHTML = ''
+  try {
+    document.body.innerHTML = ''
+  } catch (e) {}
   
   // Clear all mocks
   vi.restoreAllMocks()
