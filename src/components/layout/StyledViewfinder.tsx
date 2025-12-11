@@ -15,6 +15,24 @@ const recordingPulse = keyframes`
   }
 `;
 
+const recordButtonPulse = keyframes`
+  0%, 100% { 
+    boxShadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+  }
+  50% { 
+    boxShadow: 0 0 0 8px rgba(244, 67, 54, 0);
+  }
+`;
+
+const recordIconGlow = keyframes`
+  0%, 100% { 
+    filter: drop-shadow(0 0 4px rgba(244, 67, 54, 0.8));
+  }
+  50% { 
+    filter: drop-shadow(0 0 8px rgba(244, 67, 54, 1));
+  }
+`;
+
 const ViewfinderContainer = styled(Paper)({
   position: 'relative',
   zIndex: 1,
@@ -155,11 +173,13 @@ export const StyledViewfinder: React.FC<Props> = ({
               width: { xs: 44, sm: 72 },
               height: { xs: 44, sm: 72 },
               minHeight: 'auto',
+              animation: isRecording ? `${recordButtonPulse} 2s ease-in-out infinite` : 'none',
             }}
             aria-label={isRecording ? "Stop recording" : "Start recording"}
           >
             <FiberManualRecord sx={{ 
               fontSize: { xs: 20, sm: 32 },
+              animation: isRecording ? `${recordIconGlow} 1.5s ease-in-out infinite` : 'none',
             }} />
           </Fab>
         )}

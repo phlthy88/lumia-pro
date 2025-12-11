@@ -48,6 +48,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
             <BottomNavigation
                 value={activeTab}
                 onChange={(_, newValue) => onTabChange(newValue)}
+                showLabels={false}
                 sx={{
                     width: '100%',
                     position: 'fixed',
@@ -55,6 +56,14 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
                     zIndex: theme.zIndex.drawer + 2,
                     borderTop: `1px solid ${theme.palette.divider}`,
                     bgcolor: theme.palette.background.paper,
+                    '& .MuiBottomNavigationAction-root': {
+                        minWidth: 'auto',
+                        padding: '6px 4px',
+                        fontSize: '0.6rem',
+                        '& .MuiSvgIcon-root': {
+                            fontSize: '1.2rem'
+                        }
+                    }
                 }}
             >
                 {NAV_ITEMS.map((item) => (

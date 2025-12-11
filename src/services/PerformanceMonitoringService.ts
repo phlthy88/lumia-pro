@@ -22,6 +22,12 @@ class PerformanceMonitoringService {
   private lastAlertTime = 0;
   private readonly ALERT_THROTTLE = 5000; // Only alert every 5 seconds
   
+  // FPS tracking
+  private frameCount = 0;
+  private lastFPSTime = 0;
+  private currentFPS = 60;
+  private fpsAnimationFrame: number | null = null;
+  
   private thresholds: PerformanceThresholds = {
     minFps: 15, // More realistic threshold (was 24)
     maxFrameTime: 100, // 10fps minimum (was 33.33)
@@ -39,6 +45,8 @@ class PerformanceMonitoringService {
     if (this.isMonitoring) return;
     
     this.isMonitoring = true;
+    this.startFPSTracking();
+    
     this.monitoringInterval = window.setInterval(() => {
       const metrics = this.collectMetrics();
       this.metrics.push(metrics);
@@ -58,7 +66,32 @@ class PerformanceMonitoringService {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
     }
+    if (this.fpsAnimationFrame) {
+      cancelAnimationFrame(this.fpsAnimationFrame);
+      this.fpsAnimationFrame = null;
+    }
     this.isMonitoring = false;
+  }
+
+  private startFPSTracking() {
+    const trackFPS = () => {
+      const now = performance.now();
+      this.frameCount++;
+      
+      if (now - this.lastFPSTime >= 1000) {
+        this.currentFPS = Math.round((this.frameCount * 1000) / (now - this.lastFPSTime));
+        this.frameCount = 0;
+        this.lastFPSTime = now;
+      }
+      
+      if (this.isMonitoring) {
+        this.fpsAnimationFrame = requestAnimationFrame(trackFPS);
+      }
+    };
+    
+    this.lastFPSTime = performance.now();
+    this.frameCount = 0;
+    trackFPS();
   }
 
   private collectMetrics(): PerformanceMetrics {
@@ -85,19 +118,7 @@ class PerformanceMonitoringService {
   }
 
   private calculateFPS(): number {
-    // Use requestAnimationFrame for accurate FPS measurement
-    if (this.metrics.length < 2) return 60; // Default assumption
-    
-    const recent = this.metrics.slice(-10); // Use more samples for stability
-    if (recent.length < 2) return 60;
-    
-    const timeSpan = recent[recent.length - 1].timestamp - recent[0].timestamp;
-    const frameCount = recent.length - 1;
-    
-    if (timeSpan <= 0) return 60;
-    
-    const fps = (frameCount * 1000) / timeSpan;
-    return Math.min(Math.max(fps, 1), 120); // Clamp between 1-120 FPS
+    return this.currentFPS;
   }
 
   private estimateGPUMemory(): number {
@@ -134,7 +155,6 @@ class PerformanceMonitoringService {
     }
     
     if (issues.length > 0) {
-      console.warn('Performance issues detected:', issues);
       this.triggerPerformanceAlert(issues);
     }
   }

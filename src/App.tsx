@@ -6,7 +6,6 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CameraErrorBoundary } from './components/CameraErrorBoundary';
 import { CompatibilityWarning } from './components/CompatibilityWarning';
-import { PerformanceDashboard } from './components/PerformanceDashboard';
 import { useDeferredInit } from './hooks/useDeferredInit';
 
 // Providers & Controllers
@@ -248,7 +247,6 @@ export default function App() {
                                 <RecordingController>
                                     <AppContent />
                                     <CompatibilityWarning />
-                                    <PerformanceDashboard />
                                 </RecordingController>
                             </AIController>
                         </RenderController>

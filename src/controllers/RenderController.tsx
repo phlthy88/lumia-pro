@@ -15,8 +15,8 @@ import virtualCameraService from '../services/VirtualCameraService';
 
 // UI Components
 import { StyledViewfinder } from '../components/layout/StyledViewfinder';
-import { StatsOverlay } from '../components/StatsOverlay';
 import { PerformanceOverlay } from '../components/PerformanceOverlay';
+import { PerformanceDashboard } from '../components/PerformanceDashboard';
 import { CaptureAnimation } from '../components/CaptureAnimation';
 import { ThumbnailSwoosh } from '../components/ThumbnailSwoosh';
 import { ControlCard } from '../components/controls/ControlCard';
@@ -494,6 +494,7 @@ export const Viewfinder: React.FC = () => {
     captureAnimUrl, swooshThumbnailUrl, clearCaptureAnim, clearSwooshAnim
   } = useRenderContext();
   const { videoRef, streamReady } = useCameraContext();
+  const { isRecording, audioStream } = useRecordingContext();
   const [showPerfOverlay, setShowPerfOverlay] = React.useState(false);
   const fallbackVideoRef = React.useRef<HTMLVideoElement | null>(null);
 
@@ -521,12 +522,12 @@ export const Viewfinder: React.FC = () => {
   return (
     <>
       <StyledViewfinder
-        isRecording={false}
+        isRecording={isRecording}
         onRecordToggle={() => eventBus.emit('recording:toggle' as any, undefined)}
         onSnapshot={() => eventBus.emit('recording:snapshot' as any, undefined)}
         onCompareToggle={toggleBypass}
         isBypass={bypass}
-        audioStream={null}
+        audioStream={audioStream}
       >
         {/* Raw video fallback if GL renderer stays blank */}
         <video
@@ -559,14 +560,7 @@ export const Viewfinder: React.FC = () => {
               transition: 'opacity 0.3s ease'
           }}
         />
-        <StatsOverlay
-          statsRef={statsRef}
-          gyroAngleRef={gyroRef}
-          bypass={bypass}
-          isRecording={false}
-          recordingTime={0}
-          midiConnected={midi.connected}
-        />
+        <PerformanceDashboard />
       </StyledViewfinder>
 
       <CaptureAnimation imageUrl={captureAnimUrl} onComplete={clearCaptureAnim} />

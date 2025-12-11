@@ -56,8 +56,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     const [spinAnim, setSpinAnim] = useState<'none' | 'open' | 'close'>('none');
 
     const handleNavToggle = () => {
+        console.log('Settings button clicked, navOpen:', navOpen);
         setSpinAnim(navOpen ? 'close' : 'open');
         setNavOpen(!navOpen);
+        console.log('Settings button - new navOpen state:', !navOpen);
     };
 
     return (
@@ -97,9 +99,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 
                 {/* Desktop: Control Drawer */}
                 {!isMobile && navOpen && (
-                    <ControlDrawer key={activeTab} title={drawerTitle} onScroll={onDrawerScroll}>
-                        {drawerContent}
-                    </ControlDrawer>
+                    <Box sx={{ 
+                        width: 400,
+                        height: '100%',
+                        bgcolor: 'background.paper',
+                        borderRight: `1px solid ${theme.palette.divider}`,
+                        zIndex: 10
+                    }}>
+                        <ControlDrawer key={activeTab} title={drawerTitle} onScroll={onDrawerScroll}>
+                            {drawerContent}
+                        </ControlDrawer>
+                    </Box>
                 )}
 
                 {/* Main viewfinder area - always rendered */}
@@ -140,13 +150,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                                     position: 'absolute',
                                     top: 24,
                                     right: 24,
-                                    zIndex: 70,
+                                    zIndex: 1400,
                                     bgcolor: navOpen ? theme.palette.primary.main : theme.palette.background.paper,
                                     color: navOpen ? theme.palette.primary.contrastText : theme.palette.text.primary,
                                     opacity: navOpen ? 1 : 0.6,
                                     boxShadow: theme.shadows[4],
                                     transition: 'opacity 0.3s ease, background-color 0.3s ease',
                                     animation: spinAnim === 'open' ? `${spin} 0.5s ease-out` : spinAnim === 'close' ? `${spinReverse} 0.5s ease-out` : 'none',
+                                    pointerEvents: 'auto',
                                     '&:hover': {
                                         opacity: 1,
                                         bgcolor: navOpen ? theme.palette.primary.dark : theme.palette.action.hover,
