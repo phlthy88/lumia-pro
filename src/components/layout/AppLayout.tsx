@@ -96,7 +96,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             }}>
                 
                 {/* Desktop: Control Drawer */}
-                {!isMobile && (
+                {!isMobile && navOpen && (
                     <ControlDrawer key={activeTab} title={drawerTitle} onScroll={onDrawerScroll}>
                         {drawerContent}
                     </ControlDrawer>
