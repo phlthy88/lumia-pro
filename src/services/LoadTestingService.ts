@@ -93,7 +93,7 @@ class LoadTestingService {
     }
   }
 
-  private async simulateUserSession(duration: number, sessionId: number): Promise<void> {
+  private async simulateUserSession(duration: number, _sessionId: number): Promise<void> {
     const endTime = Date.now() + duration;
     
     while (Date.now() < endTime) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, Button, Collapse, List, ListItem, ListItemText } from '@mui/material';
-import { Warning, ExpandMore, ExpandLess } from '@mui/icons-material';
+import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import { browserCompatibilityService } from '../services/BrowserCompatibilityService';
 
 export const CompatibilityWarning: React.FC = () => {

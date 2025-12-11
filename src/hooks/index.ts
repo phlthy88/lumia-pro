@@ -10,7 +10,6 @@ export * from './useKeyboardShortcuts';
 export * from './useMemoryMonitor';
 export * from './useMidi';
 export * from './useOverlays';
-export * from './usePerformanceMode';
 export { usePerformanceMonitor } from './usePerformanceMonitor';
 export type { PerformanceMetrics as PerformanceMonitorMetrics } from './usePerformanceMonitor';
 export { usePerformanceProfile } from './usePerformanceProfile';

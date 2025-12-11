@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, Card, CardContent, Typography, Grid, LinearProgress,
-  Chip, Alert, IconButton, Collapse 
+  Chip, Alert, IconButton
 } from '@mui/material';
-import { Speed, Memory, Visibility, VisibilityOff } from '@mui/icons-material';
+import { Speed, VisibilityOff } from '@mui/icons-material';
 import { performanceMonitoringService } from '../services/PerformanceMonitoringService';
 
 interface PerformanceMetrics {

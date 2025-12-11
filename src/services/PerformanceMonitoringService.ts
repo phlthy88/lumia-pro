@@ -89,7 +89,7 @@ class PerformanceMonitoringService {
     const recent = this.metrics.slice(-5);
     const avgInterval = recent.reduce((sum, metric, i) => {
       if (i === 0 || !recent[i - 1]) return sum;
-      return sum + (metric.timestamp - recent[i - 1].timestamp);
+      return sum + (metric.timestamp - recent[i - 1]!.timestamp);
     }, 0) / Math.max(recent.length - 1, 1);
     
     return avgInterval > 0 ? 1000 / avgInterval : 60;
