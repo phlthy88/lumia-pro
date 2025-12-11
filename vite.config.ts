@@ -144,28 +144,22 @@ export default defineConfig(({ mode }) => {
         },
         rollupOptions: {
           output: {
-            manualChunks: {
-              // MUI + Emotion + Icons must stay together to avoid ESM initialization errors
-              'vendor-react': ['react', 'react-dom'],
-              'vendor-mui': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-              'vendor-mediapipe': ['@mediapipe/tasks-vision'],
-              'vendor-jszip': ['jszip'],
-              
-              // Split heavy app features
-              'ai-features': [
-                'src/controllers/AIController.tsx',
-                'src/services/AIAnalysisService.ts',
-                'src/hooks/useVisionWorker.ts',
-                'src/workers/VisionWorker.ts',
-                'src/workers/VisionWorkerThread.ts',
-                'src/beauty/MaskGenerator.ts',
-                'src/beauty/BackgroundBlur.ts'
-              ],
-              'recording-features': [
-                'src/controllers/RecordingController.tsx',
-                'src/hooks/useRecorder.ts',
-                'src/services/MediaStorageService.ts'
-              ]
+            manualChunks(id) {
+              // MUI + Emotion + Icons must stay together
+              if (id.includes('@mui/') || id.includes('@emotion/')) {
+                return 'vendor-mui';
+              }
+              if (id.includes('react-dom') || id.includes('node_modules/react/')) {
+                return 'vendor-react';
+              }
+              if (id.includes('@mediapipe/')) {
+                return 'vendor-mediapipe';
+              }
+              if (id.includes('jszip')) {
+                return 'vendor-jszip';
+              }
+              // Let Rollup handle app code splitting automatically
+              return undefined;
             }
           }
         }
