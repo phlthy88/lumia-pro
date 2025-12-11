@@ -16,7 +16,8 @@
     "size-check": "node scripts/check-bundle-size.js",
     "size-check-phase2": "PHASE=2 node scripts/check-bundle-size.js",
     "analyze": "vite build && npx vite-bundle-visualizer",
-    "test": "node --max-old-space-size=4096 --expose-gc node_modules.bin/vitest",
+    "test": "vitest",
+    "test:ci": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:load": "k6 run test/load/stress-test.js",
@@ -24,8 +25,7 @@
     "deps:check": "npx depcheck --skip-missing",
     "e2e": "cypress open",
     "e2e:run": "cypress run",
-    "lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json",
-    "test:ci": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/vitest run"
+    "lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
