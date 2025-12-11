@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { GLRenderer } from '../engine/GLRenderer';
-import { ColorGradeParams } from '../types';
+import { ColorGradeParams, TransformParams, RenderMode } from '../types';
 
 interface WebGLState {
   isReady: boolean;
@@ -23,14 +23,31 @@ export const useWebGL = (videoStream: MediaStream | null) => {
     saturation: 1,
     temperature: 0,
     tint: 0,
+    lift: 0,
+    gamma: 1,
+    gain: 1,
+    highlightRoll: 0,
+    shadowRoll: 0,
+    vignette: 0,
+    grain: 0,
+    lutStrength: 1,
+    sharpness: 0,
+    distortion: 0,
+    denoise: 0,
+    portraitLight: 0,
     highlights: 0,
     shadows: 0,
-    whites: 0,
     blacks: 0,
-    clarity: 0,
-    vibrance: 0,
-    lutIntensity: 1,
-    selectedLut: null
+    skinSmoothing: 0
+  });
+
+  const [transformParams] = useState<TransformParams>({
+    zoom: 1,
+    rotate: 0,
+    panX: 0,
+    panY: 0,
+    flipX: false,
+    flipY: false
   });
 
   const initRenderer = useCallback(async () => {
@@ -38,7 +55,6 @@ export const useWebGL = (videoStream: MediaStream | null) => {
 
     try {
       const renderer = new GLRenderer(canvasRef.current);
-      await renderer.initialize();
       rendererRef.current = renderer;
       
       setState(prev => ({ ...prev, isReady: true, error: null }));
@@ -51,33 +67,8 @@ export const useWebGL = (videoStream: MediaStream | null) => {
     }
   }, [videoStream]);
 
-  const render = useCallback(() => {
-    if (!rendererRef.current || !videoStream) return;
-
-    try {
-      rendererRef.current.render(colorParams);
-      
-      // Update FPS
-      const now = performance.now();
-      setState(prev => ({ ...prev, fps: Math.round(1000 / (now - (prev as any).lastFrame || 16)) }));
-    } catch (error) {
-      setState(prev => ({ ...prev, error: 'Render error' }));
-    }
-  }, [colorParams, videoStream]);
-
   const updateColorGrading = useCallback((params: Partial<ColorGradeParams>) => {
     setColorParams(prev => ({ ...prev, ...params }));
-  }, []);
-
-  const loadLUT = useCallback(async (lutPath: string) => {
-    if (!rendererRef.current) return;
-    
-    try {
-      await rendererRef.current.loadLUT(lutPath);
-      setColorParams(prev => ({ ...prev, selectedLut: lutPath }));
-    } catch (error) {
-      setState(prev => ({ ...prev, error: 'Failed to load LUT' }));
-    }
   }, []);
 
   const captureFrame = useCallback((): string | null => {
@@ -98,19 +89,32 @@ export const useWebGL = (videoStream: MediaStream | null) => {
     };
   }, [videoStream, initRenderer]);
 
-  // Animation loop
+  // Start rendering loop
   useEffect(() => {
-    if (!state.isReady) return;
+    if (!state.isReady || !rendererRef.current) return;
 
-    let animationId: number;
-    const animate = () => {
-      render();
-      animationId = requestAnimationFrame(animate);
+    const getParams = () => ({
+      color: colorParams,
+      transform: transformParams,
+      mode: RenderMode.Standard,
+      gyroAngle: 0,
+      bypass: false
+    });
+
+    const onStats = (fps: number) => {
+      setState(prev => ({ ...prev, fps }));
     };
-    
-    animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, [state.isReady, render]);
+
+    const onDrawOverlay = () => false;
+
+    rendererRef.current.start(getParams, onStats, onDrawOverlay);
+
+    return () => {
+      if (rendererRef.current) {
+        rendererRef.current.stop();
+      }
+    };
+  }, [state.isReady, colorParams, transformParams]);
 
   return {
     canvasRef,
@@ -119,7 +123,6 @@ export const useWebGL = (videoStream: MediaStream | null) => {
     fps: state.fps,
     colorParams,
     updateColorGrading,
-    loadLUT,
     captureFrame
   };
 };
