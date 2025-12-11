@@ -296,3 +296,13 @@ afterAll(() => {
 
 // Import memory cleanup
 import './after-test-cleanup'
+
+// Add HTMLCanvasElement mock for tests that need captureStream
+if (typeof HTMLCanvasElement !== 'undefined') {
+  if (!HTMLCanvasElement.prototype.captureStream) {
+    HTMLCanvasElement.prototype.captureStream = vi.fn(() => new MediaStream());
+  }
+  if (!HTMLCanvasElement.prototype.toBlob) {
+    HTMLCanvasElement.prototype.toBlob = vi.fn((cb) => cb(new Blob(['test'])));
+  }
+}
