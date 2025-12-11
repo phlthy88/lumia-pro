@@ -123,7 +123,14 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({
         ) : item.type === 'image' ? (
           <img src={item.url} alt={`Captured photo from ${new Date(item.timestamp).toLocaleString()}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
-          <video src={item.url} preload="metadata" aria-label={`Captured video from ${new Date(item.timestamp).toLocaleString()}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <video 
+            src={`${item.url}#t=0.1`} 
+            preload="metadata" 
+            muted
+            playsInline
+            aria-label={`Captured video from ${new Date(item.timestamp).toLocaleString()}`} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+          />
         )}
       </Box>
       
