@@ -1,4 +1,4 @@
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, lazy } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { PhotoLibrary } from '@mui/icons-material';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -13,7 +13,7 @@ import { useDeferredInit } from './hooks/useDeferredInit';
 import { UIStateProvider, useUIState } from './providers/UIStateProvider';
 import { CameraController, CameraSettings, useCameraContext } from './controllers/CameraController';
 import { RenderController, RenderSettings, Viewfinder } from './controllers/RenderController';
-import { AIController, AISettingsPanel } from './controllers/AIController';
+import { AIController } from './controllers/AIController';
 import { RecordingController, RecordingSettings, useRecordingContext } from './controllers/RecordingController';
 
 // Services
@@ -26,13 +26,16 @@ import { RenderMode } from './types';
 import { HistogramMeter } from './components/HistogramMeter';
 import { RGBParadeMeter } from './components/RGBParadeMeter';
 
-// Components (Lazy)
+// Lazy-loaded components
 const MediaLibrary = React.lazy(() => import('./components/MediaLibrary').then(m => ({ default: m.MediaLibrary })));
 const ThemeSettings = React.lazy(() => import('./components/ThemeSettings').then(m => ({ default: m.ThemeSettings })));
 const MuiOverlaySettings = React.lazy(() => import('./components/MuiOverlaySettings').then(m => ({ default: m.MuiOverlaySettings })));
 const VirtualCameraSettings = React.lazy(() => import('./components/VirtualCameraSettings').then(m => ({ default: m.VirtualCameraSettings })));
 const PlatformBoostsPanel = React.lazy(() => import('./components/PlatformBoostsPanel').then(m => ({ default: m.PlatformBoostsPanel })));
 const Vectorscope = React.lazy(() => import('./components/Vectorscope').then(m => ({ default: m.Vectorscope })));
+const AIPanel = React.lazy(() => import('./components/AIPanel').then(m => ({ default: m.AIPanel })));
+const RecorderPanel = React.lazy(() => import('./components/RecorderPanel').then(m => ({ default: m.RecorderPanel })));
+
 import { ParallaxHeader } from './components/ParallaxHeader';
 import { PerformanceModeToggle } from './components/PerformanceModeToggle';
 import { ControlCard } from './components/controls/ControlCard';
@@ -62,7 +65,9 @@ const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
             return (
                 <>
                     <ParallaxHeader title="AI Assistant" subtitle="Smart analysis & beauty" scrollY={scrollY} />
-                    <AISettingsPanel />
+                    <Suspense fallback={<Box display="flex" justifyContent="center" p={4}><CircularProgress /></Box>}>
+                        <AIPanel />
+                    </Suspense>
                 </>
             );
         case 'OVERLAYS':
@@ -122,7 +127,9 @@ const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
             return (
                 <>
                     <ParallaxHeader title="System" subtitle="Recording, export & virtual camera" scrollY={scrollY} />
-                    <RecordingSettings />
+                    <Suspense fallback={<Box display="flex" justifyContent="center" p={4}><CircularProgress /></Box>}>
+                        <RecorderPanel />
+                    </Suspense>
                     <Suspense fallback={<CircularProgress />}><VirtualCameraSettings virtualCamera={virtualCamera} /></Suspense>
                     {/* MIDI Control Card could be extracted or left here using 'midi' from context */}
                     {/* For brevity, omitting detailed MIDI UI here, assuming RenderSettings handles MIDI or we add it back if critical */}

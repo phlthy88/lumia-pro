@@ -132,7 +132,23 @@ export default defineConfig(({ mode }) => {
               'vendor-mui-icons': ['@mui/icons-material'],
               'vendor-emotion': ['@emotion/react', '@emotion/styled'],
               'vendor-mediapipe': ['@mediapipe/tasks-vision'],
-              'vendor-jszip': ['jszip']
+              'vendor-jszip': ['jszip'],
+              
+              // Split heavy app features
+              'ai-features': [
+                'src/controllers/AIController.tsx',
+                'src/services/AIAnalysisService.ts',
+                'src/hooks/useVisionWorker.ts',
+                'src/workers/VisionWorker.ts',
+                'src/workers/VisionWorkerThread.ts',
+                'src/beauty/MaskGenerator.ts',
+                'src/beauty/BackgroundBlur.ts'
+              ],
+              'recording-features': [
+                'src/controllers/RecordingController.tsx',
+                'src/hooks/useRecorder.ts',
+                'src/services/MediaStorageService.ts'
+              ]
             }
           }
         }
