@@ -61,7 +61,7 @@ export const PerformanceDashboard: React.FC = () => {
         sx={{ 
           position: 'fixed', 
           top: 16, 
-          right: 16, 
+          right: 80, // Move left to avoid settings button
           bgcolor: 'background.paper',
           boxShadow: 2,
           zIndex: 1300
@@ -76,7 +76,7 @@ export const PerformanceDashboard: React.FC = () => {
     <Box sx={{ 
       position: 'fixed', 
       top: 16, 
-      right: 16, 
+      right: 80, // Move left to avoid settings button
       width: 320,
       zIndex: 1300
     }}>
