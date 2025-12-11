@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-
+    
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">src/components</a> AudioMeter.tsx</h1>
         <div class='clearfix'>
-
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">6.52% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>3/46</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/40</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/6</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">7.14% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>3/42</span>
             </div>
-
-
+        
+            
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -305,23 +305,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -560,7 +560,7 @@ interface AudioMeterProps {
 }
 &nbsp;
 export const AudioMeter: React.FC&lt;AudioMeterProps&gt; = <span class="fstat-no" title="function not covered" >({ </span>
-  audioStream,
+  audioStream, 
   variant = <span class="branch-0 cbranch-no" title="branch not covered" >'horizontal',</span>
   showIcon = <span class="branch-0 cbranch-no" title="branch not covered" >true </span>
 }) =&gt; {
@@ -589,14 +589,14 @@ export const AudioMeter: React.FC&lt;AudioMeterProps&gt; = <span class="fstat-no
 &nbsp;
     const updateLevel = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
 <span class="cstat-no" title="statement not covered" >      if (!analyserRef.current) <span class="cstat-no" title="statement not covered" >return;</span></span>
-
+      
 <span class="cstat-no" title="statement not covered" >      analyserRef.current.getByteFrequencyData(dataArray);</span>
       const average = <span class="cstat-no" title="statement not covered" >dataArray.reduce(<span class="fstat-no" title="function not covered" >(a</span>, b) =&gt; <span class="cstat-no" title="statement not covered" >a + b, 0</span>) / dataArray.length;</span>
       const normalized = <span class="cstat-no" title="statement not covered" >Math.min(100, (average / 255) * 100);</span>
-
+      
 <span class="cstat-no" title="statement not covered" >      setLevel(normalized);</span>
 <span class="cstat-no" title="statement not covered" >      setPeak(<span class="fstat-no" title="function not covered" >prev =&gt; <span class="cstat-no" title="statement not covered" >M</span>ath.max(prev * 0.95, normalized))</span>;</span>
-
+      
 <span class="cstat-no" title="statement not covered" >      animationRef.current = requestAnimationFrame(updateLevel);</span>
     };
 &nbsp;
@@ -645,13 +645,13 @@ export const AudioMeter: React.FC&lt;AudioMeterProps&gt; = <span class="fstat-no
           }}
         /&gt;
         {showIcon &amp;&amp; (
-          &lt;MicIcon
-            sx={{
+          &lt;MicIcon 
+            sx={{ 
               color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
               fontSize: 24,
               zIndex: 1,
               transition: 'color 0.2s ease',
-            }}
+            }} 
           /&gt;
         )}
       &lt;/Box&gt;
@@ -677,8 +677,8 @@ export const AudioMeter: React.FC&lt;AudioMeterProps&gt; = <span class="fstat-no
             left: 0,
             right: 0,
             height: `${level}%`,
-            background: `linear-gradient(to top,
-              ${theme.palette.primary.main},
+            background: `linear-gradient(to top, 
+              ${theme.palette.primary.main}, 
               ${theme.palette.secondary.main})`,
             transition: 'height 0.1s ease-out',
             '&amp;::before': {
@@ -718,13 +718,13 @@ export const AudioMeter: React.FC&lt;AudioMeterProps&gt; = <span class="fstat-no
       }}
     &gt;
       {showIcon &amp;&amp; (
-        &lt;MicIcon
-          sx={{
+        &lt;MicIcon 
+          sx={{ 
             color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
             fontSize: 20,
             animation: isActive ? `${pulse} 1s ease-in-out infinite` : 'none',
             transition: 'color 0.2s ease',
-          }}
+          }} 
         /&gt;
       )}
       &lt;Box
@@ -744,8 +744,8 @@ export const AudioMeter: React.FC&lt;AudioMeterProps&gt; = <span class="fstat-no
             top: 0,
             bottom: 0,
             width: `${level}%`,
-            background: `linear-gradient(to right,
-              ${theme.palette.primary.main},
+            background: `linear-gradient(to right, 
+              ${theme.palette.primary.main}, 
               ${theme.palette.secondary.main})`,
             borderRadius: 3,
             transition: 'width 0.1s ease-out',
@@ -784,7 +784,7 @@ export const AudioMeter: React.FC&lt;AudioMeterProps&gt; = <span class="fstat-no
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-11T16:33:45.895Z
+                at 2025-12-11T17:56:47.473Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
@@ -796,3 +796,4 @@ export const AudioMeter: React.FC&lt;AudioMeterProps&gt; = <span class="fstat-no
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
+    

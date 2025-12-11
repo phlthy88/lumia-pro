@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-
+    
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">src/components</a> MuiRecorderSettings.tsx</h1>
         <div class='clearfix'>
-
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">2.12% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>1/47</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>0/13</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>0/29</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">2.7% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>1/37</span>
             </div>
-
-
+        
+            
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -303,7 +303,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -611,34 +611,34 @@ export const MuiRecorderSettings: React.FC&lt;RecorderSettingsProps&gt; = <span 
 <span class="cstat-no" title="statement not covered" >    return (</span>
         &lt;&gt;
             &lt;ControlCard title="Recording Setup"&gt;
-                &lt;MuiSelect
+                &lt;MuiSelect 
                     label="Format"
                     value={config.mimeType}
                     options={formatOptions}
                     onChange={<span class="fstat-no" title="function not covered" >(v</span>al) =&gt; <span class="cstat-no" title="statement not covered" >setConfig(<span class="fstat-no" title="function not covered" >p =&gt; (<span class="cstat-no" title="statement not covered" >{</span> ...p, mimeType: val }))</span>}</span>
                 /&gt;
-                &lt;MuiSelect
+                &lt;MuiSelect 
                     label="Bitrate"
                     value={config.bitrate}
                     options={bitrateOptions}
                     onChange={<span class="fstat-no" title="function not covered" >(v</span>al) =&gt; <span class="cstat-no" title="statement not covered" >setConfig(<span class="fstat-no" title="function not covered" >p =&gt; (<span class="cstat-no" title="statement not covered" >{</span> ...p, bitrate: Number(val) }))</span>}</span>
                 /&gt;
-                &lt;MuiSelect
+                &lt;MuiSelect 
                     label="Video Countdown"
                     value={config.countdown}
                     options={countdownOptions}
                     onChange={<span class="fstat-no" title="function not covered" >(v</span>al) =&gt; <span class="cstat-no" title="statement not covered" >setConfig(<span class="fstat-no" title="function not covered" >p =&gt; (<span class="cstat-no" title="statement not covered" >{</span> ...p, countdown: Number(val) }))</span>}</span>
                 /&gt;
             &lt;/ControlCard&gt;
-            &lt;ControlCard
+            &lt;ControlCard 
                 title={
                     &lt;Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}&gt;
                         Audio
                         {aiActive &amp;&amp; (
-                            &lt;Chip
-                                icon={&lt;AutoFixHighIcon sx={{ fontSize: 14 }} /&gt;}
-                                label="AI"
-                                size="small"
+                            &lt;Chip 
+                                icon={&lt;AutoFixHighIcon sx={{ fontSize: 14 }} /&gt;} 
+                                label="AI" 
+                                size="small" 
                                 color="primary"
                                 sx={{ height: 20, '&amp; .MuiChip-label': { px: 0.5, fontSize: 11 } }}
                             /&gt;
@@ -646,7 +646,7 @@ export const MuiRecorderSettings: React.FC&lt;RecorderSettingsProps&gt; = <span 
                     &lt;/Box&gt;
                 }
             &gt;
-                &lt;MuiSelect
+                &lt;MuiSelect 
                     label="Microphone"
                     value={config.audioSource}
                     options={audioOptions}
@@ -658,43 +658,43 @@ export const MuiRecorderSettings: React.FC&lt;RecorderSettingsProps&gt; = <span 
                             &lt;Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}&gt;Input Level&lt;/Typography&gt;
                             &lt;AudioMeter audioStream={audioStream} variant="horizontal" /&gt;
                         &lt;/Box&gt;
-
-                        &lt;MuiSelect
+                        
+                        &lt;MuiSelect 
                             label="Preset Profile"
                             value={audioConfig.preset}
                             options={presetOptions}
                             onChange={<span class="fstat-no" title="function not covered" >(v</span>al) =&gt; <span class="cstat-no" title="statement not covered" >applyPreset(val as AudioPreset)}</span>
                         /&gt;
-
+                        
                         &lt;Typography variant="caption" color="text.secondary" sx={{ px: 1, pt: 1, display: 'block' }}&gt;
                             AI Processing
                         &lt;/Typography&gt;
-                        &lt;MuiSwitch
-                            label="Noise Suppression"
-                            checked={audioConfig.noiseSuppression}
+                        &lt;MuiSwitch 
+                            label="Noise Suppression" 
+                            checked={audioConfig.noiseSuppression} 
                             onChange={<span class="fstat-no" title="function not covered" >(v</span>: boolean) =&gt; <span class="cstat-no" title="statement not covered" >handleAudioChange('noiseSuppression', v)} </span>
                         /&gt;
-                        &lt;MuiSwitch
-                            label="Echo Cancellation"
-                            checked={audioConfig.echoCancellation}
+                        &lt;MuiSwitch 
+                            label="Echo Cancellation" 
+                            checked={audioConfig.echoCancellation} 
                             onChange={<span class="fstat-no" title="function not covered" >(v</span>: boolean) =&gt; <span class="cstat-no" title="statement not covered" >handleAudioChange('echoCancellation', v)} </span>
                         /&gt;
-                        &lt;MuiSwitch
-                            label="Auto Gain Control"
-                            checked={audioConfig.autoGainControl}
+                        &lt;MuiSwitch 
+                            label="Auto Gain Control" 
+                            checked={audioConfig.autoGainControl} 
                             onChange={<span class="fstat-no" title="function not covered" >(v</span>: boolean) =&gt; <span class="cstat-no" title="statement not covered" >handleAudioChange('autoGainControl', v)} </span>
                         /&gt;
-
+                        
                         &lt;Typography variant="caption" color="text.secondary" sx={{ px: 1, pt: 1, display: 'block' }}&gt;
                             Format
                         &lt;/Typography&gt;
-                        &lt;MuiSelect
+                        &lt;MuiSelect 
                             label="Sample Rate"
                             value={audioConfig.sampleRate}
                             options={sampleRateOptions}
                             onChange={<span class="fstat-no" title="function not covered" >(v</span>al) =&gt; <span class="cstat-no" title="statement not covered" >handleAudioChange('sampleRate', Number(val))}</span>
                         /&gt;
-                        &lt;MuiSelect
+                        &lt;MuiSelect 
                             label="Channels"
                             value={audioConfig.channelCount}
                             options={channelOptions}
@@ -709,19 +709,19 @@ export const MuiRecorderSettings: React.FC&lt;RecorderSettingsProps&gt; = <span 
                 )}
             &lt;/ControlCard&gt;
             &lt;ControlCard title="Photo Capture"&gt;
-                &lt;MuiSelect
+                &lt;MuiSelect 
                     label="Photo Countdown"
                     value={config.photoCountdown}
                     options={countdownOptions}
                     onChange={<span class="fstat-no" title="function not covered" >(v</span>al) =&gt; <span class="cstat-no" title="statement not covered" >setConfig(<span class="fstat-no" title="function not covered" >p =&gt; (<span class="cstat-no" title="statement not covered" >{</span> ...p, photoCountdown: Number(val) }))</span>}</span>
                 /&gt;
-                &lt;MuiSelect
+                &lt;MuiSelect 
                     label="Burst Count"
                     value={config.burstCount}
                     options={burstOptions}
                     onChange={<span class="fstat-no" title="function not covered" >(v</span>al) =&gt; <span class="cstat-no" title="statement not covered" >setConfig(<span class="fstat-no" title="function not covered" >p =&gt; (<span class="cstat-no" title="statement not covered" >{</span> ...p, burstCount: Number(val) }))</span>}</span>
                 /&gt;
-                &lt;MuiSelect
+                &lt;MuiSelect 
                     label="Burst Delay"
                     value={config.burstDelay}
                     options={burstDelayOptions}
@@ -739,7 +739,7 @@ export const MuiRecorderSettings: React.FC&lt;RecorderSettingsProps&gt; = <span 
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-11T16:33:45.895Z
+                at 2025-12-11T17:56:47.473Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
@@ -751,3 +751,4 @@ export const MuiRecorderSettings: React.FC&lt;RecorderSettingsProps&gt; = <span 
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
+    

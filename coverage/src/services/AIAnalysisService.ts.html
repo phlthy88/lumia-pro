@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-
+    
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">src/services</a> AIAnalysisService.ts</h1>
         <div class='clearfix'>
-
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">12.17% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>14/115</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">4.34% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>2/46</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">33.33% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>2/6</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">13.2% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>14/106</span>
             </div>
-
-
+        
+            
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -335,16 +335,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -546,7 +546,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { FaceLandmarkerResult } from "@mediapipe/tasks-vision";
 import { ColorGradeParams } from "../types";
 &nbsp;
@@ -569,7 +569,7 @@ export interface AnalysisResult {
 &nbsp;
 /**
  * AI Analysis Service - Heuristic-Based Image Analysis
- *
+ * 
  * This service analyzes video frames using rule-based color science heuristics,
  * NOT machine learning or AI models. It examines pixel statistics to suggest
  * color corrections based on established photography principles.
@@ -585,7 +585,7 @@ export class AIAnalysisService {
 &nbsp;
   constructor() {
     // Small canvas for analysis (performance optimization)
-    this.canvas = new OffscreenCanvas(256, 144);
+    this.canvas = new OffscreenCanvas(256, 144); 
     this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })!;
   }
 &nbsp;
@@ -594,7 +594,7 @@ export class AIAnalysisService {
    */
   async <span class="fstat-no" title="function not covered" >analyzeWithRateLimit(v</span>ideo: HTMLVideoElement, faceResult?: FaceLandmarkerResult | null): Promise&lt;AnalysisResult | null&gt; {
     const now = <span class="cstat-no" title="statement not covered" >Date.now();</span>
-
+    
     // Throttle: Don't analyze more than once per ANALYSIS_THROTTLE period
 <span class="cstat-no" title="statement not covered" >    if (now - this.lastAnalysisTime &lt; this.ANALYSIS_THROTTLE) {</span>
 <span class="cstat-no" title="statement not covered" >      return null;</span>
@@ -640,13 +640,13 @@ export class AIAnalysisService {
     // 2. Pixel Statistics (Exposure &amp; Color)
     let rSum = <span class="cstat-no" title="statement not covered" >0, g</span>Sum = <span class="cstat-no" title="statement not covered" >0, b</span>Sum = <span class="cstat-no" title="statement not covered" >0, l</span>umaSum = <span class="cstat-no" title="statement not covered" >0;</span>
     let minLuma = <span class="cstat-no" title="statement not covered" >255, m</span>axLuma = <span class="cstat-no" title="statement not covered" >0;</span>
-
+    
 <span class="cstat-no" title="statement not covered" >    for (let i = <span class="cstat-no" title="statement not covered" >0; i</span> &lt; pixels.length; i += 4) {</span>
       const r = <span class="cstat-no" title="statement not covered" >pixels[i]!;</span>
       const g = <span class="cstat-no" title="statement not covered" >pixels[i + 1]!;</span>
       const b = <span class="cstat-no" title="statement not covered" >pixels[i + 2]!;</span>
       const luma = <span class="cstat-no" title="statement not covered" >0.2126 * r + 0.7152 * g + 0.0722 * b;</span>
-
+      
 <span class="cstat-no" title="statement not covered" >      rSum += r; <span class="cstat-no" title="statement not covered" >g</span>Sum += g; <span class="cstat-no" title="statement not covered" >b</span>Sum += b;</span>
 <span class="cstat-no" title="statement not covered" >      lumaSum += luma;</span>
 <span class="cstat-no" title="statement not covered" >      if (luma &lt; minLuma) <span class="cstat-no" title="statement not covered" >minLuma = luma;</span></span>
@@ -664,15 +664,15 @@ export class AIAnalysisService {
 <span class="cstat-no" title="statement not covered" >    console.log('[AIAnalysisService] faceLandmarks length:', faceData?.faceLandmarks?.length ?? 0, 'sample point:', faceData?.faceLandmarks?.[0]?.[1]);</span>
 &nbsp;
     // --- SCORING LOGIC ---
-
+    
     const tips: string[] = <span class="cstat-no" title="statement not covered" >[];</span>
     const autoParams: Partial&lt;ColorGradeParams&gt; = <span class="cstat-no" title="statement not covered" >{};</span>
-
+    
     // Exposure Analysis
     let exposureScore = <span class="cstat-no" title="statement not covered" >100;</span>
     // Ideal luma is around 100-140 (out of 255)
     const lumaDiff = <span class="cstat-no" title="statement not covered" >avgLuma - 128;</span>
-
+    
 <span class="cstat-no" title="statement not covered" >    if (avgLuma &lt; 60) {</span>
 <span class="cstat-no" title="statement not covered" >        tips.push("Scene is too dark. Add lighting or increase ISO.");</span>
 <span class="cstat-no" title="statement not covered" >        autoParams.exposure = 0.5 + (60 - avgLuma) / 100; // Boost exposure</span>
@@ -702,7 +702,7 @@ export class AIAnalysisService {
     // Prevent division by zero for edge cases (pure color channels)
     const rGain = <span class="cstat-no" title="statement not covered" >avgR &gt; 0 ? maxChan / avgR : 1;</span>
     const bGain = <span class="cstat-no" title="statement not covered" >avgB &gt; 0 ? maxChan / avgB : 1;</span>
-
+    
     // Map gains to Temp/Tint approximately
 <span class="cstat-no" title="statement not covered" >    if (avgR &gt; avgB * 1.2) {</span>
 <span class="cstat-no" title="statement not covered" >        tips.push("Image is too warm (Orange). Cooling down.");</span>
@@ -715,18 +715,18 @@ export class AIAnalysisService {
     // Face/Composition Analysis
     let compScore = <span class="cstat-no" title="statement not covered" >100;</span>
     let focusScore = <span class="cstat-no" title="statement not covered" >80; // Baseline</span>
-
+    
 <span class="cstat-no" title="statement not covered" >    if (faceData &amp;&amp; faceData.faceLandmarks.length &gt; 0) {</span>
         const face = <span class="cstat-no" title="statement not covered" >faceData.faceLandmarks[0];</span>
         // Nose tip is usually index 1 or 4
         const nose = <span class="cstat-no" title="statement not covered" >face?.[1];</span>
-
+        
         // Check landmark exists before using it
 <span class="cstat-no" title="statement not covered" >        if (nose) {</span>
             // Rule of Thirds check
             const xDist = <span class="cstat-no" title="statement not covered" >Math.abs(nose.x - 0.5);</span>
             const yDist = <span class="cstat-no" title="statement not covered" >Math.abs(nose.y - 0.4); // Eyes usually around 40% height</span>
-
+            
 <span class="cstat-no" title="statement not covered" >            if (xDist &gt; 0.15) {</span>
 <span class="cstat-no" title="statement not covered" >                tips.push("You are off-center. Move to the center.");</span>
 <span class="cstat-no" title="statement not covered" >                compScore -= 20;</span>
@@ -777,7 +777,7 @@ export class AIAnalysisService {
 <span class="cstat-no" title="statement not covered" >      clearTimeout(this.analysisTimeout);</span>
 <span class="cstat-no" title="statement not covered" >      this.analysisTimeout = null;</span>
     }
-
+    
     // Clear canvas to release memory
     <span class="missing-if-branch" title="else path not taken" >E</span>if (this.ctx) {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -796,7 +796,7 @@ export const aiService = new AIAnalysisService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-11T16:33:45.895Z
+                at 2025-12-11T17:56:47.473Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
@@ -808,3 +808,4 @@ export const aiService = new AIAnalysisService();
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
+    

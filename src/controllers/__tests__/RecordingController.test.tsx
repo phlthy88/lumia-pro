@@ -28,18 +28,16 @@ vi.mock('../../providers/EventBus', () => ({
 }));
 
 import { PerformanceModeProvider } from '../../providers/PerformanceModeProvider';
-// ... other imports
-
-// ... mocks
-
-// Import after mocks
 import { RecordingController, useRecordingContext } from '../RecordingController';
-
-// ... TestChild component
 
 const TestChild = () => {
   const ctx = useRecordingContext();
-  return <span data-testid="recording">{ctx.isRecording ? 'yes' : 'no'}</span>;
+  return (
+    <div>
+      <span data-testid="recording">{ctx.isRecording ? 'yes' : 'no'}</span>
+      <span data-testid="paused">{ctx.isPaused ? 'yes' : 'no'}</span>
+    </div>
+  );
 };
 
 describe('RecordingController', () => {
@@ -47,9 +45,16 @@ describe('RecordingController', () => {
     vi.clearAllMocks();
   });
 
-  it.skip('provides context to children - DEPRECATED: Migrating to useRecording hook', () => {
-    // This test is skipped during controller -> hook migration
-    // Will be replaced with useRecording hook tests
+  it('provides recording context to children', () => {
+    render(
+      <PerformanceModeProvider>
+        <RecordingController>
+          <TestChild />
+        </RecordingController>
+      </PerformanceModeProvider>
+    );
+
+    expect(screen.getByTestId('recording')).toHaveTextContent('no');
+    expect(screen.getByTestId('paused')).toHaveTextContent('no');
   });
 });
-

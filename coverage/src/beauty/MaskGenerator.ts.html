@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-
+    
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">src/beauty</a> MaskGenerator.ts</h1>
         <div class='clearfix'>
-
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">90.9% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>90/99</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">68.75% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>22/32</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>11/11</span>
             </div>
-
-
+        
+            
             <div class='fl pad1y space-right2'>
                 <span class="strong">96.59% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>85/88</span>
             </div>
-
-
+        
+            
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -321,7 +321,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -370,22 +370,22 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">16x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
+<span class="cline-any cline-yes">16x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -604,12 +604,12 @@ interface Point2D {
 &nbsp;
 /**
  * MaskGenerator creates segmentation masks for beauty effects
- *
+ * 
  * Canvas 1 (RGB channels):
  * - R: Skin region (face oval minus eyes)
  * - G: Eye regions
  * - B: Face contour/jawline
- *
+ * 
  * Canvas 2 (RGB channels):
  * - R: Cheekbone regions
  * - G: Lip region
@@ -620,11 +620,11 @@ export class MaskGenerator {
   private ctx: OffscreenCanvasRenderingContext2D;
   private canvas2: OffscreenCanvas;
   private ctx2: OffscreenCanvasRenderingContext2D;
-
+  
   // Temporal smoothing buffers
   private prevLandmarks: Point2D[] | null = null;
   private smoothingFactor = 0.3; // Lower = more smoothing
-
+  
   // Performance: reuse path objects
   private readonly blurRadius = 12;
 &nbsp;
@@ -633,7 +633,7 @@ export class MaskGenerator {
     const ctx = this.canvas.getContext('2d', { willReadFrequently: false });
     <span class="missing-if-branch" title="if path not taken" >I</span>if (!ctx) <span class="cstat-no" title="statement not covered" >throw new Error('MaskGenerator: 2D context unavailable');</span>
     this.ctx = ctx;
-
+    
     this.canvas2 = new OffscreenCanvas(width, height);
     const ctx2 = this.canvas2.getContext('2d', { willReadFrequently: false });
     <span class="missing-if-branch" title="if path not taken" >I</span>if (!ctx2) <span class="cstat-no" title="statement not covered" >throw new Error('MaskGenerator: 2D context unavailable');</span>
@@ -669,11 +669,11 @@ export class MaskGenerator {
     this.ctx2.clearRect(0, 0, w, h);
 &nbsp;
     // === Canvas 1: Skin, Eyes, Contour ===
-
+    
     // Red channel: Skin (face oval minus eyes)
     this.ctx.fillStyle = '#ff0000';
     this.drawRegion(this.ctx, REGIONS.FACE_OVAL, points);
-
+    
     // Cut out eyes from skin
     this.ctx.globalCompositeOperation = 'destination-out';
     this.drawRegion(this.ctx, REGIONS.LEFT_EYE, points);
@@ -694,7 +694,7 @@ export class MaskGenerator {
     this.drawStroke(this.ctx, REGIONS.JAWLINE_RIGHT, points);
 &nbsp;
     // === Canvas 2: Cheeks, Lips, Nose ===
-
+    
     // Red channel: Cheekbones
     this.ctx2.fillStyle = '#ff0000';
     this.drawRegion(this.ctx2, REGIONS.LEFT_CHEEK, points);
@@ -718,25 +718,25 @@ export class MaskGenerator {
    */
   private processLandmarks(landmarks: NormalizedLandmark[], w: number, h: number): Point2D[] {
     const points: Point2D[] = new Array(landmarks.length);
-
+    
     for (let i = 0; i &lt; landmarks.length; i++) {
       const lm = landmarks[i]!;
       let x = lm.x * w;
       let y = lm.y * h;
-
+      
       // Apply temporal smoothing if we have previous frame
       <span class="missing-if-branch" title="if path not taken" >I</span>if (this.prevLandmarks &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >this.prevLandmarks[i]) {</span>
         const prev = <span class="cstat-no" title="statement not covered" >this.prevLandmarks[i]!;</span>
 <span class="cstat-no" title="statement not covered" >        x = prev.x + (x - prev.x) * this.smoothingFactor;</span>
 <span class="cstat-no" title="statement not covered" >        y = prev.y + (y - prev.y) * this.smoothingFactor;</span>
       }
-
+      
       points[i] = { x, y };
     }
-
+    
     // Store for next frame
     this.prevLandmarks = points;
-
+    
     return points;
   }
 &nbsp;
@@ -745,18 +745,18 @@ export class MaskGenerator {
    */
   private drawRegion(ctx: OffscreenCanvasRenderingContext2D, indices: readonly number[], points: Point2D[]): void {
     <span class="missing-if-branch" title="if path not taken" >I</span>if (indices.length &lt; 3) <span class="cstat-no" title="statement not covered" >return;</span>
-
+    
     ctx.beginPath();
     const first = points[indices[0]!];
     <span class="missing-if-branch" title="if path not taken" >I</span>if (!first) <span class="cstat-no" title="statement not covered" >return;</span>
-
+    
     ctx.moveTo(first.x, first.y);
-
+    
     for (let i = 1; i &lt; indices.length; i++) {
       const p = points[indices[i]!];
       <span class="missing-if-branch" title="else path not taken" >E</span>if (p) ctx.lineTo(p.x, p.y);
     }
-
+    
     ctx.closePath();
     ctx.fill();
   }
@@ -766,18 +766,18 @@ export class MaskGenerator {
    */
   private drawStroke(ctx: OffscreenCanvasRenderingContext2D, indices: readonly number[], points: Point2D[]): void {
     <span class="missing-if-branch" title="if path not taken" >I</span>if (indices.length &lt; 2) <span class="cstat-no" title="statement not covered" >return;</span>
-
+    
     ctx.beginPath();
     const first = points[indices[0]!];
     <span class="missing-if-branch" title="if path not taken" >I</span>if (!first) <span class="cstat-no" title="statement not covered" >return;</span>
-
+    
     ctx.moveTo(first.x, first.y);
-
+    
     for (let i = 1; i &lt; indices.length; i++) {
       const p = points[indices[i]!];
       <span class="missing-if-branch" title="else path not taken" >E</span>if (p) ctx.lineTo(p.x, p.y);
     }
-
+    
     ctx.stroke();
   }
 &nbsp;
@@ -826,7 +826,7 @@ export class MaskGenerator {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-11T16:33:45.895Z
+                at 2025-12-11T17:56:47.473Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
@@ -838,3 +838,4 @@ export class MaskGenerator {
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
+    
