@@ -9,13 +9,27 @@ vi.mock('../RenderController', () => ({
 vi.mock('../../hooks/useRecorder', () => ({
   useRecorder: () => ({
     isRecording: false,
-    isPaused: false,
-    duration: 0,
+    isCountingDown: false,
+    isPhotoCountingDown: false,
+    isBursting: false,
+    countdown: 0,
+    photoCountdown: 0,
+    recordingTime: 0,
+    config: {},
+    setConfig: vi.fn(),
+    audioConfig: {},
+    setAudioConfig: vi.fn(),
     startRecording: vi.fn(),
-    stopRecording: vi.fn().mockResolvedValue(new Blob()),
-    pauseRecording: vi.fn(),
-    resumeRecording: vi.fn(),
-    takeSnapshot: vi.fn().mockResolvedValue(new Blob()),
+    stopRecording: vi.fn(),
+    takeScreenshot: vi.fn(),
+    takeBurst: vi.fn(),
+    cancelCountdown: vi.fn(),
+    mediaItems: [],
+    loadItemUrl: vi.fn(),
+    deleteMedia: vi.fn(),
+    clearMedia: vi.fn(),
+    audioStream: null,
+    error: null,
   }),
 }));
 
@@ -55,6 +69,6 @@ describe('RecordingController', () => {
     );
 
     expect(screen.getByTestId('recording')).toHaveTextContent('no');
-    expect(screen.getByTestId('paused')).toHaveTextContent('no');
+    expect(screen.getByTestId('error')).toHaveTextContent('no');
   });
 });
