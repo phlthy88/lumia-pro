@@ -71,7 +71,7 @@ export const PerformanceDashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ position: 'absolute', top: 24, left: 24, zIndex: 1300 }}>
+    <Box>
       <IconButton
         onClick={handleToggle}
         sx={{ 
@@ -79,9 +79,11 @@ export const PerformanceDashboard: React.FC = () => {
           color: isVisible ? 'primary.contrastText' : 'text.primary',
           boxShadow: 2,
           pointerEvents: 'auto',
+          opacity: isVisible ? 1 : 0.6,
           animation: spinAnim === 'open' ? `${spin} 0.5s ease-out` : spinAnim === 'close' ? `${spinReverse} 0.5s ease-out` : 'none',
           '&:hover': {
             bgcolor: isVisible ? 'primary.dark' : 'action.hover',
+            opacity: 1,
           }
         }}
       >
@@ -96,7 +98,7 @@ export const PerformanceDashboard: React.FC = () => {
             </Alert>
           )}
           
-          <Card sx={{ width: 280, borderRadius: 3 }}>
+          <Card sx={{ width: 280, borderRadius: 3, opacity: 0.85 }}>
             <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Speed sx={{ mr: 1, fontSize: 20 }} />

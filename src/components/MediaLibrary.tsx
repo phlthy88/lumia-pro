@@ -125,9 +125,10 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({
         ) : (
           <video 
             src={`${item.url}#t=0.1`} 
-            preload="metadata" 
+            preload="auto" 
             muted
             playsInline
+            crossOrigin="anonymous"
             aria-label={`Captured video from ${new Date(item.timestamp).toLocaleString()}`} 
             style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
           />

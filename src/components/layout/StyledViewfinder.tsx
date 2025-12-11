@@ -79,6 +79,14 @@ const ControlsStack = styled(Stack)({
   '--scale': 'min(1, 2.5cqmin / 10px)',
 });
 
+// Top-left controls wrapper matching settings button position
+const TopLeftControls = styled(Box)({
+  position: 'absolute',
+  top: 24,
+  left: 24,
+  zIndex: 60,
+});
+
 interface Props {
   children: React.ReactNode;
   isRecording?: boolean;
@@ -87,6 +95,7 @@ interface Props {
   onCompareToggle?: () => void;
   isBypass?: boolean;
   audioStream?: MediaStream | null;
+  topLeftContent?: React.ReactNode;
 }
 
 export const StyledViewfinder: React.FC<Props> = ({ 
@@ -96,7 +105,8 @@ export const StyledViewfinder: React.FC<Props> = ({
   onSnapshot, 
   onCompareToggle, 
   isBypass,
-  audioStream
+  audioStream,
+  topLeftContent
 }) => (
   <Box sx={{ 
     position: 'relative', 
@@ -126,6 +136,11 @@ export const StyledViewfinder: React.FC<Props> = ({
     />
     <ViewfinderContainer elevation={12}>
       {children}
+      
+      {/* Top-left content - scales with container */}
+      {topLeftContent && (
+        <TopLeftControls>{topLeftContent}</TopLeftControls>
+      )}
       
       {/* Action Buttons - Bottom right, scales with container */}
       <ControlsStack direction="column">

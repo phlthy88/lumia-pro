@@ -528,6 +528,7 @@ export const Viewfinder: React.FC = () => {
         onCompareToggle={toggleBypass}
         isBypass={bypass}
         audioStream={audioStream}
+        topLeftContent={<PerformanceDashboard />}
       >
         {/* Raw video fallback if GL renderer stays blank */}
         <video
@@ -560,7 +561,6 @@ export const Viewfinder: React.FC = () => {
               transition: 'opacity 0.3s ease'
           }}
         />
-        <PerformanceDashboard />
       </StyledViewfinder>
 
       <CaptureAnimation imageUrl={captureAnimUrl} onComplete={clearCaptureAnim} />

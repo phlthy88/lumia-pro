@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval'",
       `connect-src ${connectSrc}`,
       "img-src 'self' blob: data:",
+      "media-src 'self' blob: data:",
       "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline'",
       "style-src-elem 'self' 'unsafe-inline'",
