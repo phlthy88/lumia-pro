@@ -28,8 +28,8 @@ export const useAI = (videoRef: React.RefObject<HTMLVideoElement>) => {
     lastAnalysis: 0
   });
 
-  const analysisTimeoutRef = useRef<NodeJS.Timeout>();
-  const abortControllerRef = useRef<AbortController>();
+  const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const analyzeFrame = useCallback(async (): Promise<AIAnalysisResult | null> => {
     if (!videoRef.current) return null;
@@ -53,9 +53,9 @@ export const useAI = (videoRef: React.RefObject<HTMLVideoElement>) => {
     let pixelCount = 0;
 
     for (let i = 0; i < data.length; i += 4) {
-      totalR += data[i];
-      totalG += data[i + 1];
-      totalB += data[i + 2];
+      totalR += data[i] ?? 0;
+      totalG += data[i + 1] ?? 0;
+      totalB += data[i + 2] ?? 0;
       pixelCount++;
     }
 

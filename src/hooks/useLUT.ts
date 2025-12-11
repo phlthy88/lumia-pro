@@ -47,7 +47,8 @@ export const useLUT = () => {
         
         // Parse LUT_3D_SIZE
         if (trimmed.startsWith('LUT_3D_SIZE')) {
-          size = parseInt(trimmed.split(' ')[1]);
+          const sizeStr = trimmed.split(' ')[1];
+          if (sizeStr) size = parseInt(sizeStr);
           continue;
         }
 
@@ -107,9 +108,10 @@ export const useLUT = () => {
       setState(prev => ({
         ...prev,
         selectedLUT: lutPath,
-        lutData: lutData.buffer,
+        lutData: lutData.buffer as ArrayBuffer,
         isLoading: false,
-        error: null
+        error: null,
+        availableLUTs: prev.availableLUTs
       }));
 
       return true;

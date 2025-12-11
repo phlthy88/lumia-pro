@@ -34,5 +34,7 @@
     "exactOptionalPropertyTypes": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
-}
+  },
+  "include": ["src", "vite.config.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist", "lumia-pro", "coverage", "e2e"]
 }
