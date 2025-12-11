@@ -103,14 +103,17 @@ interface RecordingControllerProps {
   children?: ReactNode;
 }
 
+import { usePerformanceModeContext } from '../providers/PerformanceModeProvider';
+
 export const RecordingController: React.FC<RecordingControllerProps> = ({ children }) => {
   const { canvasRef, triggerCaptureAnim, triggerSwooshAnim } = useRenderContext();
+  const { targetFPS } = usePerformanceModeContext();
 
   const {
       isRecording, isCountingDown, isPhotoCountingDown, isBursting, countdown, photoCountdown, recordingTime, config, setConfig,
       audioConfig, setAudioConfig,
       startRecording, stopRecording, takeScreenshot, takeBurst, cancelCountdown, mediaItems, loadItemUrl, deleteMedia, clearMedia, audioStream, error
-  } = useRecorder(canvasRef as React.RefObject<HTMLCanvasElement>);
+  } = useRecorder(canvasRef as React.RefObject<HTMLCanvasElement>, targetFPS);
 
   // Listen to EventBus triggers
   useEffect(() => {

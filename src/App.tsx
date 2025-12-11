@@ -14,7 +14,7 @@ import { AIController, AISettingsPanel } from './controllers/AIController';
 import { RecordingController, RecordingSettings, useRecordingContext } from './controllers/RecordingController';
 
 // Services
-import { virtualCameraService } from './services/VirtualCameraService';
+import virtualCameraService from './services/VirtualCameraService';
 import { aiService } from './services/AIAnalysisService';
 import { useMemoryMonitor } from './hooks/useMemoryMonitor';
 import { useRenderContext } from './controllers/RenderController';
@@ -213,6 +213,8 @@ const ShortcutsListener = () => {
     return null;
 }
 
+import { PerformanceModeProvider } from './providers/PerformanceModeProvider';
+
 export default function App() {
   const ready = useDeferredInit(50); // Defer heavy initialization by 50ms
   
@@ -228,6 +230,7 @@ export default function App() {
     <ErrorBoundary>
         <ThemeProvider>
             <UIStateProvider>
+              <PerformanceModeProvider>
                 <CameraController>
                     <RenderController>
                         <AIController>
@@ -237,6 +240,7 @@ export default function App() {
                         </AIController>
                     </RenderController>
                 </CameraController>
+              </PerformanceModeProvider>
             </UIStateProvider>
         </ThemeProvider>
     </ErrorBoundary>

@@ -27,8 +27,15 @@ vi.mock('../../providers/EventBus', () => ({
   eventBus: { emit: vi.fn(), on: () => () => {} },
 }));
 
+import { PerformanceModeProvider } from '../../providers/PerformanceModeProvider';
+// ... other imports
+
+// ... mocks
+
 // Import after mocks
 import { RecordingController, useRecordingContext } from '../RecordingController';
+
+// ... TestChild component
 
 const TestChild = () => {
   const ctx = useRecordingContext();
@@ -41,7 +48,12 @@ describe('RecordingController', () => {
   });
 
   it('provides context to children', () => {
-    render(<RecordingController><TestChild /></RecordingController>);
+    render(
+      <PerformanceModeProvider>
+        <RecordingController><TestChild /></RecordingController>
+      </PerformanceModeProvider>
+    );
     expect(screen.getByTestId('recording')).toHaveTextContent('no');
   });
 });
+

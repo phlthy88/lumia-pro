@@ -3,7 +3,8 @@ import { useCameraContext } from './CameraController';
 import { useRenderContext } from './RenderController';
 import { useVisionWorker } from '../hooks/useVisionWorker';
 import { useAIAnalysis } from '../hooks/useAIAnalysis';
-import { usePerformanceMode } from '../hooks/usePerformanceMode';
+import { usePerformanceModeContext } from '../providers/PerformanceModeProvider';
+
 import { MaskGenerator } from '../beauty/MaskGenerator';
 import { eventBus } from '../providers/EventBus';
 import { useUIState } from '../providers/UIStateProvider';
@@ -68,10 +69,10 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
   const [hasExternalAI, setHasExternalAI] = useState(false);
   const [visionManuallyEnabled, setVisionManuallyEnabled] = useState(true);
 
-  const { settings } = usePerformanceMode();
+  const { performanceMode } = usePerformanceModeContext();
   
   // Enable vision when performance allows, and user toggles it on
-  const visionEnabled = settings.aiEnabled && visionManuallyEnabled && (beauty.enabled || activeTab === 'AI');
+  const visionEnabled = performanceMode !== 'off' && visionManuallyEnabled && (beauty.enabled || activeTab === 'AI');
 
   const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady, visionEnabled, {
     minFaceDetectionConfidence: 0.3,

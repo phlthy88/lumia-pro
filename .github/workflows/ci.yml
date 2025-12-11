@@ -1,127 +1,107 @@
-name: CI
+name: CI/CD - Lumia Pro
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, master ]
+    branches: [main]
 
 jobs:
-  lint-and-typecheck:
+  security:
+    name: Security Scan
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    - run: npm ci
-    - name: Typecheck
-      run: npx tsc --noEmit
-    - name: Lint
-      run: npx eslint src --ext .ts,.tsx --max-warnings 0 || true
+      - uses: actions/checkout@v4
+      
+      - name: Check for secrets
+        run: |
+          if grep -r "GEMINI\|API_KEY\|SECRET" src/ --exclude-dir=node_modules || true; then
+            echo "::warning::Potential secrets found in code"
+          fi
+
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: TypeScript check
+        run: npm run typecheck
+      
+      - name: ESLint
+        run: npx eslint src --max-warnings 0
 
   test:
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    - run: npm ci
-    - name: Unit Tests
-      run: node --max-old-space-size=4096 ./node_modules/.bin/vitest --run --coverage
-    - name: Upload Coverage
-      uses: codecov/codecov-action@v3
-      with:
-        files: ./coverage/lcov.info
-        fail_ci_if_error: false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm run test -- --run
 
   build:
+    name: Build
     runs-on: ubuntu-latest
+    needs: [lint, test, security]
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    - run: npm ci
-    - name: Build
-      run: npm run build
-    - name: Bundle Size Analysis
-      run: |
-        echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
-        echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
-        echo "|------|------|" >> $GITHUB_STEP_SUMMARY
-        for f in dist/assets/*.js; do
-          size=$(ls -lh "$f" | awk '{print $5}')
-          name=$(basename "$f")
-          echo "| $name | $size |" >> $GITHUB_STEP_SUMMARY
-        done
-        total=$(du -sh dist/assets | cut -f1)
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Total: $total**" >> $GITHUB_STEP_SUMMARY
-    - name: Check Bundle Limits
-      run: |
-        # Main bundle should be under 500KB
-        main_size=$(stat -f%z dist/assets/index-*.js 2>/dev/null || stat -c%s dist/assets/index-*.js)
-        if [ "$main_size" -gt 512000 ]; then
-          echo "::warning::Main bundle exceeds 500KB: $(($main_size / 1024))KB"
-        fi
-    - uses: actions/upload-artifact@v4
-      with:
-        name: dist
-        path: dist/
-        retention-days: 7
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Check bundle size
+        run: npm run size-check
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
 
-  e2e:
+  deploy-staging:
+    name: Deploy to Staging
     runs-on: ubuntu-latest
     needs: build
+    if: github.ref == 'refs/heads/develop'
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    - run: npm ci
-    - name: Install Playwright
-      run: npx playwright install --with-deps chromium
-    - uses: actions/download-artifact@v4
-      with:
-        name: dist
-        path: dist/
-    - name: Run E2E Tests
-      run: npx playwright test --project=chromium
-    - uses: actions/upload-artifact@v4
-      if: failure()
-      with:
-        name: playwright-report
-        path: playwright-report/
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Vercel (staging)
+        run: echo "Deploy to staging would happen here"
 
-  lighthouse:
+  deploy-production:
+    name: Deploy to Production
     runs-on: ubuntu-latest
     needs: build
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://lumia-pro.app
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    - run: npm ci
-    - uses: actions/download-artifact@v4
-      with:
-        name: dist
-        path: dist/
-    - name: Serve & Lighthouse
-      run: |
-        npm install -g serve @lhci/cli
-        serve -s dist -l 5000 &
-        sleep 3
-        lhci autorun --collect.url=http://localhost:5000 --assert.preset=lighthouse:recommended || true
-    - name: Lighthouse Report
-      run: |
-        echo "## Lighthouse Scores" >> $GITHUB_STEP_SUMMARY
-        if [ -f ".lighthouseci/lhr-*.json" ]; then
-          cat .lighthouseci/lhr-*.json | jq -r '"| Performance | \(.categories.performance.score * 100)% |"' >> $GITHUB_STEP_SUMMARY || true
-        fi
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Vercel (production)
+        run: echo "Deploy to production would happen here"

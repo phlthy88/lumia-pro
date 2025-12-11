@@ -11,7 +11,7 @@ import { useAIContext } from './AIController';
 import { eventBus } from '../providers/EventBus';
 import { LutData, RenderMode, ColorGradeParams, TransformParams, FallbackMode, Preset, EngineStats } from '../types';
 import { LutService } from '../services/LutService';
-import { virtualCameraService } from '../services/VirtualCameraService';
+import virtualCameraService from '../services/VirtualCameraService';
 
 // UI Components
 import { StyledViewfinder } from '../components/layout/StyledViewfinder';

@@ -29,7 +29,10 @@ const revokeBlobUrls = (items: MediaItem[]) => {
 // Limit stored media to prevent memory bloat
 const MAX_MEDIA_ITEMS = 50;
 
-export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
+export const useRecorder = (
+  canvasRef: React.RefObject<HTMLCanvasElement>, 
+  targetFPS = 30 
+) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isCountingDown, setIsCountingDown] = useState(false);
   const [isPhotoCountingDown, setIsPhotoCountingDown] = useState(false);
@@ -202,7 +205,7 @@ export const useRecorder = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     setError(null);
 
     try {
-      let stream = canvas.captureStream(60); 
+      let stream = canvas.captureStream(targetFPS); 
       
       if (config.audioSource !== 'none') {
         try {

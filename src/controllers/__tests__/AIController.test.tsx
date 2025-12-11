@@ -50,13 +50,25 @@ const TestChild = () => {
   return <span data-testid="analyzing">{ctx.isAnalyzing ? 'yes' : 'no'}</span>;
 };
 
+import { PerformanceModeProvider } from '../../providers/PerformanceModeProvider';
+// ... other imports
+
+// ... mocks
+
+// ... TestChild component
+
 describe('AIController', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('provides context to children', () => {
-    render(<AIController><TestChild /></AIController>);
+    render(
+      <PerformanceModeProvider>
+        <AIController><TestChild /></AIController>
+      </PerformanceModeProvider>
+    );
     expect(screen.getByTestId('analyzing')).toHaveTextContent('no');
   });
 });
+
