@@ -2,6 +2,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
@@ -110,9 +111,23 @@ export default defineConfig(({ mode }) => {
               }
             ]
           }
-        })
+        }),
+        sentryVitePlugin({
+          org: process.env.SENTRY_ORG,
+          project: process.env.SENTRY_PROJECT,
+          authToken: process.env.SENTRY_AUTH_TOKEN,
+          sourcemaps: {
+            assets: ['./dist/**'],
+          },
+          release: {
+            name: process.env.npm_package_version,
+          },
+          // Only upload sourcemaps for production builds
+          disable: mode !== 'production',
+        }),
       ],
       build: {
+        sourcemap: true,
         target: 'es2022',
         chunkSizeWarningLimit: 350,
         minify: 'terser',
