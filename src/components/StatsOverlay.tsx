@@ -78,7 +78,7 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
                 color: theme.palette.background.onSurfaceVariant,
                 animation: `${fadeIn} 0.3s ease-out`,
                 transition: 'all 0.3s ease',
-                opacity: 0.9,
+                opacity: 0.7,
             }}>
                 <Box sx={{ 
                     color: displayStats.fps < 20 ? theme.palette.warning.main : theme.palette.primary.main,
