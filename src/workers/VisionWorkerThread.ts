@@ -1,6 +1,6 @@
-import { FilesetResolver, FaceLandmarker, type FaceLandmarkerResult } from '@mediapipe/tasks-vision';
+import type { FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 
-let landmarker: FaceLandmarker | null = null;
+let landmarker: any = null;
 
 self.onmessage = async (e) => {
   const { type, data } = e.data;
@@ -8,6 +8,9 @@ self.onmessage = async (e) => {
   switch (type) {
     case 'init':
       try {
+        // Dynamic import to reduce main bundle size
+        const { FilesetResolver, FaceLandmarker } = await import('@mediapipe/tasks-vision');
+        
         const vision = await FilesetResolver.forVisionTasks(data.wasmPath);
         landmarker = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: { modelAssetPath: data.modelPath, delegate: 'GPU' },

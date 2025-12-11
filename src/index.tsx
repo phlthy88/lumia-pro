@@ -3,14 +3,14 @@ import ReactDOM from 'react-dom/client';
 // import { injectSpeedInsights } from '@vercel/speed-insights';
 import App from './App';
 import { migrateSettings } from './services/SettingsMigration';
-import { initializeSentry } from './config/sentry';
+import { initSentry } from './config/sentry';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
 // Initialize Sentry monitoring
-initializeSentry();
+initSentry();
 
 // Initialize Vercel Speed Insights
 // injectSpeedInsights();

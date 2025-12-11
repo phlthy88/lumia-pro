@@ -1,40 +1,34 @@
 import * as Sentry from "@sentry/react";
 
-export function initializeSentry() {
-  const isDev = import.meta.env.DEV;
-  const isProduction = import.meta.env.PROD;
+export const initSentry = () => {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  
+  if (!dsn) {
+    console.warn('[Sentry] DSN not configured, running in local mode');
+    return;
+  }
 
   Sentry.init({
-    // Only enable in staging/production
-    enabled: !isDev || import.meta.env.VITE_SENTRY_ENABLED === 'true',
-    
-    dsn: import.meta.env.VITE_SENTRY_DSN,
-    
+    dsn,
     environment: import.meta.env.VITE_ENV || 'development',
-    
-    release: import.meta.env.VITE_APP_VERSION || '1.0.0',
-    
+    tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
-        maskAllText: true,
-        blockAllMedia: true,
+        maskAllText: false,
+        blockAllMedia: false,
       }),
     ],
-    
-    // Set traces sample rate lower in production
-    tracesSampleRate: isProduction ? 0.1 : 0.5,
-    
-    // Capture 100% of errors
-    attachStacktrace: true,
-    
-    // Only send errors in production
     beforeSend(event) {
-      if (!isProduction && event.level === 'error') {
-        // In dev, also log to console
-        console.error('[Sentry]', event);
+      // Filter out known non-critical errors
+      if (event.exception?.values?.[0]?.value?.includes('ResizeObserver loop limit exceeded')) {
+        return null;
       }
       return event;
-    },
+    }
   });
-}
+};
+
+export const captureError = (error: Error, context?: Record<string, any>) => {
+  Sentry.captureException(error, { extra: context });
+};
