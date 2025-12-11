@@ -40,12 +40,12 @@ export const useKeyboardShortcuts = ({
         case ' ':
           e.preventDefault();
           // Toggle recording
-          eventBus.emit('recording:toggle');
+          eventBus.emit('recording:toggle', undefined);
           break;
         case 'c':
           e.preventDefault();
           // Capture photo
-          eventBus.emit('recording:snapshot');
+          eventBus.emit('recording:snapshot', undefined);
           break;
         case 'b':
           onToggleBypass();
