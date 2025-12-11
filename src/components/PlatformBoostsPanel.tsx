@@ -28,7 +28,8 @@ import {
   Tab,
   Tabs,
   LinearProgress,
-  Snackbar
+  Snackbar,
+  Tooltip
 } from '@mui/material';
 import {
   Videocam,
@@ -126,9 +127,10 @@ export const PlatformBoostsPanel: React.FC = () => {
     setSnackbar({ open: true, message: 'Launch script downloaded!' });
   };
 
-  const presetProfiles: { name: string; profile: BoostProfile }[] = [
+  const presetProfiles: { name: string; profile: BoostProfile; tooltip: string }[] = [
     {
       name: 'Power Saver',
+      tooltip: 'Optimized for battery life: 30fps, minimal AI, fast encoding',
       profile: {
         name: 'Power Saver',
         renderingTier: 'performance',
@@ -143,6 +145,7 @@ export const PlatformBoostsPanel: React.FC = () => {
     },
     {
       name: 'Balanced',
+      tooltip: 'Best of both worlds: 60fps, throttled AI, fast encoding',
       profile: {
         name: 'Balanced',
         renderingTier: 'balanced',
@@ -157,6 +160,7 @@ export const PlatformBoostsPanel: React.FC = () => {
     },
     {
       name: 'High Quality',
+      tooltip: 'Maximum quality: 60fps, full AI, HDR & WebGPU if available',
       profile: {
         name: 'High Quality',
         renderingTier: 'quality',
@@ -332,19 +336,20 @@ export const PlatformBoostsPanel: React.FC = () => {
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-          {presetProfiles.map(({ name, profile }) => (
-            <Button
-              key={name}
-              variant={currentProfile?.name === name ? 'contained' : 'outlined'}
-              onClick={() => setProfile(profile)}
-              startIcon={
-                name === 'Power Saver' ? <BatteryChargingFull /> :
-                name === 'Balanced' ? <Settings /> :
-                <HighQuality />
-              }
-            >
-              {name}
-            </Button>
+          {presetProfiles.map(({ name, profile, tooltip }) => (
+            <Tooltip key={name} title={tooltip} arrow>
+              <Button
+                variant={currentProfile?.name === name ? 'contained' : 'outlined'}
+                onClick={() => setProfile(profile)}
+                startIcon={
+                  name === 'Power Saver' ? <BatteryChargingFull /> :
+                  name === 'Balanced' ? <Settings /> :
+                  <HighQuality />
+                }
+              >
+                {name}
+              </Button>
+            </Tooltip>
           ))}
         </Box>
 
@@ -418,43 +423,22 @@ export const PlatformBoostsPanel: React.FC = () => {
       {/* Tab 2: Virtual Camera */}
       <TabPanel value={tabValue} index={2}>
         <Alert severity="info" sx={{ mb: 2 }}>
-          Virtual Camera lets you use Lumina effects in Zoom, Meet, Teams, and other video call apps!
+          Use window sharing in your video call app to share Lumina's output as your camera feed.
         </Alert>
 
         <Card variant="outlined" sx={{ mb: 2 }}>
           <CardContent>
             <Typography variant="subtitle2" gutterBottom>
-              Virtual Camera Status
+              How to Use as Virtual Camera
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Chip 
-                label={virtualCamera.isActive ? 'Active' : 'Inactive'}
-                color={virtualCamera.isActive ? 'success' : 'default'}
-                icon={<Videocam />}
-              />
-              {virtualCamera.isWindowOpen && (
-                <Chip label="Pop-out Open" color="primary" size="small" />
-              )}
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                startIcon={<OpenInNew />}
-                onClick={() => virtualCamera.openPopOut()}
-                disabled={virtualCamera.isWindowOpen}
-              >
-                Open Pop-out Window
-              </Button>
-              {virtualCamera.isWindowOpen && (
-                <Button
-                  variant="outlined"
-                  onClick={() => virtualCamera.closePopOut()}
-                >
-                  Close Pop-out
-                </Button>
-              )}
-            </Box>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              1. In your video call app (Zoom, Meet, Teams), select "Share Screen" or "Share Window"<br/>
+              2. Choose the Lumina Pro browser window<br/>
+              3. Your processed video will be shared with effects applied
+            </Typography>
+            <Alert severity="warning" size="small">
+              Note: Pop-out window feature has been removed. Use window sharing instead.
+            </Alert>
           </CardContent>
         </Card>
 
