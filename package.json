@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "size-check": "du -sh dist && test $(du -sb dist | cut -f1) -lt 10485760",
+    "size-check": "node scripts/check-bundle-size.js",
     "size-check-phase2": "PHASE=2 node scripts/check-bundle-size.js",
     "analyze": "vite build && npx vite-bundle-visualizer",
     "test": "vitest",

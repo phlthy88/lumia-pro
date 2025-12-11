@@ -115,32 +115,24 @@ export default defineConfig(({ mode }) => {
       build: {
         target: 'es2022',
         chunkSizeWarningLimit: 350,
+        minify: 'terser',
+        terserOptions: {
+          compress: {
+            drop_console: true,
+            drop_debugger: true,
+          },
+        },
         rollupOptions: {
           output: {
             manualChunks: {
-              // Core vendors (always loaded)
-              'react-vendor': ['react', 'react-dom'],
-              
-              // Heavy libraries (lazy loaded)
-              'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-              'mediapipe': ['@mediapipe/tasks-vision'],
-              'jszip': ['jszip'],
-              
-              // Feature chunks (lazy loaded)
-              'ai-features': [
-                'src/services/AIAnalysisService.ts',
-                'src/controllers/AIController.tsx',
-                'src/hooks/useVisionWorker.ts'
-              ],
-              'recording-features': [
-                'src/hooks/useRecorder.ts', 
-                'src/controllers/RecordingController.tsx',
-                'src/services/MediaStorageService.ts'
-              ],
-              'platform-features': [
-                'src/components/PlatformBoostsPanel.tsx',
-                'src/services/PlatformBoostsService.ts'
-              ]
+              // Split MUI to stay under 350KB limit
+              'vendor-react': ['react', 'react-dom'],
+              'vendor-mui-core': ['@mui/material/styles', '@mui/material/CssBaseline'],
+              'vendor-mui-components': ['@mui/material'],
+              'vendor-mui-icons': ['@mui/icons-material'],
+              'vendor-emotion': ['@emotion/react', '@emotion/styled'],
+              'vendor-mediapipe': ['@mediapipe/tasks-vision'],
+              'vendor-jszip': ['jszip']
             }
           }
         }
