@@ -130,10 +130,12 @@ export default defineConfig(({ mode }) => {
         sourcemap: true,
         target: 'es2022',
         chunkSizeWarningLimit: 400,
-        minify: 'esbuild',
-        esbuildOptions: {
-          drop: ['console', 'debugger'],
-          keepNames: true,
+        minify: 'terser',
+        terserOptions: {
+          compress: {
+            drop_console: true,
+            drop_debugger: true,
+          },
         },
         rollupOptions: {
           output: {
