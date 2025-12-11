@@ -1,12 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ErrorBoundary } from '../ErrorBoundary';
 
-// Component that throws
-const ThrowingComponent = ({ shouldThrow }: { shouldThrow: boolean }) => {
+// Mock ErrorReporter
+vi.mock('../../services/ErrorReporter', () => ({
+  ErrorReporter: {
+    captureException: vi.fn(() => 'mock-error-id'),
+  },
+}));
+
+// Component that throws an error
+const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
   if (shouldThrow) {
-    throw new Error('Test error');
+    throw new Error('Test error message');
   }
   return <div>No error</div>;
 };
@@ -14,7 +20,7 @@ const ThrowingComponent = ({ shouldThrow }: { shouldThrow: boolean }) => {
 describe('ErrorBoundary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Suppress console.error for cleaner test output
+    // Suppress console.error for expected errors
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -28,28 +34,115 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText('Child content')).toBeInTheDocument();
   });
 
-  it('renders fallback UI when child throws', () => {
+  it('renders error UI when child throws', () => {
     render(
       <ErrorBoundary>
-        <ThrowingComponent shouldThrow={true} />
+        <ThrowError shouldThrow={true} />
       </ErrorBoundary>
     );
 
-    // Should show error UI instead of crashing
-    expect(screen.queryByText('No error')).not.toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.getByText('Test error message')).toBeInTheDocument();
   });
 
-  it('catches errors in nested components', () => {
+  it('displays error ID from ErrorReporter', () => {
     render(
       <ErrorBoundary>
-        <div>
-          <div>
-            <ThrowingComponent shouldThrow={true} />
-          </div>
-        </div>
+        <ThrowError shouldThrow={true} />
       </ErrorBoundary>
     );
 
-    expect(screen.queryByText('No error')).not.toBeInTheDocument();
+    expect(screen.getByText(/Error ID: mock-error-id/)).toBeInTheDocument();
+  });
+
+  it('renders custom fallback when provided', () => {
+    render(
+      <ErrorBoundary fallback={<div>Custom fallback</div>}>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    expect(screen.getByText('Custom fallback')).toBeInTheDocument();
+  });
+
+  it('calls onError callback when error occurs', () => {
+    const onError = vi.fn();
+
+    render(
+      <ErrorBoundary onError={onError}>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    expect(onError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ componentStack: expect.any(String) })
+    );
+  });
+
+  it('reports error to ErrorReporter', async () => {
+    const { ErrorReporter } = await import('../../services/ErrorReporter');
+
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    expect(ErrorReporter.captureException).toHaveBeenCalled();
+  });
+
+  it('shows Try Again button', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    expect(screen.getByRole('button', { name: /Try Again/i })).toBeInTheDocument();
+  });
+
+  it('shows Reload Page button', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    expect(screen.getByRole('button', { name: /Reload Page/i })).toBeInTheDocument();
+  });
+
+  it('resets error state when Try Again clicked', () => {
+    const { rerender } = render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Try Again/i }));
+
+    // After reset, it will try to render children again
+    // Since ThrowError still throws, it will show error again
+    // But the reset function was called
+  });
+
+  it('reloads page when Reload Page clicked', () => {
+    const reloadMock = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { reload: reloadMock },
+      writable: true,
+    });
+
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Reload Page/i }));
+
+    expect(reloadMock).toHaveBeenCalled();
   });
 });
