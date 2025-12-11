@@ -209,37 +209,6 @@ class MockOffscreenCanvas {
 }
 vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas);
 
-// Mock useRecorder hook
-vi.mock('../hooks/useRecorder', async (importOriginal) => {
-    const original = await importOriginal<typeof import('../hooks/useRecorder')>();
-    return {
-        ...original,
-        useRecorder: vi.fn(() => ({
-            isRecording: false,
-            isCountingDown: false,
-            isPhotoCountingDown: false,
-            isBursting: false,
-            countdown: 0,
-            photoCountdown: 0,
-            recordingTime: 0,
-            config: {},
-            setConfig: vi.fn(),
-            audioConfig: {},
-            setAudioConfig: vi.fn(),
-            startRecording: vi.fn(),
-            stopRecording: vi.fn(),
-            takeScreenshot: vi.fn(),
-            takeBurst: vi.fn(),
-            cancelCountdown: vi.fn(),
-            mediaItems: [],
-            loadItemUrl: vi.fn(),
-            deleteMedia: vi.fn(),
-            clearMedia: vi.fn(),
-            audioStream: null,
-            error: null,
-        })),
-    };
-});
 
 // Mock MediaStream
 const mockTracks = [
