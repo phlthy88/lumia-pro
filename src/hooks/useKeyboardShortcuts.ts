@@ -1,6 +1,7 @@
 
 import { useEffect } from 'react';
 import { RenderMode } from '../types';
+import { eventBus } from '../providers/EventBus';
 
 interface ShortcutActions {
   onReset: () => void;
@@ -38,6 +39,15 @@ export const useKeyboardShortcuts = ({
           break;
         case ' ':
           e.preventDefault();
+          // Toggle recording
+          eventBus.emit('recording:toggle');
+          break;
+        case 'c':
+          e.preventDefault();
+          // Capture photo
+          eventBus.emit('recording:snapshot');
+          break;
+        case 'b':
           onToggleBypass();
           break;
         case 'f':
