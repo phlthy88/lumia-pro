@@ -4,8 +4,12 @@ import { Settings as SettingsIcon } from '@mui/icons-material';
 import { Navigation } from './NavigationRail';
 import { ControlDrawer } from './ControlDrawer';
 
-// M3 Emphasized Decelerate easing for entering elements
+// M3 Emphasized easing curves
 const m3EmphasizedDecelerate = 'cubic-bezier(0.05, 0.7, 0.1, 1.0)';
+const m3EmphasizedAccelerate = 'cubic-bezier(0.3, 0, 0.8, 0.15)';
+
+// Unified animation duration for coordinated motion
+const PANEL_DURATION = 450;
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -98,18 +102,28 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             }}>
                 
                 {/* Desktop: Control Drawer */}
-                {!isMobile && navOpen && (
-                    <Box sx={{ 
-                        width: 400,
-                        height: '100%',
-                        bgcolor: 'background.paper',
-                        borderRight: `1px solid ${theme.palette.divider}`,
-                        zIndex: 10
-                    }}>
-                        <ControlDrawer key={activeTab} title={drawerTitle} onScroll={onDrawerScroll}>
-                            {drawerContent}
-                        </ControlDrawer>
-                    </Box>
+                {!isMobile && (
+                    <Slide 
+                        direction="right" 
+                        in={navOpen} 
+                        mountOnEnter 
+                        unmountOnExit
+                        timeout={{ enter: PANEL_DURATION, exit: PANEL_DURATION * 0.7 }}
+                        easing={{ enter: m3EmphasizedDecelerate, exit: m3EmphasizedAccelerate }}
+                    >
+                        <Box sx={{ 
+                            width: 400,
+                            height: '100%',
+                            bgcolor: 'background.paper',
+                            borderRight: `1px solid ${theme.palette.divider}`,
+                            zIndex: 10,
+                            flexShrink: 0,
+                        }}>
+                            <ControlDrawer key={activeTab} title={drawerTitle} onScroll={onDrawerScroll}>
+                                {drawerContent}
+                            </ControlDrawer>
+                        </Box>
+                    </Slide>
                 )}
 
                 {/* Main viewfinder area - always rendered */}
@@ -120,7 +134,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                     minWidth: 0,
                     minHeight: 0,
                     overflow: 'hidden',
-                    transition: 'padding 0.3s ease',
+                    transition: `padding ${PANEL_DURATION}ms ${m3EmphasizedDecelerate}`,
                     pr: !isMobile && navOpen ? '88px' : 0,
                 }}>
                     <Box
@@ -155,7 +169,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                                     color: navOpen ? theme.palette.primary.contrastText : theme.palette.text.primary,
                                     opacity: navOpen ? 1 : 0.6,
                                     boxShadow: theme.shadows[4],
-                                    transition: 'opacity 0.3s ease, background-color 0.3s ease',
+                                    transition: `opacity ${PANEL_DURATION}ms ${m3EmphasizedDecelerate}, background-color ${PANEL_DURATION}ms ${m3EmphasizedDecelerate}`,
                                     animation: spinAnim === 'open' ? `${spin} 0.5s ease-out` : spinAnim === 'close' ? `${spinReverse} 0.5s ease-out` : 'none',
                                     pointerEvents: 'auto',
                                     '&:hover': {
@@ -174,7 +188,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                     </Box>
 
                     {/* Mobile Settings Panel with M3 transitions */}
-                    <Slide direction="up" in={isMobile && mobileSettingsOpen} mountOnEnter unmountOnExit timeout={{ enter: 350, exit: 250 }} easing={{ enter: m3EmphasizedDecelerate, exit: 'cubic-bezier(0.3, 0, 0.8, 0.15)' }}>
+                    <Slide direction="up" in={isMobile && mobileSettingsOpen} mountOnEnter unmountOnExit timeout={{ enter: PANEL_DURATION, exit: PANEL_DURATION * 0.7 }} easing={{ enter: m3EmphasizedDecelerate, exit: m3EmphasizedAccelerate }}>
                         <Box sx={{ 
                             height: 'calc(65dvh)',
                             bgcolor: theme.palette.background.paper,
@@ -212,7 +226,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                                     flex: 1, 
                                     overflow: 'auto',
                                     WebkitOverflowScrolling: 'touch',
-                                    animation: `${m3ContainerIn} 300ms ${m3EmphasizedDecelerate}`,
+                                    animation: `${m3ContainerIn} ${PANEL_DURATION}ms ${m3EmphasizedDecelerate}`,
                                 }}>
                                 {drawerContent}
                             </Box>
@@ -251,9 +265,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                     >
                         <Grow 
                             in={navOpen} 
-                            timeout={{ enter: 350, exit: 250 }}
+                            timeout={{ enter: PANEL_DURATION, exit: PANEL_DURATION * 0.7 }}
                             style={{ transformOrigin: 'top right' }}
-                            easing={{ enter: m3EmphasizedDecelerate, exit: 'cubic-bezier(0.3, 0, 0.8, 0.15)' }}
+                            easing={{ enter: m3EmphasizedDecelerate, exit: m3EmphasizedAccelerate }}
                         >
                             <Box>
                                 <Navigation activeTab={activeTab} onTabChange={onTabChange} />

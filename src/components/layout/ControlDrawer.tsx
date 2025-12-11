@@ -8,12 +8,12 @@ const expressiveZAxisIn = keyframes`
         opacity: 0; 
         transform: scale(0.92) translateZ(-40px);
     }
-    70% {
+    60% {
         opacity: 1;
-        transform: scale(1.02) translateZ(5px);
+        transform: scale(1.015) translateZ(5px);
     }
-    85% {
-        transform: scale(0.99) translateZ(-2px);
+    80% {
+        transform: scale(0.995) translateZ(-2px);
     }
     100% { 
         opacity: 1; 
@@ -221,7 +221,7 @@ export const ControlDrawer: React.FC<ControlDrawerProps> = ({ title, children, o
                 zIndex: theme.zIndex.drawer + 1,
                 overflow: 'hidden',
                 borderRadius: 0.75,
-                animation: `${expressiveZAxisIn} 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)`,
+                animation: `${expressiveZAxisIn} 0.45s cubic-bezier(0.22, 1, 0.36, 1)`,
                 transformStyle: 'preserve-3d',
                 perspective: 1000,
             }}

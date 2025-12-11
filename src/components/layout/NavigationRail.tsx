@@ -112,7 +112,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
                                         borderRadius: '12px',
                                         backgroundColor: isActive ? theme.palette.secondary.container : 'transparent',
                                         color: isActive ? theme.palette.secondary.onContainer : theme.palette.text.secondary,
-                                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        transition: 'all 0.45s cubic-bezier(0.05, 0.7, 0.1, 1.0)',
                                         transform: isActive ? 'scale(1.05)' : 'scale(1)',
                                         '&:hover': {
                                              backgroundColor: isActive ? theme.palette.secondary.container : theme.palette.action.hover,
