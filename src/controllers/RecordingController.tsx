@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useRecorder } from '../hooks/useRecorder';
 import { useRenderContext } from './RenderController';
 import { eventBus } from '../providers/EventBus';

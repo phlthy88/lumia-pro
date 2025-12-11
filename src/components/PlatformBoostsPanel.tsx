@@ -13,12 +13,8 @@ import {
   Divider,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
   ListItemSecondaryAction,
-  Switch,
-  IconButton,
-  Tooltip,
   Alert,
   Collapse,
   Select,
@@ -35,9 +31,6 @@ import {
   Snackbar
 } from '@mui/material';
 import {
-  Bolt,
-  Memory,
-  Monitor,
   Videocam,
   ContentCopy,
   Download,

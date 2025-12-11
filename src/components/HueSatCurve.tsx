@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, {} from 'react';
 import { Box, Typography, Slider, Stack } from '@mui/material';
 
 export interface HueSatPoint {

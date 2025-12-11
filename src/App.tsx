@@ -1,4 +1,4 @@
-import React, { Suspense, useState, lazy } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { PhotoLibrary } from '@mui/icons-material';
 import { ThemeProvider } from './theme/ThemeContext';
@@ -13,7 +13,7 @@ import { UIStateProvider, useUIState } from './providers/UIStateProvider';
 import { CameraController, CameraSettings, useCameraContext } from './controllers/CameraController';
 import { RenderController, RenderSettings, Viewfinder } from './controllers/RenderController';
 import { AIController } from './controllers/AIController';
-import { RecordingController, RecordingSettings, useRecordingContext } from './controllers/RecordingController';
+import { RecordingController, useRecordingContext } from './controllers/RecordingController';
 
 // Services
 import virtualCameraService from './services/VirtualCameraService';
@@ -44,7 +44,7 @@ import { MuiSlider } from './components/controls/MuiSlider';
 // Separate component for drawer content to consume contexts
 const AppDrawerContent: React.FC<{ scrollY: number }> = ({ scrollY }) => {
     const { activeTab } = useUIState();
-    const { overlayConfig, setOverlayConfig, midi, virtualCamera, wipePosition, setWipePosition } = useRenderContext();
+    const { overlayConfig, setOverlayConfig, virtualCamera, wipePosition, setWipePosition } = useRenderContext();
     const { mediaItems, deleteMedia, loadItemUrl } = useRecordingContext();
     const { videoRef } = useCameraContext();
     const [vectorscopeEnabled, setVectorscopeEnabled] = useState(false);

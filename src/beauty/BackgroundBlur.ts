@@ -88,7 +88,6 @@ export class BackgroundBlur {
     const faceWidth = Math.abs(rightEar.x - leftEar.x) * w;
     const faceHeight = Math.abs(chin.y - forehead.y) * h;
     const faceCenterX = (leftEar.x + rightEar.x) / 2 * w;
-    const faceCenterY = (chin.y + forehead.y) / 2 * h;
 
     // Draw face oval
     this.ctx.fillStyle = '#ffffff';

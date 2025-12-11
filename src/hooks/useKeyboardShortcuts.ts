@@ -1,6 +1,5 @@
 
 import { useEffect } from 'react';
-import { RenderMode } from '../types';
 import { eventBus } from '../providers/EventBus';
 
 interface ShortcutActions {

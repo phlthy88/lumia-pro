@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import { usePerformanceMonitor, PerformanceMetrics } from '../hooks/usePerformanceMonitor';
+import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
 
 interface PerformanceOverlayProps {
   visible?: boolean;

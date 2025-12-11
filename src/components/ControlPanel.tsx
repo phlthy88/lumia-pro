@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useId } from 'react';
-import { Preset, GridType, AspectRatio, OverlayConfig, SidebarPosition, RecorderConfig } from '../types';
+import { Preset, GridType, AspectRatio, OverlayConfig, RecorderConfig } from '../types';
 
 // --- Shared Components ---
 
@@ -126,7 +126,7 @@ interface PresetSelectorProps {
     onExport: () => void;
 }
 
-export const PresetSelector: React.FC<PresetSelectorProps> = ({ presets, onLoad, onSave, onDelete, onImport, onExport }) => {
+export const PresetSelector: React.FC<PresetSelectorProps> = ({ presets, onLoad, onSave, onDelete: _onDelete, onImport, onExport }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSaveClick = () => {

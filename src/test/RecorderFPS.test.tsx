@@ -33,11 +33,11 @@ describe('Recorder FPS Sync', () => {
     const lastCall = (useRecorder as Mock).mock.calls.at(-1);
     const recorderInstance = (useRecorder as Mock).mock.results.at(-1)?.value;
 
-    // @ts-ignore - vitest assertion types
+    // @ts-expect-error - vitest assertion types
     expect(lastCall?.[1]).toBe(60);
-    // @ts-ignore - vitest assertion types
+    // @ts-expect-error - vitest assertion types
     expect(recorderInstance).toBeDefined();
-    // @ts-ignore - vitest assertion types
+    // @ts-expect-error - vitest assertion types
     await waitFor(() => expect(recorderInstance?.startRecording).toHaveBeenCalled());
   });
 });
