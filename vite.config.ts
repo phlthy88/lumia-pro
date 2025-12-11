@@ -122,8 +122,7 @@ export default defineConfig(({ mode }) => {
           release: {
             name: process.env.npm_package_version,
           },
-          // Only upload sourcemaps for production builds
-          disable: mode !== 'production',
+          disable: mode !== 'production' || !process.env.SENTRY_AUTH_TOKEN,
         }),
       ],
       build: {
