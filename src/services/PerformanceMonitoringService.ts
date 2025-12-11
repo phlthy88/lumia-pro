@@ -19,10 +19,12 @@ class PerformanceMonitoringService {
   private isMonitoring = false;
   private monitoringInterval: number | null = null;
   private listeners: ((metrics: PerformanceMetrics) => void)[] = [];
+  private lastAlertTime = 0;
+  private readonly ALERT_THROTTLE = 5000; // Only alert every 5 seconds
   
   private thresholds: PerformanceThresholds = {
-    minFps: 24,
-    maxFrameTime: 33.33, // ~30fps
+    minFps: 15, // More realistic threshold (was 24)
+    maxFrameTime: 100, // 10fps minimum (was 33.33)
     maxMemoryUsage: 512 * 1024 * 1024 // 512MB
   };
 
@@ -83,16 +85,19 @@ class PerformanceMonitoringService {
   }
 
   private calculateFPS(): number {
-    // Simplified FPS calculation using requestAnimationFrame
+    // Use requestAnimationFrame for accurate FPS measurement
     if (this.metrics.length < 2) return 60; // Default assumption
     
-    const recent = this.metrics.slice(-5);
-    const avgInterval = recent.reduce((sum, metric, i) => {
-      if (i === 0 || !recent[i - 1]) return sum;
-      return sum + (metric.timestamp - recent[i - 1]!.timestamp);
-    }, 0) / Math.max(recent.length - 1, 1);
+    const recent = this.metrics.slice(-10); // Use more samples for stability
+    if (recent.length < 2) return 60;
     
-    return avgInterval > 0 ? 1000 / avgInterval : 60;
+    const timeSpan = recent[recent.length - 1].timestamp - recent[0].timestamp;
+    const frameCount = recent.length - 1;
+    
+    if (timeSpan <= 0) return 60;
+    
+    const fps = (frameCount * 1000) / timeSpan;
+    return Math.min(Math.max(fps, 1), 120); // Clamp between 1-120 FPS
   }
 
   private estimateGPUMemory(): number {
@@ -135,6 +140,20 @@ class PerformanceMonitoringService {
   }
 
   private triggerPerformanceAlert(issues: string[]) {
+    const now = Date.now();
+    
+    // Throttle alerts to prevent spam
+    if (now - this.lastAlertTime < this.ALERT_THROTTLE) {
+      return;
+    }
+    
+    this.lastAlertTime = now;
+    
+    // Only log in development, don't spam production
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Performance issues detected:', issues);
+    }
+    
     // Dispatch custom event for performance alerts
     window.dispatchEvent(new CustomEvent('performance-alert', {
       detail: { issues, metrics: this.getLatestMetrics() }
