@@ -46,11 +46,16 @@ export default defineConfig(({ mode }) => {
           '@mui/material',
           '@mui/icons-material',
           '@emotion/react',
-          '@emotion/styled'
-        ]
+          '@emotion/styled',
+          '@mui/material/styles',
+          '@mui/material/utils'
+        ],
+        exclude: []
       },
       plugins: [
-        react(),
+        react({
+          jsxImportSource: '@emotion/react',
+        }),
         VitePWA({
           registerType: 'autoUpdate',
           workbox: {
