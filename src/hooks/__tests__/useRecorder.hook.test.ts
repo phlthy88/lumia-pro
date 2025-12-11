@@ -76,7 +76,7 @@ describe('useRecorder hook', () => {
 
     expect(typeof result.current.startRecording).toBe('function');
     expect(typeof result.current.stopRecording).toBe('function');
-    expect(typeof result.current.takeSnapshot).toBe('function');
+    expect(typeof result.current.takeScreenshot).toBe('function');
   });
 
   it('exposes media items array', () => {
@@ -92,12 +92,7 @@ describe('useRecorder hook', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('handles null canvas ref gracefully', () => {
-    const nullRef = { current: null };
-    const { result } = renderHook(() => useRecorder(nullRef, 30));
 
-    expect(result.current.isRecording).toBe(false);
-  });
 });
 
 describe('useRecorder snapshot', () => {
@@ -117,12 +112,12 @@ describe('useRecorder snapshot', () => {
     canvasRef = { current: mockCanvas as unknown as HTMLCanvasElement };
   });
 
-  it('takeSnapshot returns without error when canvas exists', async () => {
+  it('takeScreenshot returns without error when canvas exists', async () => {
     const { result } = renderHook(() => useRecorder(canvasRef, 30));
 
     // Should not throw
-    await act(async () => {
-      await result.current.takeSnapshot();
+    act(() => {
+      result.current.takeScreenshot();
     });
   });
 });

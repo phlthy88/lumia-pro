@@ -35,7 +35,7 @@ const TestChild = () => {
   return (
     <div>
       <span data-testid="recording">{ctx.isRecording ? 'yes' : 'no'}</span>
-      <span data-testid="paused">{ctx.isPaused ? 'yes' : 'no'}</span>
+      <span data-testid="error">{ctx.error ? 'error' : 'no'}</span>
     </div>
   );
 };

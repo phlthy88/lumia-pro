@@ -15,7 +15,7 @@ describe('VirtualCameraService', () => {
     });
 
     it('initializes with not running state', () => {
-      expect(service.isRunning).toBe(false);
+      expect(service.getState().isActive).toBe(false);
     });
   });
 
@@ -27,9 +27,9 @@ describe('VirtualCameraService', () => {
   });
 
   describe('start', () => {
-    it('handles null canvas gracefully', async () => {
-      const result = await service.start(null);
-      expect(result).toBe(false);
+    it('returns null when not initialized', () => {
+      const result = service.start();
+      expect(result).toBeNull();
     });
   });
 
@@ -40,7 +40,7 @@ describe('VirtualCameraService', () => {
 
     it('sets isRunning to false', () => {
       service.stop();
-      expect(service.isRunning).toBe(false);
+      expect(service.getState().isActive).toBe(false);
     });
   });
 
@@ -57,7 +57,7 @@ describe('VirtualCameraService', () => {
 
   describe('getStream', () => {
     it('returns null when not running', () => {
-      expect(service.getStream()).toBeNull();
+      expect(service.getState().stream).toBeNull();
     });
   });
 });
