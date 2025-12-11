@@ -133,6 +133,7 @@ export default defineConfig(({ mode }) => {
         minify: 'esbuild',
         esbuildOptions: {
           drop: ['console', 'debugger'],
+          keepNames: true,
         },
         rollupOptions: {
           output: {
