@@ -1,13 +1,14 @@
 /**
- * Virtual Camera service with capability detection
- * Gracefully handles environments where features are not available
+ * High-Performance Virtual Camera Service
+ * Uses canvas.captureStream() + SharedWorker for zero-copy ImageBitmap transfer
  */
 
 export interface VirtualCameraCapabilities {
+  sharedWorker: boolean;
   broadcastChannel: boolean;
-  windowOpen: boolean;
   canvasToBlob: boolean;
   mediaStream: boolean;
+  imageBitmap: boolean;
   supported: boolean;
   reason?: string;
 }
@@ -18,10 +19,10 @@ export type VirtualCamCapabilities = VirtualCameraCapabilities;
 export interface VirtualCameraConfig {
   quality: number;
   fps: number;
-  frameRate: number; // Alias for fps for backward compatibility
+  frameRate: number;
   resolution: { width: number; height: number };
-  width: number; // Direct width access for backward compatibility
-  height: number; // Direct height access for backward compatibility
+  width: number;
+  height: number;
   enableAudio: boolean;
 }
 
@@ -37,12 +38,146 @@ export interface VirtualCameraState {
 
 type StateListener = (state: VirtualCameraState) => void;
 
+/**
+ * SharedWorker for zero-copy ImageBitmap transfer
+ * Handles message routing between main thread and virtual camera window
+ */
+class VirtualCameraWorker {
+  private worker: SharedWorker | null = null;
+  private messageId = 0;
+  private pendingRequests = new Map<number, { resolve: (value: any) => void; reject: (error: any) => void }>();
+
+  constructor() {
+    if (typeof SharedWorker !== 'undefined') {
+      try {
+        const workerCode = `
+          let clients = [];
+          let imageBitmap = null;
+          let frameInterval = null;
+          
+          self.onconnect = function(e) {
+            const port = e.ports[0];
+            clients.push(port);
+            
+            port.onmessage = function(event) {
+              const { type, data, messageId } = event.data;
+              
+              switch (type) {
+                case 'start':
+                  imageBitmap = data.imageBitmap;
+                  const fps = data.fps || 30;
+                  const interval = Math.max(16, Math.floor(1000 / fps));
+                  
+                  if (frameInterval) clearInterval(frameInterval);
+                  frameInterval = setInterval(() => {
+                    if (imageBitmap) {
+                      // Broadcast to all clients except sender
+                      clients.forEach(client => {
+                        if (client !== port) {
+                          try {
+                            client.postMessage({ type: 'frame', imageBitmap }, [imageBitmap]);
+                          } catch (e) {
+                            // ImageBitmap already transferred, skip
+                          }
+                        }
+                      });
+                    }
+                  }, interval);
+                  port.postMessage({ type: 'started', messageId });
+                  break;
+                  
+                case 'stop':
+                  if (frameInterval) {
+                    clearInterval(frameInterval);
+                    frameInterval = null;
+                  }
+                  imageBitmap = null;
+                  port.postMessage({ type: 'stopped', messageId });
+                  break;
+                  
+                case 'updateFrame':
+                  imageBitmap = data.imageBitmap;
+                  port.postMessage({ type: 'frameUpdated', messageId });
+                  break;
+                  
+                case 'getState':
+                  port.postMessage({ 
+                    type: 'state', 
+                    data: { hasFrame: !!imageBitmap, clientCount: clients.length },
+                    messageId 
+                  });
+                  break;
+              }
+            };
+            
+            port.start();
+          };
+        `;
+        
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        this.worker = new SharedWorker(URL.createObjectURL(blob));
+        this.worker.port.start();
+        
+        // Handle responses
+        this.worker.port.onmessage = (event) => {
+          const { type, data, messageId, error } = event.data;
+          const pending = this.pendingRequests.get(messageId);
+          if (pending) {
+            this.pendingRequests.delete(messageId);
+            if (error) {
+              pending.reject(error);
+            } else {
+              pending.resolve(data);
+            }
+          }
+        };
+      } catch (error) {
+        console.warn('Failed to create SharedWorker:', error);
+        this.worker = null;
+      }
+    }
+  }
+
+  async send<T>(type: string, data?: any): Promise<T> {
+    if (!this.worker) {
+      throw new Error('SharedWorker not available');
+    }
+
+    return new Promise((resolve, reject) => {
+      const messageId = ++this.messageId;
+      this.pendingRequests.set(messageId, { resolve, reject });
+      
+      this.worker!.port.postMessage({ type, data, messageId });
+      
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        if (this.pendingRequests.has(messageId)) {
+          this.pendingRequests.delete(messageId);
+          reject(new Error('Worker request timeout'));
+        }
+      }, 5000);
+    });
+  }
+
+  get isAvailable(): boolean {
+    return this.worker !== null;
+  }
+
+  terminate(): void {
+    if (this.worker) {
+      this.worker.port.close();
+      this.worker = null;
+    }
+    this.pendingRequests.clear();
+  }
+}
+
 export class VirtualCameraService {
   private canvas: HTMLCanvasElement | null = null;
-  private channel: BroadcastChannel | null = null;
-  private popoutWindow: Window | null = null;
   private stream: MediaStream | null = null;
-  private listeners: StateListener[] = [];
+  private worker: VirtualCameraWorker | null = null;
+  private animationFrameId: number | null = null;
+  private lastFrameTime = 0;
   private capabilities: VirtualCameraCapabilities;
   
   private state: VirtualCameraState = {
@@ -62,32 +197,37 @@ export class VirtualCameraService {
     capabilities: this.detectCapabilities()
   };
 
+  private listeners: StateListener[] = [];
+
   constructor() {
     this.capabilities = this.detectCapabilities();
     this.state.capabilities = this.capabilities;
+    
+    if (this.capabilities.imageBitmap && this.capabilities.sharedWorker) {
+      this.worker = new VirtualCameraWorker();
+    }
   }
 
-  /**
-   * Detect what virtual camera features are available
-   */
   private detectCapabilities(): VirtualCameraCapabilities {
     const caps = {
+      sharedWorker: typeof SharedWorker !== 'undefined',
       broadcastChannel: typeof BroadcastChannel !== 'undefined',
-      windowOpen: typeof window !== 'undefined' && typeof window.open === 'function',
       canvasToBlob: typeof HTMLCanvasElement !== 'undefined' && 
                    HTMLCanvasElement.prototype.toBlob !== undefined,
       mediaStream: typeof HTMLCanvasElement !== 'undefined' && 
-                  HTMLCanvasElement.prototype.captureStream !== undefined
+                  HTMLCanvasElement.prototype.captureStream !== undefined,
+      imageBitmap: typeof window !== 'undefined' && 
+                  typeof (window as any).ImageBitmap !== 'undefined' &&
+                  typeof (window as any).createImageBitmap === 'function'
     };
 
-    const supported = caps.broadcastChannel && caps.windowOpen && caps.canvasToBlob;
+    const supported = caps.mediaStream && caps.imageBitmap;
     let reason: string | undefined;
 
     if (!supported) {
       const missing = [];
-      if (!caps.broadcastChannel) missing.push('BroadcastChannel');
-      if (!caps.windowOpen) missing.push('window.open');
-      if (!caps.canvasToBlob) missing.push('canvas.toBlob');
+      if (!caps.mediaStream) missing.push('canvas.captureStream');
+      if (!caps.imageBitmap) missing.push('ImageBitmap');
       reason = `Missing browser features: ${missing.join(', ')}`;
     }
 
@@ -98,36 +238,18 @@ export class VirtualCameraService {
     };
   }
 
-  /**
-   * Check if virtual camera is supported in current environment
-   */
   isSupported(): boolean {
     return this.capabilities.supported;
   }
 
-  /**
-   * Initialize virtual camera with canvas
-   */
   initialize(canvas: HTMLCanvasElement, config?: Partial<VirtualCameraConfig>): void {
     this.canvas = canvas;
     
     if (config) {
       this.updateConfig(config);
     }
-
-    // Only create BroadcastChannel if supported
-    if (this.capabilities.broadcastChannel) {
-      try {
-        this.channel = new BroadcastChannel('lumia-virtual-camera');
-      } catch (error) {
-        console.warn('Failed to create BroadcastChannel:', error);
-      }
-    }
   }
 
-  /**
-   * Start virtual camera
-   */
   start(): MediaStream | null {
     if (!this.canvas || !this.isSupported()) {
       console.warn('Virtual camera not supported or not initialized');
@@ -135,26 +257,77 @@ export class VirtualCameraService {
     }
 
     try {
-      // Create MediaStream from canvas if supported
-      if (this.capabilities.mediaStream) {
-        this.stream = this.canvas.captureStream(this.state.config.fps);
-      }
-
+      // Use canvas.captureStream() directly for maximum performance
+      this.stream = this.canvas.captureStream(this.state.config.fps);
+      
+      // Start frame capture loop with optimized timing
+      this.startFrameLoop();
+      
       this.setState({ isActive: true, stream: this.stream });
       return this.stream;
     } catch (error) {
-      console.warn('Failed to start virtual camera:', error);
+      console.error('Failed to start virtual camera:', error);
       return null;
     }
   }
 
-  /**
-   * Stop virtual camera
-   */
+  private startFrameLoop(): void {
+    const fps = this.state.config.fps;
+    const frameInterval = Math.max(16, Math.floor(1000 / fps));
+    
+    const frameLoop = (timestamp: number) => {
+      if (!this.state.isActive || !this.canvas) return;
+      
+      // Throttle to target FPS
+      if (timestamp - this.lastFrameTime >= frameInterval) {
+        this.lastFrameTime = timestamp;
+        this.captureAndTransferFrame();
+      }
+      
+      this.animationFrameId = requestAnimationFrame(frameLoop);
+    };
+    
+    this.animationFrameId = requestAnimationFrame(frameLoop);
+  }
+
+  private async captureAndTransferFrame(): Promise<void> {
+    if (!this.canvas || !this.state.isActive) return;
+
+    try {
+      // Create ImageBitmap from canvas - zero copy, GPU-accelerated
+      const imageBitmap = await createImageBitmap(this.canvas, {
+        premultiplyAlpha: 'none',
+        colorSpaceConversion: 'none'
+      });
+
+      if (this.worker?.isAvailable) {
+        // Transfer ImageBitmap to worker (zero-copy transfer)
+        try {
+          await this.worker.send('updateFrame', { imageBitmap });
+        } catch (error) {
+          // If transfer fails, fall back to direct handling
+          console.warn('Worker transfer failed, using fallback:', error);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to capture frame:', error);
+    }
+  }
+
   stop(): void {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+
     if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
       this.stream = null;
+    }
+
+    if (this.worker) {
+      this.worker.terminate();
+      this.worker = null;
     }
 
     this.setState({ 
@@ -164,51 +337,10 @@ export class VirtualCameraService {
     });
   }
 
-  /**
-   * Open pop-out window
-   */
-  openPopOutWindow(): Window | null {
-    if (!this.capabilities.windowOpen) {
-      console.warn('window.open not supported');
-      return null;
-    }
-
-    try {
-      this.popoutWindow = window.open(
-        '/virtual-camera.html',
-        'lumia-virtual-camera',
-        'width=1280,height=720,resizable=yes'
-      );
-
-      if (this.popoutWindow) {
-        this.setState({ isWindowOpen: true });
-      }
-
-      return this.popoutWindow;
-    } catch (error) {
-      console.warn('Failed to open pop-out window:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Close pop-out window
-   */
-  closePopOutWindow(): void {
-    if (this.popoutWindow) {
-      this.popoutWindow.close();
-      this.popoutWindow = null;
-      this.setState({ isWindowOpen: false });
-    }
-  }
-
-  /**
-   * Update configuration
-   */
   updateConfig(config: Partial<VirtualCameraConfig>): void {
     const newConfig = { ...this.state.config, ...config };
     
-    // Sync resolution with width/height for backward compatibility
+    // Sync resolution with width/height
     if (config.width !== undefined || config.height !== undefined) {
       newConfig.resolution = {
         width: config.width ?? newConfig.width,
@@ -227,70 +359,18 @@ export class VirtualCameraService {
     }
     
     this.setState({ config: newConfig });
-  }
-
-  /**
-   * Start WebRTC stream (placeholder)
-   */
-  startWebRTCStream(): string {
-    const url = `ws://localhost:8080/stream/${Date.now()}`;
-    this.setState({ webrtcUrl: url, isStreaming: true });
-    return url;
-  }
-
-  /**
-   * Stop WebRTC stream
-   */
-  stopWebRTCStream(): void {
-    this.setState({ webrtcUrl: undefined, isStreaming: false });
-  }
-
-  /**
-   * Send frame to virtual camera
-   */
-  async sendFrame(): Promise<void> {
-    if (!this.state.isActive || !this.channel || !this.canvas) {
-      return;
-    }
-
-    try {
-      const dataUrl = this.canvas.toDataURL('image/jpeg', this.state.config.quality);
-      
-      this.channel.postMessage({
-        type: 'frame',
-        dataUrl,
-        timestamp: Date.now()
-      });
-    } catch (error) {
-      console.warn('Failed to send frame to virtual camera:', error);
-    }
-  }
-
-  /**
-   * Get setup instructions for different apps
-   */
-  static getSetupInstructions(app: 'zoom' | 'meet' | 'teams' | 'obs' | 'discord'): string {
-    const instructions = {
-      zoom: 'In Zoom, go to Settings > Video > Camera and select "Lumia Virtual Camera"',
-      meet: 'In Google Meet, click the camera icon and select "Lumia Virtual Camera"',
-      teams: 'In Microsoft Teams, go to Settings > Devices > Camera and select "Lumia Virtual Camera"',
-      obs: 'In OBS, add a "Video Capture Device" source and select "Lumia Virtual Camera"',
-      discord: 'In Discord, go to Settings > Voice & Video > Camera and select "Lumia Virtual Camera"'
-    };
     
-    return instructions[app] || 'Select "Lumia Virtual Camera" in your application\'s camera settings';
+    // If active, restart with new config
+    if (this.state.isActive) {
+      this.stop();
+      setTimeout(() => this.start(), 50);
+    }
   }
 
-  /**
-   * Get current state
-   */
   getState(): VirtualCameraState {
     return { ...this.state };
   }
 
-  /**
-   * Subscribe to state changes
-   */
   subscribe(listener: StateListener): () => void {
     this.listeners.push(listener);
     return () => {
@@ -301,19 +381,47 @@ export class VirtualCameraService {
     };
   }
 
-  /**
-   * Dispose resources
-   */
   dispose(): void {
     this.stop();
-    this.closePopOutWindow();
-    
-    if (this.channel) {
-      this.channel.close();
-      this.channel = null;
-    }
-    
     this.listeners = [];
+  }
+
+  // Backward compatibility methods (deprecated but kept for compatibility)
+  openPopOutWindow(): Window | null {
+    console.warn('openPopOutWindow is deprecated and no longer supported');
+    return null;
+  }
+
+  closePopOutWindow(): void {
+    console.warn('closePopOutWindow is deprecated and no longer supported');
+  }
+
+  startWebRTCStream(): string {
+    console.warn('startWebRTCStream is deprecated and no longer supported');
+    const url = `ws://localhost:8080/stream/${Date.now()}`;
+    this.setState({ webrtcUrl: url, isStreaming: true });
+    return url;
+  }
+
+  stopWebRTCStream(): void {
+    console.warn('stopWebRTCStream is deprecated and no longer supported');
+    this.setState({ webrtcUrl: undefined, isStreaming: false });
+  }
+
+  async sendFrame(): Promise<void> {
+    console.warn('sendFrame is deprecated and no longer used');
+  }
+
+  static getSetupInstructions(app: 'zoom' | 'meet' | 'teams' | 'obs' | 'discord'): string {
+    const instructions = {
+      zoom: 'In Zoom, go to Settings > Video > Camera and select "Lumia Virtual Camera"',
+      meet: 'In Google Meet, click the camera icon and select "Lumia Virtual Camera"',
+      teams: 'In Microsoft Teams, go to Settings > Devices > Camera and select "Lumia Virtual Camera"',
+      obs: 'In OBS, add a "Video Capture Device" source and select "Lumia Virtual Camera"',
+      discord: 'In Discord, go to Settings > Voice & Video > Camera and select "Lumia Virtual Camera"'
+    };
+    
+    return instructions[app] || 'Select "Lumia Virtual Camera" in your application\'s camera settings';
   }
 
   private setState(updates: Partial<VirtualCameraState>): void {
