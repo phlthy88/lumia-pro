@@ -268,3 +268,31 @@ Object.defineProperty(global, 'MediaStream', {
   writable: true,
   value: MockMediaStream
 });
+
+// Add memory cleanup after each test
+afterEach(() => {
+  // Clear all mock implementations to release memory
+  vi.clearAllMocks();
+  
+  // Clear module registry to prevent memory leaks
+  vi.resetModules();
+  
+  // Force garbage collection if available
+  if (global.gc) {
+    global.gc();
+  }
+});
+
+// Global cleanup after all tests
+afterAll(() => {
+  // Clean up any remaining resources
+  vi.restoreAllMocks();
+  
+  // Force final garbage collection
+  if (global.gc) {
+    global.gc();
+  }
+});
+
+// Import memory cleanup
+import './after-test-cleanup'

@@ -1,50 +1,20 @@
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
-
-const isCI = process.env.CI === 'true';
-
-if (isCI && !process.env.NODE_OPTIONS?.includes('--max-old-space-size')) {
-  const existing = process.env.NODE_OPTIONS ? `${process.env.NODE_OPTIONS} ` : '';
-  process.env.NODE_OPTIONS = `${existing}--max-old-space-size=6144`.trim();
-}
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [react()],
   test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'text-summary', 'json', 'html'],
-      reportsDirectory: './coverage',
-      exclude: [
-        'node_modules/',
-        'src/test/',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/mockData',
-        'dist/',
-        'coverage/',
-        '**/__tests__/**'
-      ]
+    // Reduce memory usage for CI/workers by limiting concurrency
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        maxForks: 2,
+        minForks: 1,
+      },
     },
-    isolate: !isCI,
-    fileParallelism: !isCI,
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/cypress/**',
-      '**/.{idea,git,cache,output,temp}/**',
-      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
-      '**/e2e/**',
-      '**/*.spec.ts',
-      '**/lumia-pro/**'
-    ]
+    // Single-threaded test execution to reduce memory pressure
+    fileParallelism: false,
+    // Disable coverage by default (it increases memory usage)
+    coverage: {
+      enabled: false
+    },
   },
-  resolve: {
-    alias: {
-      '@': '/src'
-    }
-  }
-});
+})
