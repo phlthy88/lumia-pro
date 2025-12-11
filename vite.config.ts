@@ -137,11 +137,10 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               // Split MUI to stay under 350KB limit
+              // Note: Emotion must stay bundled with MUI to avoid ESM initialization errors
               'vendor-react': ['react', 'react-dom'],
-              'vendor-mui-core': ['@mui/material/styles', '@mui/material/CssBaseline'],
-              'vendor-mui-components': ['@mui/material'],
+              'vendor-mui': ['@mui/material', '@emotion/react', '@emotion/styled'],
               'vendor-mui-icons': ['@mui/icons-material'],
-              'vendor-emotion': ['@emotion/react', '@emotion/styled'],
               'vendor-mediapipe': ['@mediapipe/tasks-vision'],
               'vendor-jszip': ['jszip'],
               
