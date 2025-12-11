@@ -240,3 +240,31 @@ vi.mock('../hooks/useRecorder', async (importOriginal) => {
         })),
     };
 });
+
+// Mock MediaStream
+const mockTracks = [
+  createMockTrack('video'),
+  createMockTrack('audio')
+];
+
+class MockMediaStream {
+  private tracks: any[];
+  
+  constructor(tracks?: any[]) {
+    this.tracks = tracks || mockTracks;
+  }
+  
+  getTracks() { return this.tracks; }
+  getVideoTracks() { return this.tracks.filter(t => t.kind === 'video'); }
+  getAudioTracks() { return this.tracks.filter(t => t.kind === 'audio'); }
+  addTrack(track: any) { this.tracks.push(track); }
+  removeTrack(track: any) { 
+    const index = this.tracks.indexOf(track);
+    if (index > -1) this.tracks.splice(index, 1);
+  }
+}
+
+Object.defineProperty(global, 'MediaStream', {
+  writable: true,
+  value: MockMediaStream
+});
