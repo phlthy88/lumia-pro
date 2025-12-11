@@ -44,13 +44,14 @@ export class ErrorReporter {
         }
     }
 
-    static captureException(error: unknown, context?: Record<string, any>) {
+    static captureException(error: unknown, context?: Record<string, any>): string {
         const message = error instanceof Error ? error.message : String(error);
 
         if (this.initialized) {
-            Sentry.captureException(error, {
+            const eventId = Sentry.captureException(error, {
                 extra: context
             });
+            return eventId || 'unknown';
         } else {
             // Fallback for dev/no-DSN
             console.warn(`[ErrorReporter] Exception: ${message}`, {
@@ -58,6 +59,7 @@ export class ErrorReporter {
                 context,
                 timestamp: new Date().toISOString()
             });
+            return 'local-' + Date.now().toString();
         }
     }
 

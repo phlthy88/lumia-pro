@@ -1,9 +1,12 @@
-import React, { useRef, Suspense, useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { PhotoLibrary } from '@mui/icons-material';
 import { ThemeProvider } from './theme/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { CameraErrorBoundary } from './components/CameraErrorBoundary';
+import { CompatibilityWarning } from './components/CompatibilityWarning';
+import { PerformanceDashboard } from './components/PerformanceDashboard';
 import { useDeferredInit } from './hooks/useDeferredInit';
 
 // Providers & Controllers
@@ -232,13 +235,17 @@ export default function App() {
             <UIStateProvider>
               <PerformanceModeProvider>
                 <CameraController>
-                    <RenderController>
-                        <AIController>
-                            <RecordingController>
-                                <AppContent />
-                            </RecordingController>
-                        </AIController>
-                    </RenderController>
+                    <CameraErrorBoundary>
+                        <RenderController>
+                            <AIController>
+                                <RecordingController>
+                                    <AppContent />
+                                    <CompatibilityWarning />
+                                    <PerformanceDashboard />
+                                </RecordingController>
+                            </AIController>
+                        </RenderController>
+                    </CameraErrorBoundary>
                 </CameraController>
               </PerformanceModeProvider>
             </UIStateProvider>

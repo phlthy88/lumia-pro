@@ -1,56 +1,87 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { FallbackMode } from '../types';
-import { ErrorScreen } from './ErrorScreen';
+import { Box, Button, Typography, Alert } from '@mui/material';
+import { Refresh, BugReport } from '@mui/icons-material';
 import { ErrorReporter } from '../services/ErrorReporter';
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
   hasError: boolean;
-  error?: Error;
+  error: Error | null;
+  errorId: string | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorId: null };
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error, errorId: null };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    const errorId = ErrorReporter.captureException(error, {
+      tags: { boundary: 'ErrorBoundary' },
+      extra: { componentStack: errorInfo.componentStack }
+    });
+    
+    this.setState({ errorId });
+    this.props.onError?.(error, errorInfo);
+  }
+
+  handleReload = () => {
+    window.location.reload();
   };
 
-  public static getDerivedStateFromError(error: Error): State {
-    // Special handling for WebGL context loss
-    if (error.message.includes('WebGL') || error.message.includes('context')) {
-      console.warn('WebGL context error detected, attempting recovery');
-      // Don't show error UI for WebGL context issues - let recovery mechanism handle it
-      return { hasError: false };
-    }
-    return { hasError: true, error };
-  }
+  handleReset = () => {
+    this.setState({ hasError: false, error: null, errorId: null });
+  };
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log WebGL context errors but don't break the app
-    if (error.message.includes('WebGL') || error.message.includes('context')) {
-      console.warn('WebGL context error caught by boundary:', error);
-      // Allow recovery mechanisms to handle this
-      return;
-    }
-
-    console.error("Uncaught error:", error, errorInfo);
-
-    // Capture to Sentry
-    ErrorReporter.captureException(error, {
-        componentStack: errorInfo.componentStack
-    });
-  }
-
-  public render() {
+  render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
       return (
-        <ErrorScreen
-            mode={FallbackMode.GENERIC_ERROR}
-            message={this.state.error?.message}
-            onRetry={() => window.location.reload()}
-        />
+        <Box sx={{ p: 3, textAlign: 'center', maxWidth: 500, mx: 'auto', mt: 8 }}>
+          <Alert severity="error" sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Something went wrong
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {this.state.error?.message || 'An unexpected error occurred'}
+            </Typography>
+            {this.state.errorId && (
+              <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                Error ID: {this.state.errorId}
+              </Typography>
+            )}
+          </Alert>
+          
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Button
+              variant="contained"
+              startIcon={<Refresh />}
+              onClick={this.handleReset}
+            >
+              Try Again
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<BugReport />}
+              onClick={this.handleReload}
+            >
+              Reload Page
+            </Button>
+          </Box>
+        </Box>
       );
     }
 

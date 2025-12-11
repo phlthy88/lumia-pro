@@ -1,4 +1,5 @@
 import { LutData } from '../types';
+import { cdnService } from './CDNService';
 
 // LRU Cache for loaded LUTs
 const LUT_CACHE_MAX = 5;
@@ -84,6 +85,19 @@ export class LutService {
   }
 
   static async loadFromUrl(url: string, name: string): Promise<LutData> {
+    try {
+      // Try CDN service first if it's a LUT file
+      if (url.includes('/luts/') && url.endsWith('.cube')) {
+        const filename = url.split('/').pop()!;
+        const arrayBuffer = await cdnService.loadLUT(filename);
+        const text = new TextDecoder().decode(arrayBuffer);
+        return this.parseCube(text, name);
+      }
+    } catch (error) {
+      console.warn(`CDN load failed for ${url}, falling back to direct fetch:`, error);
+    }
+
+    // Fallback to direct fetch
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
     const text = await response.text();
