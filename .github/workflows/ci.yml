@@ -29,6 +29,11 @@ jobs:
       - name: Lint
         run: npm run lint
       
+      - name: 'notify vercel'
+        uses: 'vercel/repository-dispatch/actions/status@v1'
+        with:
+          name: Vercel - lumia-pro: lint
+      
       - name: Run tests with coverage
         run: npm run test -- --coverage --run
       
