@@ -1166,6 +1166,10 @@ export class GLRenderer {
         if (this.segmentationMaskTexture) {
             this.gl.activeTexture(this.gl.TEXTURE5);
             this.gl.bindTexture(this.gl.TEXTURE_2D, this.segmentationMaskTexture);
+            // Re-upload mask content each frame since the canvas is updated externally
+            if (this.segmentationMaskSource) {
+                this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.segmentationMaskSource);
+            }
         }
 
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
