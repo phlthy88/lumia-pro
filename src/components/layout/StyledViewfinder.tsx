@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Paper, Fab, Stack, Button, keyframes } from '@mui/material';
+import { Box, Paper, Fab, Stack, Button, keyframes, useTheme, useMediaQuery } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { FiberManualRecord, CameraAlt, CompareArrows } from '@mui/icons-material';
 import { AudioMeter } from '../AudioMeter';
@@ -107,131 +107,147 @@ export const StyledViewfinder: React.FC<Props> = ({
   isBypass,
   audioStream,
   topLeftContent
-}) => (
-  <Box sx={{ 
-    position: 'relative', 
-    width: '100%', 
-    height: '100%',
-    maxWidth: '100%',
-    maxHeight: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    isolation: 'isolate',
-  }}>
-    {/* Recording glow behind viewfinder */}
-    <Box
-      sx={{
-        position: 'absolute',
-        inset: -12,
-        borderRadius: '36px',
-        opacity: isRecording ? 1 : 0,
-        background: 'radial-gradient(ellipse at center, rgba(239,68,68,0.4) 0%, rgba(239,68,68,0.2) 40%, transparent 70%)',
-        filter: 'blur(20px)',
-        animation: isRecording ? `${recordingPulse} 2s ease-in-out infinite` : undefined,
-        transition: 'opacity 0.5s ease',
-        pointerEvents: 'none',
-        zIndex: 0,
-      }}
-    />
-    <ViewfinderContainer elevation={12}>
-      {children}
-      
-      {/* Top-left content - scales with container */}
-      {topLeftContent && (
-        <TopLeftControls>{topLeftContent}</TopLeftControls>
-      )}
-      
-      {/* Action Buttons - Bottom right, scales with container */}
-      <ControlsStack direction="column">
-        {onCompareToggle && (
-          <Button
-            variant="contained"
-            size="small"
-            color={isBypass ? 'warning' : 'primary'}
-            onClick={onCompareToggle}
-            sx={{ 
-              borderRadius: '1.5cqmin',
-              px: '2cqmin',
-              py: '0.8cqmin',
-              minWidth: 'max(60px, 15cqmin)',
-              maxWidth: '120px',
-              height: 'min(32px, 5cqmin)',
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: 'clamp(8px, 2cqmin, 13px)',
-              '& .MuiButton-startIcon': {
-                marginRight: '0.5cqmin',
-                '& > svg': {
-                  fontSize: 'clamp(10px, 2.5cqmin, 18px)',
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  return (
+    <Box sx={{ 
+      position: 'relative', 
+      width: '100%', 
+      height: '100%',
+      maxWidth: '100%',
+      maxHeight: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      isolation: 'isolate',
+    }}>
+      {/* Recording glow behind viewfinder */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: -12,
+          borderRadius: '36px',
+          opacity: isRecording ? 1 : 0,
+          background: 'radial-gradient(ellipse at center, rgba(239,68,68,0.4) 0%, rgba(239,68,68,0.2) 40%, transparent 70%)',
+          filter: 'blur(20px)',
+          animation: isRecording ? `${recordingPulse} 2s ease-in-out infinite` : undefined,
+          transition: 'opacity 0.5s ease',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
+      <ViewfinderContainer elevation={12}>
+        {children}
+        
+        {/* Top-left content - scales with container */}
+        {topLeftContent && (
+          <TopLeftControls>{topLeftContent}</TopLeftControls>
+        )}
+        
+        {/* Action Buttons - Responsive positioning */}
+        <Stack 
+          direction="column"
+          sx={{
+            position: 'absolute',
+            // Mobile: position higher to avoid bottom nav (56px) and settings panel
+            bottom: isMobile ? '80px' : '3cqmin',
+            right: isMobile ? '16px' : '3cqmin',
+            alignItems: 'center',
+            zIndex: 60,
+            gap: isMobile ? '12px' : '1.5cqmin',
+          }}
+        >
+          {onCompareToggle && (
+            <Button
+              variant="contained"
+              size="small"
+              color={isBypass ? 'warning' : 'primary'}
+              onClick={onCompareToggle}
+              sx={{ 
+                borderRadius: isMobile ? '12px' : '1.5cqmin',
+                px: isMobile ? '16px' : '2cqmin',
+                py: isMobile ? '6px' : '0.8cqmin',
+                minWidth: isMobile ? '80px' : 'max(60px, 15cqmin)',
+                maxWidth: '120px',
+                height: isMobile ? '32px' : 'min(32px, 5cqmin)',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: isMobile ? '12px' : 'clamp(8px, 2cqmin, 13px)',
+                '& .MuiButton-startIcon': {
+                  marginRight: isMobile ? '4px' : '0.5cqmin',
+                  '& > svg': {
+                    fontSize: isMobile ? '16px' : 'clamp(10px, 2.5cqmin, 18px)',
+                  }
                 }
-              }
-            }}
-            startIcon={<CompareArrows />}
-            aria-label={isBypass ? "Show processed view" : "Show original view"}
-          >
-            {isBypass ? "Original" : "Processed"}
-          </Button>
+              }}
+              startIcon={<CompareArrows />}
+              aria-label={isBypass ? "Show processed view" : "Show original view"}
+            >
+              {isBypass ? "Original" : "Processed"}
+            </Button>
+          )}
+
+          {onSnapshot && (
+            <Fab 
+              size="small"
+              onClick={onSnapshot}
+              sx={{
+                bgcolor: 'white',
+                color: 'black',
+                width: isMobile ? '40px' : 'clamp(28px, 7cqmin, 48px)',
+                height: isMobile ? '40px' : 'clamp(28px, 7cqmin, 48px)',
+                minHeight: 'unset',
+                minWidth: 'unset',
+                '&:hover': { bgcolor: '#e0e0e0' },
+                '& svg': {
+                  fontSize: isMobile ? '18px' : 'clamp(14px, 3.5cqmin, 22px)',
+                }
+              }}
+              aria-label="Take screenshot"
+            >
+              <CameraAlt />
+            </Fab>
+          )}
+
+          {onRecordToggle && (
+            <Fab 
+              color={isRecording ? 'error' : 'primary'}
+              onClick={onRecordToggle}
+              sx={{
+                width: isMobile ? '56px' : 'clamp(36px, 10cqmin, 72px)',
+                height: isMobile ? '56px' : 'clamp(36px, 10cqmin, 72px)',
+                minHeight: 'unset',
+                minWidth: 'unset',
+                animation: isRecording ? `${recordButtonPulse} 2s ease-in-out infinite` : 'none',
+                '& svg': {
+                  fontSize: isMobile ? '24px' : 'clamp(16px, 4.5cqmin, 32px)',
+                  animation: isRecording ? `${recordIconGlow} 1.5s ease-in-out infinite` : 'none',
+                }
+              }}
+              aria-label={isRecording ? "Stop recording" : "Start recording"}
+            >
+              <FiberManualRecord />
+            </Fab>
+          )}
+        </Stack>
+
+        {/* Audio Meter - positioned relative to controls */}
+        {isRecording && audioStream && (
+          <Box sx={{ 
+            position: 'absolute', 
+            right: isMobile ? '16px' : '3cqmin', 
+            bottom: isMobile ? '200px' : 'calc(3cqmin + clamp(36px, 10cqmin, 72px) + clamp(28px, 7cqmin, 48px) + 5cqmin)',
+            transform: isMobile ? 'scale(0.8)' : 'scale(clamp(0.6, 0.1cqmin, 1))',
+            transformOrigin: 'bottom right',
+          }}>
+            <AudioMeter audioStream={audioStream} variant="circular" showIcon={false} />
+          </Box>
         )}
 
-        {onSnapshot && (
-          <Fab 
-            size="small"
-            onClick={onSnapshot}
-            sx={{
-              bgcolor: 'white',
-              color: 'black',
-              width: 'clamp(28px, 7cqmin, 48px)',
-              height: 'clamp(28px, 7cqmin, 48px)',
-              minHeight: 'unset',
-              minWidth: 'unset',
-              '&:hover': { bgcolor: '#e0e0e0' },
-              '& svg': {
-                fontSize: 'clamp(14px, 3.5cqmin, 22px)',
-              }
-            }}
-            aria-label="Take screenshot"
-          >
-            <CameraAlt />
-          </Fab>
-        )}
-
-        {onRecordToggle && (
-          <Fab 
-            color={isRecording ? 'error' : 'primary'}
-            onClick={onRecordToggle}
-            sx={{
-              width: 'clamp(36px, 10cqmin, 72px)',
-              height: 'clamp(36px, 10cqmin, 72px)',
-              minHeight: 'unset',
-              minWidth: 'unset',
-              animation: isRecording ? `${recordButtonPulse} 2s ease-in-out infinite` : 'none',
-              '& svg': {
-                fontSize: 'clamp(16px, 4.5cqmin, 32px)',
-                animation: isRecording ? `${recordIconGlow} 1.5s ease-in-out infinite` : 'none',
-              }
-            }}
-            aria-label={isRecording ? "Stop recording" : "Start recording"}
-          >
-            <FiberManualRecord />
-          </Fab>
-        )}
-      </ControlsStack>
-
-      {/* Audio Meter - positioned relative to controls */}
-      {isRecording && audioStream && (
-        <Box sx={{ 
-          position: 'absolute', 
-          right: '3cqmin', 
-          bottom: 'calc(3cqmin + clamp(36px, 10cqmin, 72px) + clamp(28px, 7cqmin, 48px) + 5cqmin)',
-          transform: 'scale(clamp(0.6, 0.1cqmin, 1))',
-          transformOrigin: 'bottom right',
-        }}>
-          <AudioMeter audioStream={audioStream} variant="circular" showIcon={false} />
-        </Box>
-      )}
-
-      <ScreenBezel />
-    </ViewfinderContainer>
-  </Box>
-);
+        <ScreenBezel />
+      </ViewfinderContainer>
+    </Box>
+  );
+};
