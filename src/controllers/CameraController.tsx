@@ -101,7 +101,7 @@ export const CameraController: React.FC<CameraControllerProps> = ({ children }) 
       {/* Hidden Video Element - needs real dimensions for stream to work */}
       <video
         ref={videoRef}
-        style={{ position: 'fixed', top: -9999, left: -9999, width: 640, height: 480, pointerEvents: 'none' }}
+        style={{ position: 'fixed', inset: 0, width: 0, height: 0, pointerEvents: 'none', opacity: 0 }}
         playsInline
         muted
         autoPlay

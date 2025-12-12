@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography, Alert, Link, Chip } from '@mui/material';
-import { Videocam, OpenInNew, ContentCopy, CheckCircle } from '@mui/icons-material';
+import { Videocam, ContentCopy, CheckCircle } from '@mui/icons-material';
 import { ControlCard } from './controls/ControlCard';
 import { UseVirtualCameraReturn } from '../hooks/useVirtualCamera';
 
@@ -29,32 +29,14 @@ export const VirtualCameraSettings: React.FC<VirtualCameraSettingsProps> = ({ vi
     return (
         <ControlCard title="Virtual Camera Output">
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                    Stream your processed video to OBS, Zoom, Meet, and other apps
-                </Typography>
-
-                {/* Pop-out Window Method */}
-                <Box>
-                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                        Method 1: Pop-out Window
-                    </Typography>
-                    <Button
-                        variant={virtualCamera.isWindowOpen ? "outlined" : "contained"}
-                        startIcon={<OpenInNew />}
-                        onClick={virtualCamera.isWindowOpen ? virtualCamera.closePopOut : virtualCamera.openPopOut}
-                        fullWidth
-                    >
-                        {virtualCamera.isWindowOpen ? 'Close Pop-out' : 'Open Pop-out Window'}
-                    </Button>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                        Share this window in Zoom/Meet/Teams
-                    </Typography>
-                </Box>
+                <Alert severity="info" sx={{ mb: 1 }}>
+                    Use window sharing in your video call app to share Lumina's output as your camera feed.
+                </Alert>
 
                 {/* WebRTC Browser Source Method */}
                 <Box>
                     <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                        Method 2: OBS Browser Source
+                        OBS Browser Source
                     </Typography>
                     <Button
                         variant={virtualCamera.isStreaming ? "outlined" : "contained"}
@@ -115,9 +97,6 @@ export const VirtualCameraSettings: React.FC<VirtualCameraSettingsProps> = ({ vi
                         color={virtualCamera.isActive ? "success" : "default"}
                         size="small"
                     />
-                    {virtualCamera.isWindowOpen && (
-                        <Chip label="Pop-out Open" color="info" size="small" />
-                    )}
                     {virtualCamera.isStreaming && (
                         <Chip label="WebRTC Streaming" color="success" size="small" />
                     )}

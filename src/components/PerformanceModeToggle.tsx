@@ -8,25 +8,29 @@ export const PerformanceModeToggle: React.FC = () => {
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
-      <Tooltip title="Performance Mode">
-        <ToggleButtonGroup
-          value={performanceMode}
-          exclusive
-          onChange={(_, value: PerformanceMode) => value && setPerformanceMode(value)}
-          size="large"
-          aria-label="Performance Mode"
-        >
+      <ToggleButtonGroup
+        value={performanceMode}
+        exclusive
+        onChange={(_, value: PerformanceMode) => value && setPerformanceMode(value)}
+        size="large"
+        aria-label="Performance Mode"
+      >
+        <Tooltip title="Performance: 30fps, 960x540, essential effects only">
           <ToggleButton value="performance" aria-label="Performance">
             <Speed fontSize="large" />
           </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Balanced: 30fps, 1280x720, most effects">
           <ToggleButton value="balanced" aria-label="Balanced">
             <Balance fontSize="large" />
           </ToggleButton>
-          <ToggleButton value="off" aria-label="Power saving">
+        </Tooltip>
+        <Tooltip title="Quality: 60fps, full resolution, all effects">
+          <ToggleButton value="off" aria-label="Quality">
             <PowerOff fontSize="large" />
           </ToggleButton>
-        </ToggleButtonGroup>
-      </Tooltip>
+        </Tooltip>
+      </ToggleButtonGroup>
       
       <Typography variant="caption" color="text.secondary" display="block">
         {performanceMode} • Target FPS: {targetFPS}
