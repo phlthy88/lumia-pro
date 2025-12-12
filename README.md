@@ -14,6 +14,18 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Coverage](https://img.shields.io/badge/Coverage-58%25-yellow?style=for-the-badge)](https://vitest.dev/)
+
+<br />
+
+### 🚀 Production Ready (Phase 0)
+
+Lumia Pro has shipped Phase 0 with a focus on stability and core feature validation.
+
+- **Test Coverage**: 58% (330+ tests)
+- **Bundle Size**: 282KB (Main Chunk)
+- **Type Safety**: 100% Strict TypeScript
+- **Performance**: 60fps WebGL Pipeline
 
 <br />
 

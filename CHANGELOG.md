@@ -1,6 +1,11 @@
 # Changelog
 
-## [Unreleased]
+## [1.0.0-phase0] - 2024-02-14
+
+### Production Readiness
+- **Test Coverage**: 58% (up from 37%)
+- **Test Count**: 335 passing tests
+- **Bundle Size**: 282KB (Main Chunk)
 
 ### Changed
 - Refactored App.tsx into modular controllers (Camera, Render, AI, Recording)
@@ -23,7 +28,7 @@
 - A/B wipe comparison (before/after slider)
 - Vectorscope with skin tone line
 - De-esser and brickwall limiter in audio chain
-- Comprehensive test suite (90+ tests)
+- Comprehensive test suite (335 tests)
 
 ## [1.0.0] - Initial Release
 
