@@ -97,6 +97,7 @@ export interface BeautyConfig {
     cheekbones: number;
     lipsFuller: number;
     noseSlim: number;
+    backgroundBlurStrength?: number;
 }
 
 export interface ColorGradeParams {
