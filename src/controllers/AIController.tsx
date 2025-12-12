@@ -142,8 +142,9 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
   // Mask Generation
   const maskGeneratorRef = useRef<MaskGenerator | null>(null);
   const backgroundBlurRef = useRef<BackgroundBlur | null>(null);
+  const segmentationFrameRef = useRef<number>(0);
 
-  // Background Blur Segmentation
+  // Background Blur Segmentation - runs continuously when enabled
   useEffect(() => {
     const blurStrength = beauty.backgroundBlurStrength ?? 0;
     if (blurStrength <= 0) {
@@ -152,22 +153,43 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
     }
 
     const video = videoRef.current;
-    if (!video || video.videoWidth === 0) {
+    if (!video || !streamReady) {
       return;
     }
 
     if (!backgroundBlurRef.current) {
-      backgroundBlurRef.current = new BackgroundBlur(video.videoWidth, video.videoHeight);
+      backgroundBlurRef.current = new BackgroundBlur(video.videoWidth || 640, video.videoHeight || 480);
       backgroundBlurRef.current.initialize();
     }
 
-    const mask = backgroundBlurRef.current.segment(video);
-    eventBus.emit('ai:segmentation' as any, { mask });
+    let running = true;
+    const runSegmentation = () => {
+      if (!running || !backgroundBlurRef.current) return;
+      
+      const mask = backgroundBlurRef.current.segment(video);
+      if (mask) {
+        eventBus.emit('ai:segmentation' as any, { mask });
+      }
+      
+      segmentationFrameRef.current = requestAnimationFrame(runSegmentation);
+    };
+
+    // Start loop after a short delay to let segmenter initialize
+    const timeout = setTimeout(() => {
+      segmentationFrameRef.current = requestAnimationFrame(runSegmentation);
+    }, 500);
+
+    return () => {
+      running = false;
+      clearTimeout(timeout);
+      cancelAnimationFrame(segmentationFrameRef.current);
+    };
   }, [beauty.backgroundBlurStrength, videoRef, streamReady]);
 
   // Cleanup BackgroundBlur on unmount
   useEffect(() => {
     return () => {
+      cancelAnimationFrame(segmentationFrameRef.current);
       backgroundBlurRef.current?.dispose();
       backgroundBlurRef.current = null;
     };

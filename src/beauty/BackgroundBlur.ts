@@ -34,12 +34,12 @@ export class BackgroundBlur {
           delegate: "GPU"
         },
         runningMode: this.runningMode,
-        outputCategoryMask: true,
-        outputConfidenceMasks: false
+        outputCategoryMask: false,
+        outputConfidenceMasks: true
       });
-      console.log('BackgroundBlur initialized');
+      console.log('[BackgroundBlur] Initialized with confidence masks');
     } catch (e) {
-      console.error('Failed to initialize BackgroundBlur:', e);
+      console.error('[BackgroundBlur] Failed to initialize:', e);
     } finally {
       this.isInitializing = false;
     }
@@ -51,70 +51,58 @@ export class BackgroundBlur {
    */
   segment(video: HTMLVideoElement): OffscreenCanvas | null {
     if (!this.segmenter) {
-        if (!this.isInitializing) this.initialize();
-        return null;
+      if (!this.isInitializing) this.initialize();
+      return null;
     }
 
     if (video.currentTime === this.lastVideoTime) {
-        return this.canvas;
+      return this.canvas;
     }
     this.lastVideoTime = video.currentTime;
 
     // Resize if needed
     if (this.canvas.width !== video.videoWidth || this.canvas.height !== video.videoHeight) {
-        this.canvas.width = video.videoWidth;
-        this.canvas.height = video.videoHeight;
+      this.canvas.width = video.videoWidth;
+      this.canvas.height = video.videoHeight;
     }
 
     const startTimeMs = performance.now();
 
-    // In VIDEO mode, we need to pass timestamp
     this.segmenter.segmentForVideo(video, startTimeMs, (result) => {
-        this.processResult(result);
+      this.processResult(result);
     });
 
     return this.canvas;
   }
 
   private processResult(result: ImageSegmenterResult) {
-      const { width, height } = this.canvas;
+    const { width, height } = this.canvas;
 
-      // Get category mask (Uint8Array/Float32Array depending on config)
-      // For selfie segmenter: 0 = background, 1 = person
-      // But result.categoryMask might be an ImageBitmap or something else depending on outputCategoryMask
-      // Tasks-vision 0.10.8 returns `categoryMask` as `MPMask`.
+    // Get confidence mask - selfie segmenter outputs one mask where higher = person
+    const masks = result.confidenceMasks;
+    if (!masks || masks.length === 0) return;
 
-      const mask = result.categoryMask;
-      if (!mask) return;
+    const mask = masks[0];
+    if (!mask) return;
 
-      // We need to draw the mask to our canvas.
-      // If mask is an ImageBitmap or WebGLTexture, we can draw it.
-      // The MediaPipe JS API usually provides `getAsFloat32Array()` or `getAsUint8Array()`.
+    // Get as float array (values 0.0-1.0)
+    const maskData = mask.getAsFloat32Array();
 
-      // Optimally, we want to upload this directly to GPU, but here we prepare an OffscreenCanvas
-      // that GLRenderer can upload.
+    const imageData = this.ctx.createImageData(width, height);
+    const data = imageData.data;
 
-      // Check if we can just draw it (if it's an ImageBitmap compatible object)
-      // Actually, MPImage in JS usually has `getAs...` methods.
-      // Let's assume we need to convert the data to ImageData.
+    // Convert confidence to RGBA (Person=White, Bg=Black)
+    // Higher confidence = more likely person
+    for (let i = 0; i < maskData.length; i++) {
+      const confidence = maskData[i] ?? 0;
+      const val = Math.round(confidence * 255); // person confidence as brightness
+      data[i * 4] = val;     // R
+      data[i * 4 + 1] = val; // G
+      data[i * 4 + 2] = val; // B
+      data[i * 4 + 3] = 255; // A
+    }
 
-      const maskData = mask.getAsUint8Array();
-      // This is a single channel array of category indices.
-
-      const imageData = this.ctx.createImageData(width, height);
-      const data = imageData.data;
-
-      // Convert category index to RGBA (Person=White, Bg=Black)
-      for (let i = 0; i < maskData.length; i++) {
-          const category = maskData[i];
-          const val = category === 1 ? 255 : 0; // 1 is person
-          data[i * 4] = val;     // R
-          data[i * 4 + 1] = val; // G
-          data[i * 4 + 2] = val; // B
-          data[i * 4 + 3] = 255; // A
-      }
-
-      this.ctx.putImageData(imageData, 0, 0);
+    this.ctx.putImageData(imageData, 0, 0);
   }
 
   getCanvas(): OffscreenCanvas {
