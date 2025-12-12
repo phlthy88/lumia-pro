@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box, Typography, CircularProgress, Stack, useTheme, keyframes, Chip, Divider } from '@mui/material';
 import { AutoFixHigh, Refresh, Undo, AutoAwesome, Lightbulb } from '@mui/icons-material';
 import { AnalysisResult } from '../services/AIAnalysisService';
@@ -37,13 +37,18 @@ interface AIWidgetProps {
 
 const ScoreRing: React.FC<{ score: number; label: string; delay?: number }> = ({ score, label, delay = 0 }) => {
     const theme = useTheme();
-    const radius = 18;
-    const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (score / 100) * circumference;
     
-    let color = theme.palette.error.main;
-    if (score > 50) color = theme.palette.warning.main;
-    if (score > 80) color = theme.palette.success.main;
+    const { radius, circumference, offset, color } = useMemo(() => {
+        const radius = 18;
+        const circumference = 2 * Math.PI * radius;
+        const offset = circumference - (score / 100) * circumference;
+        
+        let color = theme.palette.error.main;
+        if (score > 50) color = theme.palette.warning.main;
+        if (score > 80) color = theme.palette.success.main;
+        
+        return { radius, circumference, offset, color };
+    }, [score, theme.palette]);
 
     return (
         <Stack 
@@ -68,7 +73,7 @@ const ScoreRing: React.FC<{ score: number; label: string; delay?: number }> = ({
     );
 };
 
-export const AIWidget: React.FC<AIWidgetProps> = ({ 
+export const AIWidget: React.FC<AIWidgetProps> = React.memo(({ 
     result, sceneAnalysis, isAnalyzing, isSceneAnalyzing, 
     onAnalyze, onSceneAnalyze, onAutoFix, onApplySceneAnalysis, onUndo, canUndo, hasExternalAI 
 }) => {
@@ -91,9 +96,9 @@ export const AIWidget: React.FC<AIWidgetProps> = ({
                 {result ? (
                     <Stack direction="row" justifyContent="space-between" mb={2}>
                         <ScoreRing score={result.score.overall} label="Overall" delay={0} />
-                        <ScoreRing score={result.score.exposure} label="Light" delay={100} />
-                        <ScoreRing score={result.score.focus} label="Focus" delay={200} />
-                        <ScoreRing score={result.score.composition} label="Frame" delay={300} />
+                        <ScoreRing score={result.score.exposure} label="Light" delay={50} />
+                        <ScoreRing score={result.score.focus} label="Focus" delay={100} />
+                        <ScoreRing score={result.score.composition} label="Frame" delay={150} />
                     </Stack>
                 ) : (
                     <Typography variant="body2" color="text.secondary" align="center" py={2}>
@@ -107,7 +112,7 @@ export const AIWidget: React.FC<AIWidgetProps> = ({
                         <Typography variant="caption" fontWeight="bold" display="block" mb={0.5}>SUGGESTIONS</Typography>
                         <Stack spacing={0.5}>
                             {result.tips.map((tip, i) => (
-                                <Box key={i} display="flex" gap={1} sx={{ animation: `${slideIn} 0.3s ease-out ${400 + i * 100}ms both` }}>
+                                <Box key={i} display="flex" gap={1} sx={{ animation: `${slideIn} 0.3s ease-out ${Math.min(400 + i * 50, 600)}ms both` }}>
                                     <Typography variant="caption" fontWeight="bold">•</Typography>
                                     <Typography variant="caption">{tip}</Typography>
                                 </Box>
@@ -209,4 +214,6 @@ export const AIWidget: React.FC<AIWidgetProps> = ({
             </Box>
         </ControlCard>
     );
-};
+});
+
+AIWidget.displayName = 'AIWidget';

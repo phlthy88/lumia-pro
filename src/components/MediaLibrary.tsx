@@ -11,6 +11,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 import DownloadIcon from '@mui/icons-material/Download';
 import FolderZipIcon from '@mui/icons-material/FolderZip';
+import { blobToDataURL } from '../utils/CSPUtils';
 
 const DELETE_ANIMATION_DURATION = 320;
 
@@ -54,12 +55,14 @@ interface ParallaxMediaItemProps {
   onLoadUrl?: () => void;
 }
 
-const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({ 
+const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = React.memo(({ 
   item, index, scrollY, onSave, onEdit, onShare, onDelete, isDeleting = false, isSelected = false, onSelect, selectMode = false, onLoadUrl
 }) => {
   const theme = useTheme();
   const parallaxOffset = (scrollY * 0.1) * (index % 3 === 0 ? 1 : index % 3 === 1 ? 0.7 : 0.4);
   const ref = useRef<HTMLDivElement>(null);
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
 
   // Lazy-load URL when item becomes visible
   useEffect(() => {
@@ -73,6 +76,22 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [item.url, onLoadUrl]);
+  
+  // Monitor for CSP violations
+  useEffect(() => {
+    const handleCSPViolation = (e: SecurityPolicyViolationEvent) => {
+      console.error('[MediaLibrary] CSP Violation:', {
+        violatedDirective: e.violatedDirective,
+        blockedURI: e.blockedURI,
+        originalPolicy: e.originalPolicy,
+        itemId: item.id,
+        itemUrl: item.url
+      });
+    };
+    
+    document.addEventListener('securitypolicyviolation', handleCSPViolation);
+    return () => document.removeEventListener('securitypolicyviolation', handleCSPViolation);
+  }, [item.id, item.url]);
   
   return (
     <Box 
@@ -121,16 +140,82 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({
         {!item.url ? (
           <CircularProgress size={24} />
         ) : item.type === 'image' ? (
-          <img src={item.url} alt={`Captured photo from ${new Date(item.timestamp).toLocaleString()}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img 
+            src={fallbackUrl || item.url} 
+            alt={`Captured photo from ${new Date(item.timestamp).toLocaleString()}`} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={async (e) => {
+              console.error('[MediaLibrary] Image failed to load:', {
+                url: item.url,
+                fallbackUrl,
+                type: item.type,
+                id: item.id,
+                error: e
+              });
+              
+              // If blob URL failed and we haven't created a fallback yet
+              if (item.url.startsWith('blob:') && !fallbackUrl && !hasError) {
+                setHasError(true);
+                console.log('[MediaLibrary] Attempting to create data URL fallback for blob...');
+                
+                try {
+                  // Try to get the blob and convert to data URL
+                  const response = await fetch(item.url);
+                  const blob = await response.blob();
+                  const dataUrl = await blobToDataURL(blob);
+                  
+                  if (dataUrl) {
+                    console.log('[MediaLibrary] Successfully created data URL fallback');
+                    setFallbackUrl(dataUrl);
+                  } else {
+                    console.error('[MediaLibrary] Failed to create data URL fallback');
+                  }
+                } catch (fetchError) {
+                  console.error('[MediaLibrary] Failed to fetch blob for fallback:', fetchError);
+                }
+              }
+            }}
+          />
         ) : (
           <video 
-            src={`${item.url}#t=0.1`} 
+            src={fallbackUrl ? fallbackUrl : `${item.url}#t=0.1`} 
             preload="auto" 
             muted
             playsInline
             crossOrigin="anonymous"
             aria-label={`Captured video from ${new Date(item.timestamp).toLocaleString()}`} 
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={async (e) => {
+              console.error('[MediaLibrary] Video failed to load:', {
+                url: item.url,
+                fallbackUrl,
+                type: item.type,
+                id: item.id,
+                error: e
+              });
+              
+              // If blob URL failed and we haven't created a fallback yet
+              if (item.url.startsWith('blob:') && !fallbackUrl && !hasError) {
+                setHasError(true);
+                console.log('[MediaLibrary] Attempting to create data URL fallback for video blob...');
+                
+                try {
+                  // Try to get the blob and convert to data URL
+                  const response = await fetch(item.url);
+                  const blob = await response.blob();
+                  const dataUrl = await blobToDataURL(blob);
+                  
+                  if (dataUrl) {
+                    console.log('[MediaLibrary] Successfully created data URL fallback for video');
+                    setFallbackUrl(dataUrl);
+                  } else {
+                    console.error('[MediaLibrary] Failed to create data URL fallback for video');
+                  }
+                } catch (fetchError) {
+                  console.error('[MediaLibrary] Failed to fetch video blob for fallback:', fetchError);
+                }
+              }
+            }}
           />
         )}
       </Box>
@@ -183,7 +268,9 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = ({
       </Box>
     </Box>
   );
-};
+});
+
+ParallaxMediaItem.displayName = 'ParallaxMediaItem';
 
 interface MediaLibraryProps {
   items: MediaItem[];
@@ -193,7 +280,7 @@ interface MediaLibraryProps {
   mode?: 'dialog' | 'panel';
 }
 
-export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDelete, loadItemUrl, mode = 'dialog' }) => {
+export const MediaLibrary: React.FC<MediaLibraryProps> = React.memo(({ items, onClose, onDelete, loadItemUrl, mode = 'dialog' }) => {
   const theme = useTheme();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -244,25 +331,64 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
 
   const downloadAsZip = async () => {
     const selected = getSelectedItems();
+    if (selected.length === 0) return;
+    
     try {
-      const { default: JSZip } = await import('jszip');
-      const zip = new JSZip();
+      // Dynamically import jszip only when needed
+      const [{ default: JSZip }, toast] = await Promise.all([
+        import('jszip'),
+        import('react-hot-toast').then(m => m.default)
+      ]);
       
-      for (const item of selected) {
-        const response = await fetch(item.url);
-        const blob = await response.blob();
-        const ext = item.type === 'image' ? 'png' : 'webm';
-        zip.file(`lumina_${item.type}_${item.timestamp}.${ext}`, blob);
+      const zip = new JSZip();
+      let processed = 0;
+      
+      // Process files in smaller batches to avoid blocking
+      const batchSize = 3;
+      for (let i = 0; i < selected.length; i += batchSize) {
+        const batch = selected.slice(i, i + batchSize);
+        
+        await Promise.all(batch.map(async (item) => {
+          try {
+            const response = await fetch(item.url);
+            if (!response.ok) throw new Error(`Failed to fetch ${item.url}`);
+            
+            const blob = await response.blob();
+            const ext = item.type === 'image' ? 'png' : 'webm';
+            zip.file(`lumina_${item.type}_${item.timestamp}.${ext}`, blob);
+            processed++;
+          } catch (error) {
+            console.warn(`Failed to add ${item.url} to zip:`, error);
+          }
+        }));
+        
+        // Give browser time to breathe between batches
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
       
-      const content = await zip.generateAsync({ type: 'blob' });
+      if (processed === 0) {
+        toast.error('No files could be downloaded');
+        return;
+      }
+      
+      // Generate zip with lower compression for faster processing
+      const content = await zip.generateAsync({ 
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 1 } // Lower compression = faster
+      });
+      
       const a = document.createElement('a');
       a.href = URL.createObjectURL(content);
       a.download = `lumia_media_${Date.now()}.zip`;
       a.click();
       URL.revokeObjectURL(a.href);
+      
+      toast.success(`Downloaded ${processed} files`);
     } catch (e) {
       console.error('Zip download failed', e);
+      const toast = await import('react-hot-toast').then(m => m.default);
+      toast.error('Download failed');
     }
   };
 
@@ -514,4 +640,6 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ items, onClose, onDe
       </Box>
     </Dialog>
   );
-};
+});
+
+MediaLibrary.displayName = 'MediaLibrary';

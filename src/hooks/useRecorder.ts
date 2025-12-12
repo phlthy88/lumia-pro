@@ -3,6 +3,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FallbackMode, RecorderConfig, AudioConfig } from '../types';
 import { useAudioProcessor } from './useAudioProcessor';
 import { saveMedia, loadMediaMetadata, loadMediaBlob, deleteMediaItem, clearAllMedia } from '../services/MediaStorageService';
+import { getCSPSafeBlobURL, revokeCSPAwareBlobURL } from '../utils/CSPUtils';
 
 interface MediaItem {
   id: string;
@@ -16,9 +17,9 @@ const stopStreamTracks = (stream: MediaStream | null) => {
   stream.getTracks().forEach(track => track.stop());
 };
 
-const revokeBlobUrl = (item: MediaItem | undefined) => {
+  const revokeBlobUrl = (item: MediaItem | undefined) => {
   if (item && item.url.startsWith('blob:')) {
-    URL.revokeObjectURL(item.url);
+    revokeCSPAwareBlobURL(item.url);
   }
 };
 
@@ -93,9 +94,12 @@ export const useRecorder = (
     const blob = await loadMediaBlob(id);
     if (!blob) return '';
     
-    const url = URL.createObjectURL(blob);
-    setMediaItems(prev => prev.map(i => i.id === id ? { ...i, url } : i));
-    return url;
+    // Use CSP-aware blob URL creation
+    const url = await getCSPSafeBlobURL(blob);
+    if (url) {
+      setMediaItems(prev => prev.map(i => i.id === id ? { ...i, url } : i));
+    }
+    return url || '';
   }, []);
 
   useEffect(() => {

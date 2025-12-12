@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { FilesetResolver, FaceLandmarker, type FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 
 type VisionState = {
@@ -23,6 +23,7 @@ export const useVisionWorker = (
 ) => {
   const landmarkerRef = useRef<FaceLandmarker | null>(null);
   const [state, setState] = useState<VisionState>({ result: null, ready: false });
+  const lastUpdateRef = useRef<number>(0);
 
   // Initialize FaceLandmarker
   useEffect(() => {
@@ -92,19 +93,25 @@ export const useVisionWorker = (
         isProcessing = true;
         try {
           const result = landmarker.detectForVideo(video, performance.now());
-          setState(prev => ({ ...prev, result }));
+          
+          // More aggressive throttling - max every 1000ms
+          const now = performance.now();
+          if (now - lastUpdateRef.current > 1000) { // Update max every 1000ms
+            setState(prev => ({ ...prev, result }));
+            lastUpdateRef.current = now;
+          }
         } catch (e) {
           // Silently drop frames on error
         } finally {
           isProcessing = false;
-          timeoutId = window.setTimeout(detect, 500); // ~2fps to lower message load
+          timeoutId = window.setTimeout(detect, 1500); // ~0.67fps for minimal load
         }
       };
 
       if ('requestIdleCallback' in window) {
-        requestIdleCallback(processFrame, { timeout: 100 });
+        requestIdleCallback(processFrame, { timeout: 25 }); // Very short timeout
       } else {
-        setTimeout(processFrame, 0);
+        setTimeout(processFrame, 32); // ~30fps max, but with 1.5s delays between frames
       }
     };
 

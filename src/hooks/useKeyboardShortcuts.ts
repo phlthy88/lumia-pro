@@ -22,7 +22,7 @@ export const useKeyboardShortcuts = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape and Q always work for canceling countdowns
-      if (e.key === 'Escape' || e.key.toLowerCase() === 'q') {
+      if (e.key === 'Escape' || (e.key && e.key.toLowerCase() === 'q')) {
         onCancelCountdown?.();
         return;
       }
@@ -32,7 +32,7 @@ export const useKeyboardShortcuts = ({
         return;
       }
 
-      switch (e.key.toLowerCase()) {
+      switch (e.key?.toLowerCase()) {
         case 'r':
           onReset();
           break;

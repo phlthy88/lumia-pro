@@ -71,16 +71,18 @@ class VirtualCameraWorker {
                   if (frameInterval) clearInterval(frameInterval);
                   frameInterval = setInterval(() => {
                     if (imageBitmap) {
-                      // Broadcast to all clients except sender
-                      clients.forEach(client => {
-                        if (client !== port) {
-                          try {
-                            client.postMessage({ type: 'frame', imageBitmap }, [imageBitmap]);
-                          } catch (e) {
-                            // ImageBitmap already transferred, skip
-                          }
+                      // Batch broadcast to reduce message overhead
+                      const frameMessage = { type: 'frame', imageBitmap };
+                      const activeClients = clients.filter(client => client !== port);
+                      
+                      // Send to first client only to reduce load
+                      if (activeClients.length > 0) {
+                        try {
+                          activeClients[0].postMessage(frameMessage, [imageBitmap]);
+                        } catch (e) {
+                          // ImageBitmap already transferred, skip
                         }
-                      });
+                      }
                     }
                   }, interval);
                   port.postMessage({ type: 'started', messageId });
