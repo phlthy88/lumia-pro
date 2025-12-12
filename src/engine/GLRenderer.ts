@@ -9,11 +9,13 @@ export class GLRenderer {
     private overlaySource: HTMLCanvasElement | null = null;
     private beautyMaskSource: OffscreenCanvas | HTMLCanvasElement | null = null;
     private beautyMask2Source: OffscreenCanvas | HTMLCanvasElement | null = null;
+    private segmentationMaskSource: OffscreenCanvas | HTMLCanvasElement | null = null;
     
     private program: WebGLProgram | null = null;
     private lutTexture: WebGLTexture | null = null;
     private beautyMaskTexture: WebGLTexture | null = null;
     private beautyMask2Texture: WebGLTexture | null = null;
+    private segmentationMaskTexture: WebGLTexture | null = null;
     private textures: Map<string, WebGLTexture> = new Map();
     private positionBuffer: WebGLBuffer | null = null;
     private frameId: number | null = null;
@@ -83,6 +85,7 @@ export class GLRenderer {
                         this.lutTexture = null;
                         this.beautyMaskTexture = null;
                         this.beautyMask2Texture = null;
+                        this.segmentationMaskTexture = null;
                         this.initShaders();
                         this.initBuffers();
                         console.log('WebGL context recovered - textures will reload on next frame');
@@ -160,6 +163,27 @@ export class GLRenderer {
             // Use cached empty texture to avoid repeated allocations
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, GLRenderer.EMPTY_TEXTURE);
             this.beautyMask2Texture = texture;
+        }
+    }
+
+    public setSegmentationMask(mask: OffscreenCanvas | HTMLCanvasElement | null) {
+        this.segmentationMaskSource = mask;
+        if (!this.textures.get('segmentationMask')) {
+            this.createTexture('segmentationMask');
+        }
+        const texture = this.textures.get('segmentationMask');
+        if (!texture) return;
+
+        this.gl.activeTexture(this.gl.TEXTURE5);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+
+        if (mask) {
+            this.segmentationMaskTexture = texture;
+            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, false);
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, mask);
+        } else {
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, GLRenderer.EMPTY_TEXTURE);
+            this.segmentationMaskTexture = texture;
         }
     }
 
@@ -342,10 +366,12 @@ export class GLRenderer {
         this.overlaySource = null;
         this.beautyMaskSource = null;
         this.beautyMask2Source = null;
+        this.segmentationMaskSource = null;
 
         // Ensure texture map references are cleared
         this.beautyMaskTexture = null;
         this.beautyMask2Texture = null;
+        this.segmentationMaskTexture = null;
     }
 
     private resize() {
@@ -422,6 +448,7 @@ export class GLRenderer {
             uniform sampler3D u_lutTexture;
             uniform sampler2D u_beautyMask;
             uniform sampler2D u_beautyMask2;
+            uniform sampler2D u_segmentationMask;
             
             uniform int u_mode;
             uniform int u_bypass;
@@ -437,6 +464,7 @@ export class GLRenderer {
             uniform float u_cheekbones;
             uniform float u_lipsFuller;
             uniform float u_noseSlim;
+            uniform float u_backgroundBlurStrength;
 
             uniform vec2 u_faceCenter;
             uniform vec2 u_mouthCenter;
@@ -639,6 +667,38 @@ export class GLRenderer {
                 return uv - delta * strength;
             }
 
+            vec3 applyBackgroundBlur(vec2 uv, vec3 color) {
+                if (u_backgroundBlurStrength <= 0.0) return color;
+
+                vec4 seg = texture(u_segmentationMask, uv);
+                // Assume mask is in R channel or Alpha (person = 1.0, background = 0.0)
+                // Background weight is 1.0 - person
+                float bgWeight = 1.0 - seg.r;
+
+                if (bgWeight < 0.01) return color;
+
+                // Simple blur loop
+                vec2 texelSize = vec2(1.0) / vec2(textureSize(u_videoTexture, 0));
+                vec3 blurred = vec3(0.0);
+                float totalWeight = 0.0;
+
+                // Adjustable blur radius based on strength (max 10 pixels approx)
+                float radius = u_backgroundBlurStrength * 10.0;
+                int steps = 3; // Keep it low for performance in single pass
+
+                // Spiral or circular sampling for bokeh-like effect
+                for(int i = -steps; i <= steps; i++) {
+                    for(int j = -steps; j <= steps; j++) {
+                        vec2 offset = vec2(float(i), float(j)) * radius / float(steps) * texelSize;
+                        blurred += texture(u_videoTexture, uv + offset).rgb;
+                        totalWeight += 1.0;
+                    }
+                }
+
+                blurred /= totalWeight;
+                return mix(color, blurred, bgWeight);
+            }
+
             void main() {
                 vec2 uv = v_texCoord;
                 uv -= 0.5;
@@ -690,6 +750,7 @@ export class GLRenderer {
                 color = applySkinSmoothing(warpedUv, color, beautyMask.r);
                 color = applyEyeBrighten(color, beautyMask.g);
                 color = applySkinTone(color, beautyMask.r);
+                color = applyBackgroundBlur(warpedUv, color);
 
                 if (u_bypass == 0) {
                     color = colorGrade(color);
@@ -1025,6 +1086,7 @@ export class GLRenderer {
         setUniform1i('u_lutTexture', 2);
         setUniform1i('u_beautyMask', 3);
         setUniform1i('u_beautyMask2', 4);
+        setUniform1i('u_segmentationMask', 5);
 
         setUniform1i('u_mode', this.getModeInt(params.mode));
         setUniform1i('u_bypass', params.bypass ? 1 : 0);
@@ -1039,6 +1101,7 @@ export class GLRenderer {
         setUniform1f('u_cheekbones', params.beauty?.cheekbones ?? 0);
         setUniform1f('u_lipsFuller', params.beauty?.lipsFuller ?? 0);
         setUniform1f('u_noseSlim', params.beauty?.noseSlim ?? 0);
+        setUniform1f('u_backgroundBlurStrength', params.beauty?.backgroundBlurStrength ?? 0);
 
         this.gl.uniform2f(this.getUniformLoc('u_faceCenter'), params.faceCenter?.x ?? 0.5, params.faceCenter?.y ?? 0.5);
         this.gl.uniform2f(this.getUniformLoc('u_mouthCenter'), params.mouthCenter?.x ?? 0.5, params.mouthCenter?.y ?? 0.7);
@@ -1098,6 +1161,11 @@ export class GLRenderer {
         if (this.beautyMask2Texture) {
             this.gl.activeTexture(this.gl.TEXTURE4);
             this.gl.bindTexture(this.gl.TEXTURE_2D, this.beautyMask2Texture);
+        }
+
+        if (this.segmentationMaskTexture) {
+            this.gl.activeTexture(this.gl.TEXTURE5);
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.segmentationMaskTexture);
         }
 
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
