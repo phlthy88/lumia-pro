@@ -211,6 +211,12 @@ export const AISettings: React.FC<AISettingsProps> = ({
                     onChange={(v) => setBeauty(p => ({ ...p, skinTone: v }))} 
                     disabled={!beauty.enabled}
                 />
+                <MuiSlider 
+                    label="Background Blur" 
+                    value={beauty.backgroundBlurStrength ?? 0} 
+                    min={0} max={1} step={0.01} 
+                    onChange={(v) => setBeauty(p => ({ ...p, backgroundBlurStrength: v }))} 
+                />
                 {!hasFace && beauty.enabled && (
                     <Typography variant="caption" color="text.secondary">
                         Beauty effects require face detection. Position yourself in frame.

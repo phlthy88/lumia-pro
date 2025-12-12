@@ -195,6 +195,7 @@ export interface BeautyParams {
     cheekbones: number;
     lipsFuller: number;
     noseSlim: number;
+    backgroundBlurStrength?: number;
 }
 
 export interface Point2D {

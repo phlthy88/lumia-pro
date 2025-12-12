@@ -6,6 +6,7 @@ import { useAIAnalysis } from '../hooks/useAIAnalysis';
 import { usePerformanceModeContext } from '../providers/PerformanceModeProvider';
 
 import { MaskGenerator } from '../beauty/MaskGenerator';
+import { BackgroundBlur } from '../beauty/BackgroundBlur';
 import { eventBus } from '../providers/EventBus';
 import { useUIState } from '../providers/UIStateProvider';
 import { Features } from '../config/features';
@@ -61,7 +62,8 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
     skinTone: 0,
     cheekbones: 0,
     lipsFuller: 0,
-    noseSlim: 0
+    noseSlim: 0,
+    backgroundBlurStrength: 0
   });
 
   const [sceneAnalysis, setSceneAnalysis] = useState<SceneAnalysis | null>(null);
@@ -129,7 +131,7 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
   }, [ai.autoParams]);
 
   const resetBeauty = useCallback(() => {
-    setBeauty({ enabled: false, smooth: 0.35, eyeBrighten: 0, faceThin: 0, skinTone: 0, cheekbones: 0, lipsFuller: 0, noseSlim: 0 });
+    setBeauty({ enabled: false, smooth: 0.35, eyeBrighten: 0, faceThin: 0, skinTone: 0, cheekbones: 0, lipsFuller: 0, noseSlim: 0, backgroundBlurStrength: 0 });
   }, []);
 
   // Broadcast beauty slider changes so the renderer can apply them
@@ -139,6 +141,37 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
 
   // Mask Generation
   const maskGeneratorRef = useRef<MaskGenerator | null>(null);
+  const backgroundBlurRef = useRef<BackgroundBlur | null>(null);
+
+  // Background Blur Segmentation
+  useEffect(() => {
+    const blurStrength = beauty.backgroundBlurStrength ?? 0;
+    if (blurStrength <= 0) {
+      eventBus.emit('ai:segmentation' as any, { mask: null });
+      return;
+    }
+
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0) {
+      return;
+    }
+
+    if (!backgroundBlurRef.current) {
+      backgroundBlurRef.current = new BackgroundBlur(video.videoWidth, video.videoHeight);
+      backgroundBlurRef.current.initialize();
+    }
+
+    const mask = backgroundBlurRef.current.segment(video);
+    eventBus.emit('ai:segmentation' as any, { mask });
+  }, [beauty.backgroundBlurStrength, videoRef, streamReady]);
+
+  // Cleanup BackgroundBlur on unmount
+  useEffect(() => {
+    return () => {
+      backgroundBlurRef.current?.dispose();
+      backgroundBlurRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!maskGeneratorRef.current) {

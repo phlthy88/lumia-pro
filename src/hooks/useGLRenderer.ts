@@ -195,6 +195,10 @@ export const useGLRenderer = (
       rendererRef.current?.setBeautyMask2(mask);
   }, []);
 
+  const setSegmentationMask = useCallback((mask: OffscreenCanvas | HTMLCanvasElement | null) => {
+      rendererRef.current?.setSegmentationMask(mask);
+  }, []);
+
   // Callback ref to detect when canvas is mounted
   const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
     if (node === canvasRef.current) return;
@@ -207,5 +211,5 @@ export const useGLRenderer = (
     });
   }, []);
 
-  return { canvasRef, setCanvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error };
+  return { canvasRef, setCanvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, setSegmentationMask, error };
 };

@@ -362,7 +362,7 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
       };
   }, [gyroRef]);
 
-  const { canvasRef, setCanvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, error: glError } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
+  const { canvasRef, setCanvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, setSegmentationMask, error: glError } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
 
   // Renderer health watchdog: if GL never produces frames, fall back to raw video display
   const [renderHealthy, setRenderHealthy] = useState(false);
@@ -423,15 +423,21 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
                   cheekbones: beauty.enabled ? beauty.cheekbones : 0,
                   lipsFuller: beauty.enabled ? beauty.lipsFuller : 0,
                   noseSlim: beauty.enabled ? beauty.noseSlim : 0,
+                  backgroundBlurStrength: beauty.backgroundBlurStrength ?? 0,
               }
           }));
+      });
+
+      const removeSegmentationListener = eventBus.on('ai:segmentation' as any, ({ mask }: { mask: OffscreenCanvas | HTMLCanvasElement | null }) => {
+          setSegmentationMask(mask);
       });
 
       return () => {
           removeMaskListener();
           removeBeautyListener();
+          removeSegmentationListener();
       };
-  }, [setBeautyMask, setBeautyMask2]);
+  }, [setBeautyMask, setBeautyMask2, setSegmentationMask]);
 
   // Context Lost handling
   useEffect(() => {
