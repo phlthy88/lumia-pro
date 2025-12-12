@@ -41,6 +41,7 @@ describe('useRecorder hook', () => {
       toBlob: vi.fn((cb: (blob: Blob) => void) => cb(new Blob(['test'], { type: 'image/png' }))),
       getContext: vi.fn().mockReturnValue({
         drawImage: vi.fn(),
+        finish: vi.fn(),
       }),
       width: 1920,
       height: 1080,
@@ -105,7 +106,7 @@ describe('useRecorder snapshot', () => {
       captureStream: vi.fn().mockReturnValue(new MediaStream()),
       toDataURL: vi.fn().mockReturnValue('data:image/png;base64,test'),
       toBlob: vi.fn((cb: (blob: Blob) => void) => cb(new Blob(['test'], { type: 'image/png' }))),
-      getContext: vi.fn().mockReturnValue({ drawImage: vi.fn() }),
+      getContext: vi.fn().mockReturnValue({ drawImage: vi.fn(), finish: vi.fn() }),
       width: 1920,
       height: 1080,
     };
