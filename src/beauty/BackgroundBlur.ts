@@ -9,6 +9,7 @@ export class BackgroundBlur {
   private runningMode: 'IMAGE' | 'VIDEO' = 'VIDEO';
   private lastVideoTime = -1;
   private isInitializing = false;
+  private initFailed = false;
   private canvas: OffscreenCanvas;
   private ctx: OffscreenCanvasRenderingContext2D;
 
@@ -19,8 +20,10 @@ export class BackgroundBlur {
     this.ctx = ctx as OffscreenCanvasRenderingContext2D;
   }
 
-  async initialize() {
-    if (this.segmenter || this.isInitializing) return;
+  async initialize(): Promise<boolean> {
+    if (this.segmenter) return true;
+    if (this.isInitializing || this.initFailed) return false;
+    
     this.isInitializing = true;
 
     try {
@@ -37,9 +40,12 @@ export class BackgroundBlur {
         outputCategoryMask: false,
         outputConfidenceMasks: true
       });
-      console.log('[BackgroundBlur] Initialized with confidence masks');
+      console.log('[BackgroundBlur] Initialized');
+      return true;
     } catch (e) {
       console.error('[BackgroundBlur] Failed to initialize:', e);
+      this.initFailed = true;
+      return false;
     } finally {
       this.isInitializing = false;
     }
@@ -50,8 +56,7 @@ export class BackgroundBlur {
    * Returns a canvas where white = person, black = background
    */
   segment(video: HTMLVideoElement): OffscreenCanvas | null {
-    if (!this.segmenter) {
-      if (!this.isInitializing) this.initialize();
+    if (!this.segmenter || this.initFailed) {
       return null;
     }
 
@@ -78,31 +83,35 @@ export class BackgroundBlur {
   private processResult(result: ImageSegmenterResult) {
     const { width, height } = this.canvas;
 
-    // Get confidence mask - selfie segmenter outputs one mask where higher = person
     const masks = result.confidenceMasks;
     if (!masks || masks.length === 0) return;
 
     const mask = masks[0];
     if (!mask) return;
 
-    // Get as float array (values 0.0-1.0)
     const maskData = mask.getAsFloat32Array();
 
     const imageData = this.ctx.createImageData(width, height);
     const data = imageData.data;
 
-    // Convert confidence to RGBA (Person=White, Bg=Black)
-    // Higher confidence = more likely person
     for (let i = 0; i < maskData.length; i++) {
       const confidence = maskData[i] ?? 0;
-      const val = Math.round(confidence * 255); // person confidence as brightness
-      data[i * 4] = val;     // R
-      data[i * 4 + 1] = val; // G
-      data[i * 4 + 2] = val; // B
-      data[i * 4 + 3] = 255; // A
+      const val = Math.round(confidence * 255);
+      data[i * 4] = val;
+      data[i * 4 + 1] = val;
+      data[i * 4 + 2] = val;
+      data[i * 4 + 3] = 255;
     }
 
     this.ctx.putImageData(imageData, 0, 0);
+  }
+
+  isReady(): boolean {
+    return this.segmenter !== null && !this.initFailed;
+  }
+
+  hasFailed(): boolean {
+    return this.initFailed;
   }
 
   getCanvas(): OffscreenCanvas {
@@ -112,5 +121,6 @@ export class BackgroundBlur {
   dispose() {
     this.segmenter?.close();
     this.segmenter = null;
+    this.initFailed = false;
   }
 }

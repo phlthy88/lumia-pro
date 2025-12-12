@@ -39,10 +39,12 @@ describe('BackgroundBlur', () => {
       const { FilesetResolver, ImageSegmenter } = await import('@mediapipe/tasks-vision');
       const blur = new BackgroundBlur();
       
-      await blur.initialize();
+      const result = await blur.initialize();
       
+      expect(result).toBe(true);
       expect(FilesetResolver.forVisionTasks).toHaveBeenCalled();
       expect(ImageSegmenter.createFromOptions).toHaveBeenCalled();
+      expect(blur.isReady()).toBe(true);
     });
 
     it('does not reinitialize if already initialized', async () => {
@@ -53,6 +55,17 @@ describe('BackgroundBlur', () => {
       await blur.initialize();
       
       expect(ImageSegmenter.createFromOptions).toHaveBeenCalledTimes(1);
+    });
+
+    it('sets hasFailed on initialization error', async () => {
+      const { FilesetResolver } = await import('@mediapipe/tasks-vision');
+      (FilesetResolver.forVisionTasks as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
+      
+      const blur = new BackgroundBlur();
+      const result = await blur.initialize();
+      
+      expect(result).toBe(false);
+      expect(blur.hasFailed()).toBe(true);
     });
   });
 
@@ -66,16 +79,17 @@ describe('BackgroundBlur', () => {
       expect(result).toBeNull();
     });
 
-    it('triggers initialization when called without init', async () => {
+    it('returns null when initialization failed', async () => {
       const { FilesetResolver } = await import('@mediapipe/tasks-vision');
+      (FilesetResolver.forVisionTasks as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('fail'));
+      
       const blur = new BackgroundBlur();
+      await blur.initialize();
+      
       const video = document.createElement('video');
+      const result = blur.segment(video);
       
-      blur.segment(video);
-      
-      // Should trigger async initialization
-      await new Promise(r => setTimeout(r, 10));
-      expect(FilesetResolver.forVisionTasks).toHaveBeenCalled();
+      expect(result).toBeNull();
     });
   });
 
@@ -93,6 +107,7 @@ describe('BackgroundBlur', () => {
       blur.dispose();
       
       expect(mockClose).toHaveBeenCalled();
+      expect(blur.isReady()).toBe(false);
     });
 
     it('handles dispose when not initialized', () => {

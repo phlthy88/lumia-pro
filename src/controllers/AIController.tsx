@@ -157,31 +157,44 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
       return;
     }
 
-    if (!backgroundBlurRef.current) {
-      backgroundBlurRef.current = new BackgroundBlur(video.videoWidth || 640, video.videoHeight || 480);
-      backgroundBlurRef.current.initialize();
-    }
-
     let running = true;
-    const runSegmentation = () => {
-      if (!running || !backgroundBlurRef.current) return;
-      
-      const mask = backgroundBlurRef.current.segment(video);
-      if (mask) {
-        eventBus.emit('ai:segmentation' as any, { mask });
+    let initialized = false;
+
+    const initAndRun = async () => {
+      if (!backgroundBlurRef.current) {
+        backgroundBlurRef.current = new BackgroundBlur(video.videoWidth || 640, video.videoHeight || 480);
       }
       
+      if (!backgroundBlurRef.current.isReady() && !backgroundBlurRef.current.hasFailed()) {
+        initialized = await backgroundBlurRef.current.initialize();
+        if (!initialized) {
+          console.warn('[AIController] BackgroundBlur initialization failed');
+          return;
+        }
+      }
+
+      if (backgroundBlurRef.current.hasFailed()) {
+        return;
+      }
+
+      const runSegmentation = () => {
+        if (!running || !backgroundBlurRef.current?.isReady()) return;
+        
+        const mask = backgroundBlurRef.current.segment(video);
+        if (mask) {
+          eventBus.emit('ai:segmentation' as any, { mask });
+        }
+        
+        segmentationFrameRef.current = requestAnimationFrame(runSegmentation);
+      };
+
       segmentationFrameRef.current = requestAnimationFrame(runSegmentation);
     };
 
-    // Start loop after a short delay to let segmenter initialize
-    const timeout = setTimeout(() => {
-      segmentationFrameRef.current = requestAnimationFrame(runSegmentation);
-    }, 500);
+    initAndRun();
 
     return () => {
       running = false;
-      clearTimeout(timeout);
       cancelAnimationFrame(segmentationFrameRef.current);
     };
   }, [beauty.backgroundBlurStrength, videoRef, streamReady]);
