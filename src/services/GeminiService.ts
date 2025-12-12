@@ -1,8 +1,7 @@
 /**
- * Gemini AI Service (Stub)
+ * Gemini AI Service
  * 
- * This is a placeholder for future Gemini Vision API integration.
- * Currently disabled - the app uses heuristic-based analysis instead.
+ * Integration with Gemini Vision API for image analysis.
  */
 
 import { isFeatureEnabled, Features } from '../config/features';
@@ -29,9 +28,66 @@ export class GeminiService {
       throw new Error('Gemini API key not configured');
     }
 
-    // TODO: Implement actual Gemini Vision API call
-    // This is a stub for future implementation
-    throw new Error('Gemini integration not yet implemented');
+    try {
+      const mimeType = imageDataUrl.substring(5, imageDataUrl.indexOf(';'));
+      const base64Data = imageDataUrl.substring(imageDataUrl.indexOf(',') + 1);
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`;
+
+      const prompt = `Analyze this image and provide a description and a dictionary of suggestion values (0-1) for 'brightness', 'contrast', 'saturation', and 'sharpness'. Return only raw JSON matching this interface: { type: 'ml', description: string, suggestions: Record<string, number> }.`;
+
+      const requestBody = {
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64Data
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0].text) {
+        throw new Error('Invalid response format from Gemini API');
+      }
+
+      let text = data.candidates[0].content.parts[0].text;
+
+      // Remove markdown code blocks if present
+      // Handle ```json ... ``` and ``` ... ```
+      text = text.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+
+      const result = JSON.parse(text) as GeminiAnalysisResult;
+
+      // Basic validation
+      if (result.type !== 'ml' || !result.description || !result.suggestions) {
+         throw new Error('Invalid JSON structure from Gemini API');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Gemini analysis failed:', error);
+      throw error;
+    }
   }
 
   isConfigured(): boolean {
