@@ -153,8 +153,8 @@ class SceneDirectorService {
     const key = this.keys.openrouter;
     if (!key) throw new Error('OpenRouter API key not configured');
 
-    // Default to a valid OpenRouter Gemini endpoint; allow override via settings
-    const model = this.keys.openrouterModel || 'google/gemini-1.5-flash-8b';
+    // Default to a known-available OpenRouter endpoint; allow override via settings
+    const model = this.keys.openrouterModel || 'sourceful/riverflow-v2-fast-preview';
 
     const referer = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
 
@@ -190,7 +190,7 @@ class SceneDirectorService {
       const errorText = await response.text();
       // Surface a clearer hint if the model id is invalid / missing
       if (response.status === 404 && /No endpoints found/i.test(errorText)) {
-        throw new Error(`OpenRouter model not available (${model}). Update the model in settings (e.g., google/gemini-1.5-flash-8b). Raw: ${errorText}`);
+        throw new Error(`OpenRouter model not available (${model}). Update the model in settings (e.g., sourceful/riverflow-v2-fast-preview). Raw: ${errorText}`);
       }
       throw new Error(`OpenRouter API error: ${errorText}`);
     }
