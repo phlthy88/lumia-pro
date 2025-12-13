@@ -153,7 +153,8 @@ class SceneDirectorService {
     const key = this.keys.openrouter;
     if (!key) throw new Error('OpenRouter API key not configured');
 
-    const model = this.keys.openrouterModel || 'google/gemini-flash-1.5-8b';
+    // Default to a valid OpenRouter Gemini endpoint; allow override via settings
+    const model = this.keys.openrouterModel || 'google/gemini-1.5-flash-8b';
 
     const referer = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
 
@@ -186,8 +187,12 @@ class SceneDirectorService {
     }
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`OpenRouter API error: ${error}`);
+      const errorText = await response.text();
+      // Surface a clearer hint if the model id is invalid / missing
+      if (response.status === 404 && /No endpoints found/i.test(errorText)) {
+        throw new Error(`OpenRouter model not available (${model}). Update the model in settings (e.g., google/gemini-1.5-flash-8b). Raw: ${errorText}`);
+      }
+      throw new Error(`OpenRouter API error: ${errorText}`);
     }
 
     const data = await response.json();
