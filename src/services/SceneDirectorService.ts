@@ -167,7 +167,9 @@ class SceneDirectorService {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${key}`,
-          'X-Title': 'Lumia Pro'
+          // OpenRouter requires either a referer or title for browser-based keys
+          'X-Title': 'Lumia Pro',
+          'HTTP-Referer': referer
         },
         body: JSON.stringify({
           model,
