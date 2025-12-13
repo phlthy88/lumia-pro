@@ -49,9 +49,15 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
   }); 
   const [targetFps, setTargetFps] = useState<number>(30);
   const [status, setStatus] = useState<StreamStatus>('idle');
+  const statusRef = useRef<StreamStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<CameraErrorCode | null>(null);
   const [currentStream, setCurrentStream] = useState<MediaStream | null>(null);
+
+  // Keep statusRef in sync
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   // Device Discovery
   const refreshDevices = useCallback(async () => {
@@ -88,18 +94,34 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
     let isMounted = true;
     let activeStream: MediaStream | null = null;
     let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 30; // 3 seconds max wait
 
     const startStream = async () => {
       // Wait for videoRef to be available
       if (!videoRef.current) {
-        retryTimeout = setTimeout(() => {
-          if (isMounted) startStream();
-        }, 100);
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.log(`[Camera] Waiting for videoRef... retry ${retryCount}/${MAX_RETRIES}`);
+          retryTimeout = setTimeout(() => {
+            if (isMounted) startStream();
+          }, 100);
+        } else {
+          console.error('[Camera] videoRef never became available after max retries');
+        }
         return;
       }
-      if (status === 'initializing') return;
+      
+      console.log(`[Camera] videoRef available, status: ${statusRef.current}`);
+      
+      // Skip if already initializing or streaming
+      if (statusRef.current === 'initializing' || statusRef.current === 'streaming') {
+        console.log(`[Camera] Skipping - already ${statusRef.current}`);
+        return;
+      }
 
       setStatus('initializing');
+      statusRef.current = 'initializing';
       setErrorMessage(null);
       setErrorCode(null);
 
@@ -196,7 +218,10 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
           if (!videoRef.current || !isMounted) return;
           await videoRef.current.play().catch(e => console.warn("Play interrupted", e));
           
-          if (isMounted) setStatus('streaming');
+          if (isMounted) {
+            setStatus('streaming');
+            statusRef.current = 'streaming';
+          }
           break; // Stream started successfully, exit loop
 
         } catch (err) {
@@ -243,11 +268,13 @@ export const useCameraStream = (maxFrameRateCapability?: number, maxW?: number, 
 
     return () => {
       isMounted = false;
+      statusRef.current = 'idle';
       if (retryTimeout) clearTimeout(retryTimeout);
       if (activeStream) {
         activeStream.getTracks().forEach(t => t.stop());
       }
       setCurrentStream(null);
+      setStatus('idle');
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
