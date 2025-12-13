@@ -21,11 +21,15 @@ vi.mock('../useAudioProcessor', () => ({
 }));
 
 vi.mock('../../services/MediaStorageService', () => ({
-  saveMedia: vi.fn().mockResolvedValue('test-id'),
-  loadMediaMetadata: vi.fn().mockResolvedValue([]),
-  loadMediaBlob: vi.fn().mockResolvedValue(new Blob()),
-  deleteMediaItem: vi.fn().mockResolvedValue(undefined),
-  clearAllMedia: vi.fn().mockResolvedValue(undefined),
+  mediaStorage: {
+    listMetadata: vi.fn().mockResolvedValue([]),
+    getBlob: vi.fn().mockResolvedValue(new Blob()),
+    saveBlob: vi.fn().mockResolvedValue(undefined),
+    deleteBlob: vi.fn().mockResolvedValue(undefined),
+    clear: vi.fn().mockResolvedValue(undefined),
+    getTotalSize: vi.fn().mockResolvedValue(0),
+  },
+  MediaItemMetadata: {},
 }));
 
 describe('useRecorder hook', () => {

@@ -57,15 +57,25 @@ describe('BackgroundBlur', () => {
       expect(ImageSegmenter.createFromOptions).toHaveBeenCalledTimes(1);
     });
 
-    it('sets hasFailed on initialization error', async () => {
+    it('sets hasFailed after max retries', async () => {
       const { FilesetResolver } = await import('@mediapipe/tasks-vision');
-      (FilesetResolver.forVisionTasks as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
-      
       const blur = new BackgroundBlur();
+      
+      // Mock 3 failures (maxRetries)
+      const mockFilesetResolver = FilesetResolver.forVisionTasks as ReturnType<typeof vi.fn>;
+      mockFilesetResolver.mockRejectedValueOnce(new Error('Network error'));
+      await blur.initialize();
+      expect(blur.hasFailed()).toBe(false); // Should allow retry
+      
+      mockFilesetResolver.mockRejectedValueOnce(new Error('Network error'));
+      await blur.initialize();
+      expect(blur.hasFailed()).toBe(false); // Should allow retry
+      
+      mockFilesetResolver.mockRejectedValueOnce(new Error('Network error'));
       const result = await blur.initialize();
       
       expect(result).toBe(false);
-      expect(blur.hasFailed()).toBe(true);
+      expect(blur.hasFailed()).toBe(true); // Should fail after max retries
     });
   });
 

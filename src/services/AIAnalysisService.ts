@@ -18,6 +18,10 @@ export interface AnalysisResult {
   reasoning: string[]; // Human-readable explanation of suggestions
 }
 
+interface FaceLandmarksOnly {
+  faceLandmarks: Array<Array<{ x: number; y: number; z: number }>>;
+}
+
 /**
  * AI Analysis Service - Heuristic-Based Image Analysis
  * 
@@ -40,13 +44,9 @@ export class AIAnalysisService {
     this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })!;
   }
 
-  /**
-   * Analyzes a video frame with rate limiting (debounce + throttle)
-   */
-  async analyzeWithRateLimit(video: HTMLVideoElement, faceResult?: FaceLandmarkerResult | null): Promise<AnalysisResult | null> {
+  async analyzeWithRateLimit(video: HTMLVideoElement, faceResult?: FaceLandmarkerResult | FaceLandmarksOnly | null): Promise<AnalysisResult | null> {
     const now = Date.now();
     
-    // Throttle: Don't analyze more than once per ANALYSIS_THROTTLE period
     if (now - this.lastAnalysisTime < this.ANALYSIS_THROTTLE) {
       return null;
     }
@@ -75,7 +75,7 @@ export class AIAnalysisService {
    * Analyzes a video frame using rule-based heuristics (not machine learning).
    * Examines pixel statistics to suggest color corrections.
    */
-  async analyze(video: HTMLVideoElement, faceResult?: FaceLandmarkerResult | null): Promise<AnalysisResult> {
+  async analyze(video: HTMLVideoElement, faceResult?: FaceLandmarkerResult | FaceLandmarksOnly | null): Promise<AnalysisResult> {
     // Prevent concurrent analysis - shared canvas would corrupt data
     if (this.isAnalyzing) {
       throw new Error('Analysis already in progress');
@@ -111,7 +111,7 @@ export class AIAnalysisService {
     const avgB = bSum / pixelCount;
 
     // 3. AI Face Detection (Composition & Focus)
-    const faceData: FaceLandmarkerResult | null = faceResult ?? null;
+    const faceData = faceResult ?? null;
     console.log('[AIAnalysisService] faceLandmarks length:', faceData?.faceLandmarks?.length ?? 0, 'sample point:', faceData?.faceLandmarks?.[0]?.[1]);
 
     // --- SCORING LOGIC ---

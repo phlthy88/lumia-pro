@@ -2,7 +2,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FallbackMode, RecorderConfig, AudioConfig } from '../types';
 import { useAudioProcessor } from './useAudioProcessor';
-import { saveMedia, loadMediaMetadata, loadMediaBlob, deleteMediaItem, clearAllMedia } from '../services/MediaStorageService';
+import { mediaStorage, MediaItemMetadata } from '../services/MediaStorageService';
 import { getCSPSafeBlobURL, revokeCSPAwareBlobURL } from '../utils/CSPUtils';
 
 interface MediaItem {
@@ -79,9 +79,9 @@ export const useRecorder = (
 
   // Load only metadata on mount - blobs loaded on demand
   useEffect(() => {
-    loadMediaMetadata().then(meta => {
-      const sorted = meta.sort((a, b) => b.timestamp - a.timestamp).slice(0, MAX_MEDIA_ITEMS);
-      const items = sorted.map(m => ({ id: m.id, url: '', type: m.type, timestamp: m.timestamp }));
+    mediaStorage.listMetadata().then((meta: MediaItemMetadata[]) => {
+      const sorted = meta.sort((a: MediaItemMetadata, b: MediaItemMetadata) => b.timestamp - a.timestamp).slice(0, MAX_MEDIA_ITEMS);
+      const items = sorted.map((m: MediaItemMetadata) => ({ id: m.id, url: '', type: m.type, timestamp: m.timestamp }));
       setMediaItems(items.reverse());
     }).catch(console.error);
   }, []);
@@ -91,7 +91,7 @@ export const useRecorder = (
     const existing = mediaItemsRef.current.find(i => i.id === id);
     if (existing?.url) return existing.url;
     
-    const blob = await loadMediaBlob(id);
+    const blob = await mediaStorage.getBlob(id);
     if (!blob) return '';
     
     // Use CSP-aware blob URL creation
@@ -293,13 +293,13 @@ export const useRecorder = (
             const oldest = prev[0];
             if (oldest) {
               revokeBlobUrl(oldest);
-              deleteMediaItem(oldest.id).catch(console.error);
+              mediaStorage.deleteBlob(oldest.id).catch(console.error);
             }
             return [...prev.slice(1), item];
           }
           return [...prev, item];
         });
-        saveMedia({ id, blob, type: 'video', timestamp: item.timestamp }).catch(console.error);
+        mediaStorage.saveBlob(id, blob, { type: 'video', timestamp: item.timestamp, size: blob.size, mimeType: blob.type }).catch(console.error);
         
         chunksRef.current = [];
         currentSizeRef.current = 0;
@@ -387,13 +387,13 @@ export const useRecorder = (
             const oldest = prev[0];
             if (oldest) {
               revokeBlobUrl(oldest);
-              deleteMediaItem(oldest.id).catch(console.error);
+              mediaStorage.deleteBlob(oldest.id).catch(console.error);
             }
             return [...prev.slice(1), item];
           }
           return [...prev, item];
         });
-        saveMedia({ id, blob, type: 'image', timestamp: item.timestamp }).catch(console.error);
+        mediaStorage.saveBlob(id, blob, { type: 'image', timestamp: item.timestamp, size: blob.size, mimeType: blob.type }).catch(console.error);
         onCapture?.(url);
       });
     },
@@ -460,7 +460,7 @@ export const useRecorder = (
       revokeBlobUrl(item);
       return prev.filter(i => i.id !== id);
     });
-    deleteMediaItem(id).catch(console.error);
+    mediaStorage.deleteBlob(id).catch(console.error);
   }, []);
 
   const clearMedia = useCallback(() => {
@@ -468,7 +468,7 @@ export const useRecorder = (
       revokeBlobUrls(prev);
       return [];
     });
-    clearAllMedia().catch(console.error);
+    mediaStorage.clear().catch(console.error);
   }, []);
 
   useEffect(() => {

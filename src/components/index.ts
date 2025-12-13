@@ -18,6 +18,8 @@ export { default as PlatformBoostsPanel } from './PlatformBoostsPanel';
 export * from './PlatformBoostsPanel';
 export * from './PerformanceModeToggle';
 export * from './PerformanceOverlay';
+export * from './PTZJoystick';
+export * from './PTZPanel';
 export * from './RGBParadeMeter';
 export * from './StatsOverlay';
 export * from './ThemeSettings';

@@ -74,6 +74,7 @@ export const PerformanceDashboard: React.FC = () => {
     <Box>
       <IconButton
         onClick={handleToggle}
+        aria-label={isVisible ? "Hide performance dashboard" : "Show performance dashboard"}
         sx={{ 
           bgcolor: isVisible ? 'primary.main' : 'background.paper',
           color: isVisible ? 'primary.contrastText' : 'text.primary',
@@ -105,7 +106,7 @@ export const PerformanceDashboard: React.FC = () => {
                 <Typography variant="subtitle1" sx={{ flexGrow: 1 }}>
                   Performance
                 </Typography>
-                <IconButton size="small" onClick={handleToggle}>
+                <IconButton size="small" onClick={handleToggle} aria-label="Hide performance dashboard">
                   <VisibilityOff fontSize="small" />
                 </IconButton>
               </Box>

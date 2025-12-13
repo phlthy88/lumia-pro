@@ -1,6 +1,7 @@
 export * from './useAIAnalysis';
 export * from './useAudioProcessor';
 export * from './useCameraStream';
+export * from './useCapture';
 export * from './useColorGrading';
 export * from './useDeferredInit';
 export * from './useGLRenderer';
@@ -18,7 +19,10 @@ export * from './usePermissions';
 export * from './usePersistedState';
 export * from './usePlatformBoosts';
 export { default as usePlatformBoosts } from './usePlatformBoosts';
+export * from './usePTZ';
 export * from './useRecorder';
+export * from './useResourceManager';
+export * from './useVideoRecorder';
 export * from './useVirtualCamera';
 export { default as useVirtualCamera } from './useVirtualCamera';
 export * from './useVisionWorker';

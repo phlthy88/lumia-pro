@@ -86,8 +86,23 @@ export class GLRenderer {
                         this.beautyMaskTexture = null;
                         this.beautyMask2Texture = null;
                         this.segmentationMaskTexture = null;
+                        
+                        // Re-enable extensions
+                        this.gl.getExtension('EXT_color_buffer_float');
+                        this.supportsFloatLinear = !!this.gl.getExtension('OES_texture_float_linear');
+                        
+                        // Reset quality profile based on new context capabilities
+                        this.gpuTier = GPUCapabilities.getTier();
+                        this.qualityProfile = GPUCapabilities.getProfile(this.gpuTier);
+                        
                         this.initShaders();
                         this.initBuffers();
+                        
+                        // Reupload video texture if available
+                        if (this.videoSource && !this.videoSource.paused) {
+                            this.updateVideoTexture();
+                        }
+                        
                         console.log('WebGL context recovered - textures will reload on next frame');
                     }
                 } catch (recoveryError) {
@@ -669,6 +684,10 @@ export class GLRenderer {
 
             vec3 applyBackgroundBlur(vec2 uv, vec3 color) {
                 if (u_backgroundBlurStrength <= 0.0) return color;
+
+                // Check if segmentation mask is available by looking at texture size
+                ivec2 maskSize = textureSize(u_segmentationMask, 0);
+                if (maskSize.x <= 1) return color; // Mask not available, skip blur
 
                 vec4 seg = texture(u_segmentationMask, uv);
                 // Assume mask is in R channel or Alpha (person = 1.0, background = 0.0)

@@ -216,3 +216,24 @@ export interface RenderParams {
 }
 
 export type SidebarPosition = 'left' | 'right';
+
+// PTZ (Pan-Tilt-Zoom) Types
+export interface PTZCapabilities {
+    hasPan: boolean;
+    hasTilt: boolean;
+    hasZoom: boolean;
+    panRange?: { min: number; max: number };
+    tiltRange?: { min: number; max: number };
+    zoomRange?: { min: number; max: number };
+}
+
+export interface PTZState {
+    pan: number;
+    tilt: number;
+    zoom: number;
+    panSpeed: number;
+    tiltSpeed: number;
+    zoomSpeed: number;
+}
+
+export type PTZMode = 'virtual' | 'physical' | 'disabled';

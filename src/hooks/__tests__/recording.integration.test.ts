@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useRecorder } from '../useRecorder';
-import * as MediaStorageService from '../../services/MediaStorageService';
+import { mediaStorage } from '../../services/MediaStorageService';
 
 // Mock dependencies
 const mockCleanupAudio = vi.fn();
@@ -15,11 +15,15 @@ vi.mock('../useAudioProcessor', () => ({
 }));
 
 vi.mock('../../services/MediaStorageService', () => ({
-  saveMedia: vi.fn().mockResolvedValue('test-id'),
-  loadMediaMetadata: vi.fn().mockResolvedValue([]),
-  loadMediaBlob: vi.fn().mockResolvedValue(new Blob()),
-  deleteMediaItem: vi.fn().mockResolvedValue(undefined),
-  clearAllMedia: vi.fn().mockResolvedValue(undefined),
+  mediaStorage: {
+    listMetadata: vi.fn().mockResolvedValue([]),
+    getBlob: vi.fn().mockResolvedValue(new Blob()),
+    saveBlob: vi.fn().mockResolvedValue(undefined),
+    deleteBlob: vi.fn().mockResolvedValue(undefined),
+    clear: vi.fn().mockResolvedValue(undefined),
+    getTotalSize: vi.fn().mockResolvedValue(0),
+  },
+  MediaItemMetadata: {},
 }));
 
 vi.mock('../../utils/CSPUtils', () => ({
@@ -80,7 +84,9 @@ describe('Recording Workflow Integration', () => {
         this.pause = pauseSpy;
         this.resume = resumeSpy;
 
-        activeRecorderInstance = this;
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const instance = this;
+        activeRecorderInstance = instance;
       }
 
       // Methods placeholders to satisfy type checker (actual logic is in bound spies)
@@ -139,13 +145,14 @@ describe('Recording Workflow Integration', () => {
     expect(item!.url).toBeDefined();
 
     // 5. Verify Save Service Called
-    const calls = vi.mocked(MediaStorageService.saveMedia).mock.calls;
-    const saveCall = calls[0]?.[0];
+    const calls = vi.mocked(mediaStorage.saveBlob).mock.calls;
+    const saveCall = calls[0];
 
     expect(saveCall).toBeDefined();
     if (saveCall) {
-      expect(saveCall.blob.type).toBe('video/webm');
-      expect(saveCall.blob.size).toBeGreaterThan(0);
+      const [_id, blob] = saveCall;
+      expect(blob.type).toBe('video/webm');
+      expect(blob.size).toBeGreaterThan(0);
     }
   });
 

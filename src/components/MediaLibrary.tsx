@@ -33,11 +33,10 @@ const deleteScaleFade = keyframes`
   }
 `;
 
-interface MediaItem {
-  id: string;
-  url: string;
-  type: 'image' | 'video';
-  timestamp: number;
+import { MediaItemMetadata } from '../services/MediaStorageService';
+
+interface MediaItem extends MediaItemMetadata {
+  url?: string;
 }
 
 interface ParallaxMediaItemProps {
@@ -154,12 +153,11 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = React.memo(({
               });
               
               // If blob URL failed and we haven't created a fallback yet
-              if (item.url.startsWith('blob:') && !fallbackUrl && !hasError) {
-                setHasError(true);
-                console.log('[MediaLibrary] Attempting to create data URL fallback for blob...');
+              if (item.url && item.url.startsWith('blob:') && !fallbackUrl && !hasError) {
                 
                 try {
                   // Try to get the blob and convert to data URL
+                if (item.url) {
                   const response = await fetch(item.url);
                   const blob = await response.blob();
                   const dataUrl = await blobToDataURL(blob);
@@ -170,6 +168,7 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = React.memo(({
                   } else {
                     console.error('[MediaLibrary] Failed to create data URL fallback');
                   }
+                }
                 } catch (fetchError) {
                   console.error('[MediaLibrary] Failed to fetch blob for fallback:', fetchError);
                 }
@@ -195,12 +194,13 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = React.memo(({
               });
               
               // If blob URL failed and we haven't created a fallback yet
-              if (item.url.startsWith('blob:') && !fallbackUrl && !hasError) {
+              if (item.url && item.url.startsWith('blob:') && !fallbackUrl && !hasError) {
                 setHasError(true);
                 console.log('[MediaLibrary] Attempting to create data URL fallback for video blob...');
                 
                 try {
                   // Try to get the blob and convert to data URL
+                if (item.url) {
                   const response = await fetch(item.url);
                   const blob = await response.blob();
                   const dataUrl = await blobToDataURL(blob);
@@ -211,6 +211,7 @@ const ParallaxMediaItem: React.FC<ParallaxMediaItemProps> = React.memo(({
                   } else {
                     console.error('[MediaLibrary] Failed to create data URL fallback for video');
                   }
+                }
                 } catch (fetchError) {
                   console.error('[MediaLibrary] Failed to fetch video blob for fallback:', fetchError);
                 }
@@ -319,7 +320,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = React.memo(({ items, on
     try {
       for (const item of selected) {
         const a = document.createElement('a');
-        a.href = item.url;
+        a.href = item.url || ''; // Provide empty string as fallback
         a.download = `lumina_${item.type}_${item.timestamp}.${item.type === 'image' ? 'png' : 'webm'}`;
         a.click();
         await new Promise(r => setTimeout(r, 100));
@@ -350,13 +351,15 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = React.memo(({ items, on
         
         await Promise.all(batch.map(async (item) => {
           try {
-            const response = await fetch(item.url);
-            if (!response.ok) throw new Error(`Failed to fetch ${item.url}`);
-            
-            const blob = await response.blob();
-            const ext = item.type === 'image' ? 'png' : 'webm';
-            zip.file(`lumina_${item.type}_${item.timestamp}.${ext}`, blob);
-            processed++;
+            if (item.url) {
+              const response = await fetch(item.url);
+              if (!response.ok) throw new Error(`Failed to fetch ${item.url}`);
+              
+              const blob = await response.blob();
+              const ext = item.type === 'image' ? 'png' : 'webm';
+              zip.file(`lumina_${item.type}_${item.timestamp}.${ext}`, blob);
+              processed++;
+            }
           } catch (error) {
             console.warn(`Failed to add ${item.url} to zip:`, error);
           }
@@ -396,10 +399,13 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = React.memo(({ items, on
     const selected = getSelectedItems();
     try {
       const files = await Promise.all(selected.map(async item => {
-        const response = await fetch(item.url);
-        const blob = await response.blob();
-        return new File([blob], `lumina_${item.type}_${item.timestamp}.${item.type === 'image' ? 'png' : 'webm'}`, { type: blob.type });
-      }));
+        if (item.url) {
+          const response = await fetch(item.url);
+          const blob = await response.blob();
+          return new File([blob], `lumina_${item.type}_${item.timestamp}.${item.type === 'image' ? 'png' : 'webm'}`, { type: blob.type });
+        }
+        return null; // Return null if url is undefined
+      })).then(files => files.filter(Boolean) as File[]); // Filter out nulls
       
       if (navigator.share && navigator.canShare({ files })) {
         await navigator.share({ files, title: 'Lumia Pro Media' });
@@ -415,11 +421,13 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = React.memo(({ items, on
     setScrollY(e.currentTarget.scrollTop);
   }, []);
 
-  const handleDeleteClick = (item: MediaItem, event: React.MouseEvent<HTMLElement>) => {
+    const handleDeleteClick = (item: MediaItem, event: React.MouseEvent<HTMLElement>) => {
 
-    const target = event.currentTarget.closest('[data-media-item]') as HTMLElement;
-    setDeleteConfirm({open: true, id: item.id, url: item.url, type: item.type, anchorEl: target});
-  };
+      const target = event.currentTarget.closest('[data-media-item]') as HTMLElement;
+
+      setDeleteConfirm({open: true, id: item.id, url: item.url || null, type: item.type, anchorEl: target});
+
+    };
   
   const handleDeleteConfirm = () => {
     if (!deleteConfirm.id) {
@@ -441,6 +449,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = React.memo(({ items, on
   };
 
   const handleSave = (item: MediaItem) => {
+    if (!item.url) return;
     const a = document.createElement('a');
     a.href = item.url;
     a.download = `lumina_${item.type}_${item.timestamp}.${item.type === 'image' ? 'png' : 'webm'}`;
@@ -448,6 +457,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = React.memo(({ items, on
   };
 
   const handleShare = async (item: MediaItem) => {
+    if (!item.url) return;
     try {
       const response = await fetch(item.url);
       const blob = await response.blob();
@@ -464,6 +474,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = React.memo(({ items, on
   };
 
   const handleEdit = (item: MediaItem) => {
+    if (!item.url) return;
     window.open(item.url, '_blank');
   };
 

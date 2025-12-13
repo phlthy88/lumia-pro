@@ -1,12 +1,12 @@
-import * as Sentry from "@sentry/react";
-
-export const initSentry = () => {
+export const initSentry = async () => {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
   
   if (!dsn) {
     console.warn('[Sentry] DSN not configured, running in local mode');
     return;
   }
+
+  const Sentry = await import("@sentry/react");
 
   Sentry.init({
     dsn,
@@ -20,7 +20,6 @@ export const initSentry = () => {
       }),
     ],
     beforeSend(event) {
-      // Filter out known non-critical errors
       if (event.exception?.values?.[0]?.value?.includes('ResizeObserver loop limit exceeded')) {
         return null;
       }
@@ -29,6 +28,10 @@ export const initSentry = () => {
   });
 };
 
-export const captureError = (error: Error, context?: Record<string, any>) => {
+export const captureError = async (error: Error, context?: Record<string, any>) => {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (!dsn) return;
+  
+  const Sentry = await import("@sentry/react");
   Sentry.captureException(error, { extra: context });
 };

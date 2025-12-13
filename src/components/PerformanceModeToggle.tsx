@@ -1,6 +1,6 @@
 import React from 'react';
 import { ToggleButton, ToggleButtonGroup, Tooltip, Typography, Box } from '@mui/material';
-import { Speed, PowerOff, Balance } from '@mui/icons-material';
+import { HighQuality, Tune, Bolt } from '@mui/icons-material';
 import { usePerformanceModeContext, PerformanceMode } from '../providers/PerformanceModeProvider';
 
 export const PerformanceModeToggle: React.FC = () => {
@@ -15,25 +15,25 @@ export const PerformanceModeToggle: React.FC = () => {
         size="large"
         aria-label="Performance Mode"
       >
-        <Tooltip title="Performance: 30fps, 960x540, essential effects only">
-          <ToggleButton value="performance" aria-label="Performance">
-            <Speed fontSize="large" />
+        <Tooltip title="Performance: 60fps, full resolution, all effects">
+          <ToggleButton value="off" aria-label="Performance">
+            <HighQuality fontSize="large" />
           </ToggleButton>
         </Tooltip>
         <Tooltip title="Balanced: 30fps, 1280x720, most effects">
           <ToggleButton value="balanced" aria-label="Balanced">
-            <Balance fontSize="large" />
+            <Tune fontSize="large" />
           </ToggleButton>
         </Tooltip>
-        <Tooltip title="Quality: 60fps, full resolution, all effects">
-          <ToggleButton value="off" aria-label="Quality">
-            <PowerOff fontSize="large" />
+        <Tooltip title="Lite: 30fps, 960x540, essential effects only">
+          <ToggleButton value="performance" aria-label="Lite">
+            <Bolt fontSize="large" />
           </ToggleButton>
         </Tooltip>
       </ToggleButtonGroup>
       
       <Typography variant="caption" color="text.secondary" display="block">
-        {performanceMode} • Target FPS: {targetFPS}
+        {performanceMode === 'off' ? 'performance' : performanceMode === 'performance' ? 'lite' : performanceMode} • Target FPS: {targetFPS}
       </Typography>
     </Box>
   );

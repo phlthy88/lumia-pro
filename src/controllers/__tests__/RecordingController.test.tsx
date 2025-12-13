@@ -6,35 +6,15 @@ vi.mock('../RenderController', () => ({
   useRenderContext: () => ({ canvasRef: { current: null } }),
 }));
 
-vi.mock('../../hooks/useRecorder', () => ({
-  useRecorder: () => ({
-    isRecording: false,
-    isCountingDown: false,
-    isPhotoCountingDown: false,
-    isBursting: false,
-    countdown: 0,
-    photoCountdown: 0,
-    recordingTime: 0,
-    config: {},
-    setConfig: vi.fn(),
-    audioConfig: {},
-    setAudioConfig: vi.fn(),
-    startRecording: vi.fn(),
-    stopRecording: vi.fn(),
-    takeScreenshot: vi.fn(),
-    takeBurst: vi.fn(),
-    cancelCountdown: vi.fn(),
-    mediaItems: [],
-    loadItemUrl: vi.fn(),
-    deleteMedia: vi.fn(),
-    clearMedia: vi.fn(),
-    audioStream: null,
-    error: null,
-  }),
-}));
-
 vi.mock('../../services/MediaStorageService', () => ({
-  mediaStorageService: { saveMedia: vi.fn(), loadMedia: vi.fn().mockResolvedValue([]), deleteMedia: vi.fn(), getMediaUrl: vi.fn() },
+  mediaStorage: {
+    listMetadata: vi.fn().mockResolvedValue([]),
+    getBlob: vi.fn().mockResolvedValue(null),
+    saveBlob: vi.fn().mockResolvedValue(undefined),
+    deleteBlob: vi.fn().mockResolvedValue(undefined),
+    getTotalSize: vi.fn().mockResolvedValue(0),
+    clear: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 vi.mock('../../providers/EventBus', () => ({

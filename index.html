@@ -2,57 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#6750A4" />
     <meta name="description" content="Lumia Pro Lens - Professional WebGL Webcam Studio" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://storage.googleapis.com blob:; script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://storage.googleapis.com; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' ws://localhost:* https://generativelanguage.googleapis.com https://storage.googleapis.com https://cdn.jsdelivr.net https://openrouter.ai; worker-src 'self' blob:; object-src 'none';">
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <!-- Preconnect to external origins -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preconnect" href="https://storage.googleapis.com" crossorigin />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://storage.googleapis.com" />
+    
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     
     <title>Lumia Pro Lens</title>
-    <!-- Roboto Font bundled via @fontsource/roboto -->
-    <style>
-      * {
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-      }
-      *::-webkit-scrollbar {
-        display: none;
-      }
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-      }
-      #root {
-        height: 100vh;
-        width: 100vw;
-      }
-      @keyframes electric-pulse {
-        0%, 100% {
-          box-shadow: 0 0 20px #ff1744, 0 0 40px #ff174480, 0 0 60px #ff174440;
-        }
-        50% {
-          box-shadow: 0 0 30px #ff1744, 0 0 60px #ff1744aa, 0 0 90px #ff174466, 0 0 120px #ff174433;
-        }
-      }
-      @keyframes recording-pulse {
-        0%, 100% {
-          opacity: 0.6;
-          transform: scale(1);
-        }
-        50% {
-          opacity: 1;
-          transform: scale(1.02);
-        }
-      }
-    </style>
-    <!-- Import map removed - Vite handles module bundling -->
-</head>
+    
+    <!-- Critical CSS for faster FCP -->
+    <link rel="stylesheet" href="/critical.css" />
+  </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="loading">Loading...</div></div>
     <script type="module" src="/src/index.tsx"></script>
-</body>
+  </body>
 </html>

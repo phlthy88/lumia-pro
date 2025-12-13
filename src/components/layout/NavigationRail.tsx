@@ -45,6 +45,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
 
     if (isMobile) {
         return (
+            <Box component="nav" aria-label="Main navigation">
             <BottomNavigation
                 value={activeTab}
                 onChange={(_, newValue) => onTabChange(newValue)}
@@ -75,12 +76,15 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
                     />
                 ))}
             </BottomNavigation>
+            </Box>
         );
     }
 
     // Vertical dropdown panel (same style as original rail)
     return (
         <Box
+            component="nav"
+            aria-label="Main navigation"
             sx={{
                 width: 72,
                 bgcolor: theme.palette.background.paper,

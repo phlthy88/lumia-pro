@@ -9,7 +9,8 @@ import { useVirtualCamera } from '../hooks/useVirtualCamera';
 import { useCameraContext } from './CameraController';
 import { useAIContext } from './AIController';
 import { eventBus } from '../providers/EventBus';
-import { LutData, RenderMode, ColorGradeParams, TransformParams, FallbackMode, Preset, EngineStats } from '../types';
+import { LutData, RenderMode, ColorGradeParams, TransformParams, FallbackMode, Preset, EngineStats, PTZMode, PTZState, PTZCapabilities } from '../types';
+import { usePTZ } from '../hooks/usePTZ';
 import { LutService } from '../services/LutService';
 import virtualCameraService from '../services/VirtualCameraService';
 
@@ -80,12 +81,30 @@ interface RenderContextState {
   // Animation Triggers (exposed for RecordingController)
   triggerCaptureAnim: (url: string) => void;
   triggerSwooshAnim: (url: string) => void;
+  currentStream: MediaStream | null;
   
   // Animation state (for Viewfinder to render)
   captureAnimUrl: string | null;
   swooshThumbnailUrl: string | null;
   clearCaptureAnim: () => void;
   clearSwooshAnim: () => void;
+
+  // PTZ Control
+  ptzMode: PTZMode;
+  ptzState: PTZState;
+  ptzCapabilities: PTZCapabilities;
+  hasPhysicalPTZ: boolean;
+  setPTZMode: (mode: PTZMode) => void;
+  setPTZPan: (v: number) => void;
+  setPTZTilt: (v: number) => void;
+  setPTZZoom: (v: number) => void;
+  setPTZPanSpeed: (v: number) => void;
+  setPTZTiltSpeed: (v: number) => void;
+  setPTZZoomSpeed: (v: number) => void;
+  resetPTZPan: () => void;
+  resetPTZTilt: () => void;
+  resetPTZZoom: () => void;
+  applyPTZJoystickDelta: (dx: number, dy: number) => void;
 }
 
 const RenderContext = createContext<RenderContextState | null>(null);
@@ -101,7 +120,7 @@ interface RenderControllerProps {
 }
 
 export const RenderController: React.FC<RenderControllerProps> = ({ children }) => {
-  const { videoRef, streamReady } = useCameraContext();
+  const { videoRef, streamReady, currentStream } = useCameraContext();
   const { showToast } = useUIState();
 
   // Color Grading Hook
@@ -143,6 +162,18 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
 
   // Virtual Camera
   const virtualCamera = useVirtualCamera();
+
+  // PTZ Control
+  const ptz = usePTZ(streamReady);
+
+  // Sync PTZ with virtual gimbal transform when in virtual mode
+  useEffect(() => {
+    if (ptz.mode === 'virtual') {
+      handleTransformChange('panX', ptz.state.pan);
+      handleTransformChange('panY', ptz.state.tilt);
+      handleTransformChange('zoom', ptz.state.zoom);
+    }
+  }, [ptz.mode, ptz.state.pan, ptz.state.tilt, ptz.state.zoom, handleTransformChange]);
 
   // LUTs Logic (moved from App.tsx)
   interface LutEntry { name: string; url: string | null; data: LutData | null; }
@@ -201,37 +232,9 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
       setActiveLutData(catalog[0]!.data);
   }, []);
 
-  useEffect(() => {
-      const entry = lutEntries[activeLutIndex];
-      if (!entry) return;
-      const cached = lutCacheRef.current.get(activeLutIndex);
-      if (cached) {
-          setActiveLutData(cached);
-          return;
-      }
-      if (entry.data) {
-          lutCacheRef.current.set(activeLutIndex, entry.data);
-          setActiveLutData(entry.data);
-          return;
-      }
-      if (entry.url) {
-          LutService.loadFromUrl(entry.url, entry.name)
-              .then((lut: LutData) => {
-                  if (lutCacheRef.current.size >= MAX_CACHED_LUTS) {
-                      const oldest = lutCacheRef.current.keys().next().value;
-                      if (oldest !== undefined) lutCacheRef.current.delete(oldest);
-                  }
-                  lutCacheRef.current.set(activeLutIndex, lut);
-                  setActiveLutData(lut);
-              })
-              .catch((err: any) => {
-                  console.error(`Failed to load LUT: ${entry.name}`, err);
-                  showToast(`Failed to load ${entry.name}`, 'warning');
-              });
-      }
-  }, [activeLutIndex, lutEntries, showToast]);
 
-  const handleLutUpload = (file: File) => {
+
+  const handleLutUpload = useCallback((file: File) => {
       const reader = new FileReader();
       reader.onload = (e) => {
           if (e.target?.result) {
@@ -247,7 +250,7 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
           }
       };
       reader.readAsText(file);
-  };
+  }, [lutEntries, lutCacheRef, setActiveLutIndex, showToast]);
 
   // AI & Beauty Integration
   // Use a context selector to prevent cyclic dependency issues or just use context?
@@ -364,6 +367,37 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
 
   const { canvasRef, setCanvasRef, statsRef, setLut, setBeautyMask, setBeautyMask2, setSegmentationMask, error: glError } = useGLRenderer(videoRef, streamReady, getParams, drawOverlays);
 
+  // Sync LUT
+  useEffect(() => {
+      const entry = lutEntries[activeLutIndex];
+      if (!entry) return;
+      const cached = lutCacheRef.current.get(activeLutIndex);
+      if (cached) {
+          setActiveLutData(cached);
+          return;
+      }
+      if (entry.data) {
+          lutCacheRef.current.set(activeLutIndex, entry.data);
+          setActiveLutData(entry.data);
+          return;
+      }
+      if (entry.url) {
+          LutService.loadFromUrl(entry.url, entry.name)
+              .then((lut: LutData) => {
+                  if (lutCacheRef.current.size >= MAX_CACHED_LUTS) {
+                      const oldest = lutCacheRef.current.keys().next().value;
+                      if (oldest !== undefined) lutCacheRef.current.delete(oldest);
+                  }
+                  lutCacheRef.current.set(activeLutIndex, lut);
+                  setActiveLutData(lut);
+              })
+              .catch((err: any) => {
+                  console.error(`Failed to load LUT: ${entry.name}`, err);
+                  showToast(`Failed to load ${entry.name}`, 'warning');
+              });
+      }
+  }, [activeLutIndex, lutEntries, showToast, setLut]);
+
   // Renderer health watchdog: if GL never produces frames, fall back to raw video display
   const [renderHealthy, setRenderHealthy] = useState(false);
   const [useFallbackVideo, setUseFallbackVideo] = useState(false);
@@ -429,7 +463,12 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
       });
 
       const removeSegmentationListener = eventBus.on('ai:segmentation' as any, ({ mask }: { mask: OffscreenCanvas | HTMLCanvasElement | null }) => {
-          setSegmentationMask(mask);
+          // Validate mask is a valid canvas before setting
+          if (mask && (mask instanceof HTMLCanvasElement || mask instanceof OffscreenCanvas)) {
+              setSegmentationMask(mask);
+          } else {
+              setSegmentationMask(null);
+          }
       });
 
       return () => {
@@ -486,7 +525,24 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
       swooshThumbnailUrl: swooshThumbnail,
       clearCaptureAnim: () => setCaptureAnim(null),
       clearSwooshAnim: () => setSwooshThumbnail(null),
-      setColor: setColor as any, undo, canUndo
+      currentStream,
+      setColor: setColor as any, undo, canUndo,
+      // PTZ
+      ptzMode: ptz.mode,
+      ptzState: ptz.state,
+      ptzCapabilities: ptz.capabilities,
+      hasPhysicalPTZ: ptz.hasPhysicalPTZ,
+      setPTZMode: ptz.setMode,
+      setPTZPan: ptz.setPan,
+      setPTZTilt: ptz.setTilt,
+      setPTZZoom: ptz.setZoom,
+      setPTZPanSpeed: ptz.setPanSpeed,
+      setPTZTiltSpeed: ptz.setTiltSpeed,
+      setPTZZoomSpeed: ptz.setZoomSpeed,
+      resetPTZPan: ptz.resetPan,
+      resetPTZTilt: ptz.resetTilt,
+      resetPTZZoom: ptz.resetZoom,
+      applyPTZJoystickDelta: ptz.applyJoystickDelta
     }}>
       {children}
     </RenderContext.Provider>
@@ -497,12 +553,16 @@ export const RenderController: React.FC<RenderControllerProps> = ({ children }) 
 export const Viewfinder: React.FC = () => {
   const { 
     setCanvasRef, statsRef, gyroRef, bypass, toggleBypass, midi, glError, useFallbackVideo,
-    captureAnimUrl, swooshThumbnailUrl, clearCaptureAnim, clearSwooshAnim
+    captureAnimUrl, swooshThumbnailUrl, clearCaptureAnim, clearSwooshAnim,
+    ptzMode, applyPTZJoystickDelta, resetPTZPan, resetPTZTilt, resetPTZZoom
   } = useRenderContext();
   const { videoRef, streamReady } = useCameraContext();
   const { isRecording, audioStream } = useRecordingContext();
   const [showPerfOverlay, setShowPerfOverlay] = React.useState(false);
   const fallbackVideoRef = React.useRef<HTMLVideoElement | null>(null);
+
+  // Lazy load PTZJoystick
+  const PTZJoystick = React.useMemo(() => React.lazy(() => import('../components/PTZJoystick').then(m => ({ default: m.PTZJoystick }))), []);
 
   // Keyboard shortcut for Perf Overlay
   React.useEffect(() => {
@@ -552,6 +612,7 @@ export const Viewfinder: React.FC = () => {
           muted
           playsInline
           autoPlay
+          aria-label="Live camera preview"
           data-testid="fallback-video"
         />
         <canvas
@@ -567,6 +628,17 @@ export const Viewfinder: React.FC = () => {
               transition: 'opacity 0.3s ease'
           }}
         />
+        {/* PTZ Joystick Overlay */}
+        {ptzMode !== 'disabled' && (
+          <Box sx={{ position: 'absolute', bottom: 24, left: 24, zIndex: 70, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <React.Suspense fallback={null}>
+              <PTZJoystick mode={ptzMode} onMove={applyPTZJoystickDelta} />
+            </React.Suspense>
+            <MuiButton size="small" variant="outlined" onClick={() => { resetPTZPan(); resetPTZTilt(); resetPTZZoom(); }} sx={{ fontSize: 10, py: 0.25, minWidth: 60 }}>
+              Reset
+            </MuiButton>
+          </Box>
+        )}
       </StyledViewfinder>
 
       <CaptureAnimation imageUrl={captureAnimUrl} onComplete={clearCaptureAnim} />
@@ -585,8 +657,16 @@ export const RenderSettings: React.FC = () => {
       setMode, toggleBypass, handleColorChange, handleTransformChange,
       setActiveLutIndex, handleLutUpload,
       resetColorWheels, resetGrading, resetDetailOptics, resetTransform,
-      savePreset, loadPreset, deletePreset, importPresets, exportPresets
+      savePreset, loadPreset, deletePreset, importPresets, exportPresets,
+      // PTZ
+      ptzMode, ptzState, ptzCapabilities, hasPhysicalPTZ,
+      setPTZMode, setPTZPan, setPTZTilt, setPTZZoom,
+      setPTZPanSpeed, setPTZTiltSpeed, setPTZZoomSpeed,
+      resetPTZPan, resetPTZTilt, resetPTZZoom
   } = useRenderContext();
+
+  // Lazy load PTZPanel
+  const PTZPanel = React.useMemo(() => React.lazy(() => import('../components/PTZPanel').then(m => ({ default: m.PTZPanel }))), []);
 
   // ... Render controls (ControlCard, etc) ...
   // Copying the JSX from App.tsx "ADJUST" tab
@@ -619,6 +699,26 @@ export const RenderSettings: React.FC = () => {
                 />
             </Box>
         </ControlCard>
+
+        {/* PTZ Control Panel */}
+        <React.Suspense fallback={null}>
+          <PTZPanel
+            mode={ptzMode}
+            state={ptzState}
+            capabilities={ptzCapabilities}
+            hasPhysicalPTZ={hasPhysicalPTZ}
+            onModeChange={setPTZMode}
+            onPanChange={setPTZPan}
+            onTiltChange={setPTZTilt}
+            onZoomChange={setPTZZoom}
+            onPanSpeedChange={setPTZPanSpeed}
+            onTiltSpeedChange={setPTZTiltSpeed}
+            onZoomSpeedChange={setPTZZoomSpeed}
+            onResetPan={resetPTZPan}
+            onResetTilt={resetPTZTilt}
+            onResetZoom={resetPTZZoom}
+          />
+        </React.Suspense>
 
         <ControlCard title="Virtual Gimbal" onReset={resetTransform}>
             <MuiSlider label="Zoom" value={transform.zoom} min={1.0} max={4.0} step={0.01} onChange={(v) => handleTransformChange('zoom', v)} unit="x" />

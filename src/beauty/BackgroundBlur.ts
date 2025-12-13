@@ -10,6 +10,8 @@ export class BackgroundBlur {
   private lastVideoTime = -1;
   private isInitializing = false;
   private initFailed = false;
+  private retryCount = 0;
+  private maxRetries = 3;
   private canvas: OffscreenCanvas;
   private ctx: OffscreenCanvasRenderingContext2D;
 
@@ -18,11 +20,12 @@ export class BackgroundBlur {
     const ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) throw new Error('BackgroundBlur: 2D context unavailable');
     this.ctx = ctx as OffscreenCanvasRenderingContext2D;
+    this.retryCount = 0;
   }
 
   async initialize(): Promise<boolean> {
     if (this.segmenter) return true;
-    if (this.isInitializing || this.initFailed) return false;
+    if (this.isInitializing) return false;
     
     this.isInitializing = true;
 
@@ -41,10 +44,20 @@ export class BackgroundBlur {
         outputConfidenceMasks: true
       });
       console.log('[BackgroundBlur] Initialized');
+      this.retryCount = 0;
+      this.initFailed = false;
       return true;
     } catch (e) {
-      console.error('[BackgroundBlur] Failed to initialize:', e);
-      this.initFailed = true;
+      this.retryCount++;
+      console.error(`[BackgroundBlur] Failed to initialize (attempt ${this.retryCount}/${this.maxRetries}):`, e);
+      
+      if (this.retryCount >= this.maxRetries) {
+        this.initFailed = true;
+      } else {
+        // Allow retry - don't set initFailed permanently
+        this.initFailed = false;
+      }
+      
       return false;
     } finally {
       this.isInitializing = false;
@@ -122,5 +135,6 @@ export class BackgroundBlur {
     this.segmenter?.close();
     this.segmenter = null;
     this.initFailed = false;
+    this.retryCount = 0;
   }
 }

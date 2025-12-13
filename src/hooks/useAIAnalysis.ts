@@ -3,9 +3,13 @@ import type { FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 import { aiService, AnalysisResult } from '../services/AIAnalysisService';
 import { ColorGradeParams } from '../types';
 
+export interface FaceLandmarksOnly {
+  faceLandmarks: Array<Array<{ x: number; y: number; z: number }>>;
+}
+
 export const useAIAnalysis = (
     videoRef: React.RefObject<HTMLVideoElement>,
-    faceResult: FaceLandmarkerResult | null
+    faceResult: FaceLandmarkerResult | FaceLandmarksOnly | null
 ) => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [result, setResult] = useState<AnalysisResult | null>(null);

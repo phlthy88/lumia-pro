@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from 'react';
 import { useCameraContext } from './CameraController';
 import { useRenderContext } from './RenderController';
-import { useVisionWorker } from '../hooks/useVisionWorker';
+import { useVisionWorkerThread } from '../hooks/useVisionWorkerThread';
 import { useAIAnalysis } from '../hooks/useAIAnalysis';
 import { usePerformanceModeContext } from '../providers/PerformanceModeProvider';
 
@@ -76,7 +76,7 @@ export const AIController: React.FC<AIControllerProps> = ({ children }) => {
   // Enable vision when performance allows, and user toggles it on
   const visionEnabled = performanceMode !== 'off' && visionManuallyEnabled && (beauty.enabled || activeTab === 'AI');
 
-  const vision = useVisionWorker(videoRef as React.RefObject<HTMLVideoElement>, streamReady, visionEnabled, {
+  const vision = useVisionWorkerThread(videoRef as React.RefObject<HTMLVideoElement>, streamReady, visionEnabled, {
     minFaceDetectionConfidence: 0.3,
     minFacePresenceConfidence: 0.3,
     minTrackingConfidence: 0.3

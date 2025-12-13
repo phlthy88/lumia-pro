@@ -1,0 +1,5 @@
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+body{margin:0;padding:0;overflow:hidden;background:#121212}
+#root{height:100dvh;width:100vw;display:flex;align-items:center;justify-content:center}
+.loading{color:#fff;font-family:system-ui,sans-serif}

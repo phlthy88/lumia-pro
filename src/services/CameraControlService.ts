@@ -33,7 +33,7 @@ export class CameraControlService {
         }
     }
 
-    public async initialize(deviceId?: string): Promise<MediaStream> {
+    public async initialize(deviceId?: string, preferredWidth?: number, preferredHeight?: number): Promise<MediaStream> {
         // Stop existing stream
         if (this.stream) {
             this.stream.getTracks().forEach(t => t.stop());
@@ -49,38 +49,23 @@ export class CameraControlService {
             validDeviceId = exists ? deviceId : undefined;
         }
 
-        // Resolution ladder - start at 1080p for better performance on most systems
-        const resolutions = [
-            { width: 1920, height: 1080 }, // 1080p
-            { width: 1280, height: 720 },  // 720p
-            { width: 640, height: 480 },   // 480p fallback
-        ];
-
-        for (const res of resolutions) {
-            try {
-                const constraints: MediaStreamConstraints = {
-                    audio: false,
-                    video: validDeviceId 
-                        ? { deviceId: { exact: validDeviceId }, width: { ideal: res.width }, height: { ideal: res.height }, frameRate: { ideal: 60 } }
-                        : { width: { ideal: res.width }, height: { ideal: res.height }, frameRate: { ideal: 60 } }
-                };
-                this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-                this.track = this.stream.getVideoTracks()[0] || null;
-                const settings = this.track?.getSettings();
-                console.log(`[Camera] Initialized at ${res.width}x${res.height} @ ${settings?.frameRate ?? '?'}fps`);
-                return this.stream;
-            } catch (e) {
-                console.warn(`[Camera] Failed at ${res.width}x${res.height}, trying lower resolution`);
-            }
+        const constraints: MediaStreamConstraints = {
+            audio: true, // Request audio always for now, to be handled by useVideoRecorder
+            video: validDeviceId 
+                ? { deviceId: { exact: validDeviceId }, width: { ideal: preferredWidth }, height: { ideal: preferredHeight }, frameRate: { ideal: 60 } }
+                : { width: { ideal: preferredWidth }, height: { ideal: preferredHeight }, frameRate: { ideal: 60 } }
+        };
+        
+        // If preferred width/height are not defined, try with no resolution constraints
+        if (!preferredWidth || !preferredHeight) {
+             (constraints.video as MediaTrackConstraints).width = undefined;
+             (constraints.video as MediaTrackConstraints).height = undefined;
         }
 
-        // Final fallback - no resolution constraints
-        const fallbackConstraints: MediaStreamConstraints = {
-            audio: false,
-            video: validDeviceId ? { deviceId: { exact: validDeviceId } } : true
-        };
-        this.stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        this.stream = await navigator.mediaDevices.getUserMedia(constraints);
         this.track = this.stream.getVideoTracks()[0] || null;
+        const settings = this.track?.getSettings();
+        console.log(`[Camera] Initialized at ${settings?.width}x${settings?.height} @ ${settings?.frameRate ?? '?'}fps`);
         return this.stream;
     }
 

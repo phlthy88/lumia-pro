@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Box, Typography } from '@mui/material';
-import { useCameraStream, CameraError } from '../hooks/useCameraStream';
+import { useCameraStream, UseCameraStreamReturn } from '../hooks/useCameraStream';
+import { CameraErrorCode } from '../utils/cameraErrors';
 import { useHardwareControls } from '../hooks/useHardwareControls';
 import { eventBus } from '../providers/EventBus';
 import { ControlCard } from '../components/controls/ControlCard';
@@ -18,7 +19,9 @@ interface CameraContextState {
   targetFps: number;
   applyFormat: (w: number, h: number, fps: number) => void;
   streamReady: boolean;
-  error: CameraError | null;
+  errorMessage: string | null;
+  errorCode: CameraErrorCode | null;
+  currentStream: MediaStream | null;
   availableResolutions: { label: string, width: number, height: number }[];
   availableFps: number[];
   capabilities: CameraCapabilities;
@@ -50,8 +53,8 @@ export const CameraController: React.FC<CameraControllerProps> = ({ children }) 
   const {
     videoRef,
     deviceList, activeDeviceId, setActiveDeviceId,
-    targetRes, targetFps, applyFormat, streamReady, error,
-    availableResolutions, availableFps
+    targetRes, targetFps, applyFormat, streamReady, // Restored
+    availableResolutions, availableFps, errorMessage, errorCode, currentStream,
   } = useCameraStream(streamCapabilities.maxFrameRate, streamCapabilities.maxWidth, streamCapabilities.maxHeight);
 
   // Single camera hook instance; its ref is shared via context so render/AI layers read the same stream.
@@ -83,16 +86,16 @@ export const CameraController: React.FC<CameraControllerProps> = ({ children }) 
   }, [streamReady, activeDeviceId]);
 
   useEffect(() => {
-    if (error) {
-      eventBus.emit('camera:error', { error: new Error(error.message) });
+    if (errorMessage && errorCode) {
+      eventBus.emit('camera:error', { error: new Error(`${errorMessage || 'Unknown camera error'} (Code: ${errorCode})`) });
     }
-  }, [error]);
+  }, [errorMessage, errorCode]);
 
   return (
     <CameraContext.Provider value={{
       videoRef,
       deviceList, activeDeviceId, setActiveDeviceId,
-      targetRes, targetFps, applyFormat, streamReady, error,
+      targetRes, targetFps, applyFormat, streamReady, errorMessage, errorCode, currentStream,
       availableResolutions, availableFps,
       capabilities, hardware,
       toggleFocusMode, setFocusDistance, toggleExposureMode, setShutterSpeed,
@@ -105,6 +108,7 @@ export const CameraController: React.FC<CameraControllerProps> = ({ children }) 
         playsInline
         muted
         autoPlay
+        aria-hidden="true"
       />
       {children}
     </CameraContext.Provider>

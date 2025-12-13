@@ -1,13 +1,23 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-// import { injectSpeedInsights } from '@vercel/speed-insights';
 import App from './App';
 import { migrateSettings } from './services/SettingsMigration';
 import { initSentry } from './config/sentry';
-import '@fontsource/roboto/300.css';
+
+// Load only critical font weight synchronously
 import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
+
+// Lazy load other font weights after initial render
+const loadFonts = () => {
+  import('@fontsource/roboto/300.css');
+  import('@fontsource/roboto/500.css');
+  import('@fontsource/roboto/700.css');
+};
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(loadFonts);
+} else {
+  setTimeout(loadFonts, 100);
+}
 
 // Initialize Sentry monitoring
 initSentry();

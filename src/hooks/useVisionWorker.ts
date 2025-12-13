@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { FilesetResolver, FaceLandmarker, type FaceLandmarkerResult } from '@mediapipe/tasks-vision';
+import type { FaceLandmarker, FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 
 type VisionState = {
   result: FaceLandmarkerResult | null;
@@ -33,6 +33,7 @@ export const useVisionWorker = (
 
     (async () => {
       try {
+        const { FilesetResolver, FaceLandmarker } = await import('@mediapipe/tasks-vision');
         const vision = await FilesetResolver.forVisionTasks(`${BASE_PATH}wasm`);
         if (cancelled) return;
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { Typography, TextField, Stack, Alert, Collapse, IconButton, Chip, Box, MenuItem } from '@mui/material';
 import { ExpandMore, ExpandLess, Key, CheckCircle } from '@mui/icons-material';
 import { AIWidget } from './AIWidget';
@@ -58,6 +58,10 @@ export const AISettings: React.FC<AISettingsProps> = ({
     const [showAPIKeys, setShowAPIKeys] = useState(false);
     const [openrouterKey, setOpenrouterKey] = usePersistedState('lumia_api_openrouter', '');
     const [openrouterModel, setOpenrouterModel] = usePersistedState('lumia_api_openrouter_model', MODEL_OPTIONS[0]!.value);
+    
+    // Generate stable IDs at component level
+    const apiKeyId = useId();
+    const modelSelectId = useId();
 
     // Notify parent when keys change
     React.useEffect(() => {
@@ -102,7 +106,7 @@ export const AISettings: React.FC<AISettingsProps> = ({
                                 : 'No API keys configured'}
                         </Typography>
                     </Box>
-                    <IconButton size="small" onClick={() => setShowAPIKeys(!showAPIKeys)}>
+                    <IconButton size="small" onClick={() => setShowAPIKeys(!showAPIKeys)} aria-label={showAPIKeys ? "Hide API keys" : "Show API keys"}>
                         {showAPIKeys ? <ExpandLess /> : <ExpandMore />}
                     </IconButton>
                 </Box>
@@ -128,6 +132,8 @@ export const AISettings: React.FC<AISettingsProps> = ({
                         </Alert>
                         
                         <TextField 
+                            id={apiKeyId}
+                            name="apiKey"
                             label="OpenRouter API Key" 
                             type="password"
                             size="small"
@@ -135,9 +141,12 @@ export const AISettings: React.FC<AISettingsProps> = ({
                             onChange={(e) => setOpenrouterKey(e.target.value)}
                             helperText="Get a key at openrouter.ai (kept locally)"
                             fullWidth
+                            autoComplete="off"
                         />
                         
                         <TextField 
+                            id={modelSelectId}
+                            name="model"
                             label="Model"
                             select
                             size="small"
@@ -145,6 +154,7 @@ export const AISettings: React.FC<AISettingsProps> = ({
                             onChange={(e) => setOpenrouterModel(e.target.value)}
                             helperText="Vision-capable, free-friendly choices"
                             fullWidth
+                            autoComplete="off"
                         >
                             {MODEL_OPTIONS.map(option => (
                                 <MenuItem key={option.value} value={option.value}>
