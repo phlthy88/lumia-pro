@@ -50,7 +50,8 @@ export const AISettings: React.FC<AISettingsProps> = ({
     onToggleVision,
 }) => {
     const MODEL_OPTIONS = [
-        { value: 'google/gemini-flash-1.5-8b', label: 'Gemini Flash 1.5 8B (free, vision)' },
+        { value: 'sourceful/riverflow-v2-fast-preview', label: 'Riverflow v2 Fast (vision)' },
+        { value: 'google/gemini-flash-1.5-8b', label: 'Gemini Flash 1.5 8B (vision)' },
         { value: 'meta-llama/llama-3.2-11b-vision-instruct', label: 'Llama 3.2 11B Vision (free)' },
         { value: 'mistralai/pixtral-12b', label: 'Pixtral 12B (vision)' },
     ];
