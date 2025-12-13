@@ -30,18 +30,18 @@ export const useVisionWorkerThread = (
     if (!streamReady || !enabled || workerRef.current) return;
 
     const worker = new Worker(new URL('../workers/VisionWorker.ts', import.meta.url), {
-      type: 'module',
+      type: 'classic',
       name: 'vision-worker'
     });
 
     worker.onmessage = (event) => {
-      const { type, payload } = event.data;
+      const { type, payload } = event.data || {};
       
       switch (type) {
         case 'landmarks':
           const now = performance.now();
           if (now - lastUpdateRef.current > 1000) {
-            setState(prev => ({ ...prev, result: payload.result }));
+            setState(prev => ({ ...prev, result: payload?.result }));
             lastUpdateRef.current = now;
           }
           break;
@@ -49,7 +49,7 @@ export const useVisionWorkerThread = (
           setState(prev => ({ ...prev, ready: true }));
           break;
         case 'error':
-          setState(prev => ({ ...prev, error: payload.message }));
+          setState(prev => ({ ...prev, error: payload?.message || 'Unknown error' }));
           break;
       }
     };

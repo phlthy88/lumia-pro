@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { FilesetResolver, FaceLandmarker, NormalizedLandmark } from '@mediapipe/tasks-vision';
+import type { FaceLandmarker, NormalizedLandmark } from '@mediapipe/tasks-vision';
 
 type InitMessage = {
   type: 'init';
@@ -23,11 +23,50 @@ type ReadyEvent = { type: 'ready' };
 type ErrorEvent = { type: 'error'; message: string };
 type _OutgoingMessage = LandmarkEvent | ReadyEvent | ErrorEvent;
 
-let landmarker: FaceLandmarker | null = null;
+type VisionLib = Pick<typeof import('@mediapipe/tasks-vision'), 'FilesetResolver' | 'FaceLandmarker'>;
+type FaceLandmarkerInstance = FaceLandmarker;
+
+let visionLibPromise: Promise<VisionLib> | null = null;
+let landmarker: FaceLandmarkerInstance | null = null;
 let isInitializing = false;
 let isProcessing = false;
 let consecutiveErrors = 0;
 const MAX_CONSECUTIVE_ERRORS = 5;
+
+function normalizeBundleBase(wasmPath: string): string {
+  if (wasmPath.endsWith('/wasm/')) return wasmPath.slice(0, -6);
+  if (wasmPath.endsWith('/wasm')) return wasmPath.slice(0, -5);
+  return wasmPath.replace(/\/$/, '');
+}
+
+async function loadVisionLib(wasmPath: string): Promise<VisionLib> {
+  if (!visionLibPromise) {
+    visionLibPromise = (async () => {
+      const basePath = normalizeBundleBase(wasmPath);
+      const bundleUrl = `${basePath}/vision_bundle.js`;
+
+      try {
+        self.importScripts(bundleUrl);
+      } catch (err) {
+        throw new Error(
+          `[VisionWorker] Failed to import MediaPipe vision bundle: ${err instanceof Error ? err.message : 'Unknown error'}`
+        );
+      }
+
+      const scoped = self as unknown as typeof globalThis & VisionLib;
+      if (!scoped.FilesetResolver || !scoped.FaceLandmarker) {
+        throw new Error('[VisionWorker] MediaPipe vision bundle did not expose expected globals');
+      }
+
+      return {
+        FilesetResolver: scoped.FilesetResolver,
+        FaceLandmarker: scoped.FaceLandmarker
+      };
+    })();
+  }
+
+  return visionLibPromise;
+}
 
 /**
  * Initialize FaceLandmarker with optimal settings for consistent detection
@@ -47,10 +86,11 @@ async function ensureLandmarker(
   isInitializing = true;
   
   try {
+    const { FilesetResolver, FaceLandmarker } = await loadVisionLib(wasmPath);
     const vision = await FilesetResolver.forVisionTasks(wasmPath);
     
     // Try GPU first, fallback to CPU if unavailable
-    let newLandmarker: FaceLandmarker;
+    let newLandmarker: FaceLandmarkerInstance;
     try {
       newLandmarker = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
